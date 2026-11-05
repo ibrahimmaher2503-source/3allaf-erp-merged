@@ -22,8 +22,10 @@ use App\Modules\Platform\Actions\DecideApprovalSource;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Pricing\Models\PriceList;
 use App\Support\ProductQuantity;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\TestCase;
@@ -100,6 +102,30 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame(0, ApprovalRecord::query()->where('source_type', 'stock_transfers')->where('source_id', (string) $transfer->id)->count());
         self::assertSame(1, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_dispatch')->count());
         self::assertThrows(fn () => app(SubmitStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
+    }
+
+    public function test_receiving_review_uses_destination_outlet_effective_price(): void
+    {
+        $this->withoutVite();
+        $outlet = Store::query()->create([
+            'company_id' => $this->destinationA->company_id, 'branch_id' => $this->destinationA->branch_id,
+            'code' => 'QA-OUT-'.uniqid(), 'type' => 'selling', 'name_ar' => 'منفذ الوجهة',
+            'name_en' => 'Destination outlet', 'status' => 'active', 'allows_negative_stock' => false,
+        ]);
+        BranchSellingStore::query()->create(['branch_id' => $outlet->branch_id, 'store_id' => $outlet->id, 'status' => 'active', 'effective_from' => now()->subDay()]);
+        $list = PriceList::query()->create([
+            'company_id' => $outlet->company_id, 'list_number' => 0, 'code' => 'QA-BASE-'.uniqid(),
+            'name_ar' => 'أساسي', 'name_en' => 'Base', 'percentage_increase' => '0', 'status' => 'active',
+        ]);
+        $version = $list->versions()->create(['version' => 1, 'state' => 'approved', 'source_type' => 'qa_fixture', 'approved_by' => $this->user->id, 'approved_at' => now()]);
+        $version->lines()->create(['product_id' => $this->product->id, 'store_id' => $outlet->id, 'branch_id' => $outlet->branch_id, 'amount' => '47.000', 'reference_amount' => '20.000']);
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '2', 'allocations' => [$this->destinationA->id => '2']],
+        ], idempotencyKey: 'qa-price-'.uniqid());
+        app(SubmitStockTransferAction::class)->execute($transfer->id);
+
+        $this->get(route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $this->destinationA->id]))
+            ->assertOk()->assertSee('47.00')->assertDontSee('20.00');
     }
 
     public function test_dispatches_one_line_to_two_destinations_once_and_preserves_independence(): void

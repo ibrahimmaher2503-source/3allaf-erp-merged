@@ -6,7 +6,6 @@ namespace App\Livewire\Pos;
 
 use App\Models\User;
 use App\Modules\Retail\Actions\PosCartAction;
-use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\InvoiceDiscount;
 use App\Modules\Retail\Support\PosCartSnapshot;
@@ -108,6 +107,11 @@ final class Cart extends Component
     {
         Gate::authorize('pos_sales.create');
         request()->session()->forget('pos.gift_card_sale');
+        /** @var User $user */
+        $user = auth()->user();
+        $context = app(PosContextResolver::class)->resolve($user);
+        $order = app(PosOpenOrderManager::class)->active(request(), $user, $context, false);
+        app(PosOpenOrderManager::class)->updateTotals($order, ['subtotal' => '0.00', 'discount_total' => '0.00', 'tax_total' => '0.00', 'total' => '0.00']);
         $this->dispatch('pos-cart-updated');
     }
 
@@ -120,14 +124,7 @@ final class Cart extends Component
         $data = $snapshot->build($context);
         $activeOrder = $orders->active(request(), $user, $context, false);
         $openOrders = $orders->orders($user, $context);
-        $pendingCard = request()->session()->get('pos.gift_card_sale');
-        $giftCardSale = is_array($pendingCard) && $context->isReady() && $context->store !== null && $context->shift !== null
-            && (int) ($pendingCard['user_id'] ?? 0) === (int) $user->id
-            && (int) ($pendingCard['store_id'] ?? 0) === (int) $context->store->id
-            && (int) ($pendingCard['shift_id'] ?? 0) === (int) $context->shift->id
-            ? GiftCard::query()->visibleTo($user)->where('identifier', $pendingCard['identifier'] ?? '')->where('status', 'unsold')->first()
-            : null;
 
-        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context, 'activeOrder' => $activeOrder, 'openOrders' => $openOrders, 'giftCardSale' => $giftCardSale]);
+        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context, 'activeOrder' => $activeOrder, 'openOrders' => $openOrders]);
     }
 }

@@ -9,6 +9,7 @@
     <table class="mt-6 w-full text-sm">
         <thead><tr class="border-b border-zinc-300"><th class="py-2 text-start">{{ __('Product') }}</th><th class="py-2 text-end">{{ __('Quantity') }}</th><th class="py-2 text-end">{{ __('Original price') }}</th><th class="py-2 text-end">{{ __('Selling price') }}</th><th class="py-2 text-end">{{ __('Discount') }}</th><th class="py-2 text-end">{{ __('Line total') }}</th></tr></thead>
         <tbody>
+            @if($giftCardSale ?? null)<tr class="border-b border-zinc-100"><td class="py-3">{{ __('Gift Card') }}<div class="font-mono text-xs" dir="ltr">{{ $giftCardSale->giftCard?->identifier }}</div></td><td class="py-3 text-end">1</td><td class="py-3 text-end"><x-money :amount="$giftCardSale->giftCard?->issued_value" /></td><td class="py-3 text-end"><x-money :amount="$giftCardSale->giftCard?->issued_value" /></td><td class="py-3 text-end">—</td><td class="py-3 text-end"><x-money :amount="$sale->total" /></td></tr>@endif
             @foreach ($sale->lines as $line)
                 <tr class="border-b border-zinc-100">
                     <td class="py-3">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->name_ar : $line->name_en }}<div class="text-xs text-zinc-500">{{ $line->item_code }}@if ($line->is_open_price)<span class="ms-2">· {{ __('Open price') }}: {{ $line->open_price_reason }}</span>@endif</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>

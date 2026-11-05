@@ -58,6 +58,7 @@ final class PosCartAction
             $cart[$key] = $line;
         }
         $request->session()->put('pos.cart', $cart->values()->all());
+        $request->session()->forget('pos.gift_card_sale');
         $this->persist($request, $user, $context);
     }
 

@@ -155,16 +155,20 @@ final class Module5PosQaTest extends TestCase
         self::assertSame('75.00', $panel->giftCardSalePreview['face_value']);
         self::assertSame($card->identifier, session('pos.gift_card_sale.identifier'));
         $this->get(route('pos'))->assertOk()->assertSee('data-gift-card-cart-line', false);
+        $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context);
 
-        $response = $this->post(route('pos.gift-cards.sell'), [
-            'identifier' => $card->identifier,
-            'idempotency_key' => $panel->giftCardSaleToken,
+        $response = $this->post(route('pos.checkout'), [
+            'checkout_token' => $order->checkout_token,
+            'open_order_uuid' => $order->uuid,
+            'payment_mode' => 'cash',
             'payments' => [['method_id' => $cash->id, 'amount' => '75.00', 'tendered' => '75.00']],
         ]);
         $response->assertRedirect(route('pos'));
         self::assertSame('active', $card->fresh()->status);
         self::assertSame(1, GiftCardPosSale::query()->where('gift_card_id', $card->id)->count());
         self::assertNull(session('pos.gift_card_sale'));
+        self::assertSame('completed', $order->fresh()->status);
+        $this->get(route('pos.receipt.preview', $order->fresh()->completed_sale_id))->assertOk()->assertSee($card->identifier);
 
         $panel->scanGiftCard((string) $card->identifier);
         self::assertSame($card->identifier, $panel->giftCardPreview['identifier']);

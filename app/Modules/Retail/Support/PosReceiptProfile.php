@@ -16,7 +16,7 @@ final class PosReceiptProfile
     {
         Gate::forUser($actor)->authorize('pos_sales.print');
         $sale->loadMissing('store.company');
-        abort_unless($sale->status === 'approved' && $sale->store !== null && Sale::query()->visibleTo($actor)->whereKey($sale->id)->exists(), 404);
+        abort_unless(in_array($sale->status, ['approved', 'gift_card_sold'], true) && $sale->store !== null && Sale::query()->visibleTo($actor)->whereKey($sale->id)->exists(), 404);
 
         $locale = app()->getLocale();
         $printer = PrinterConfiguration::query()

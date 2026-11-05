@@ -9,6 +9,7 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Data\PosContext;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Support\UserSafeError;
 use InvalidArgumentException;
@@ -29,11 +30,22 @@ final class PosCartSnapshot
                 'error' => $context->disabledReason ?? __('POS is disabled until you open an assigned cashier shift.'),
                 'taxApplicable' => false,
                 'taxSetting' => null,
+                'giftCardSale' => null,
             ];
         }
 
         $store = $context->store;
         $cart = collect(request()->session()->get('pos.cart', []));
+        $pendingGiftCard = request()->session()->get('pos.gift_card_sale');
+        $giftCardSale = null;
+        if ($cart->isEmpty() && is_array($pendingGiftCard)
+            && (int) ($pendingGiftCard['user_id'] ?? 0) === (int) auth()->id()
+            && (int) ($pendingGiftCard['store_id'] ?? 0) === (int) $store->id
+            && (int) ($pendingGiftCard['shift_id'] ?? 0) === (int) $context->shift?->id
+            && (string) ($pendingGiftCard['open_order_uuid'] ?? '') === (string) request()->session()->get(PosOpenOrderManager::SESSION_KEY)) {
+            $giftCardSale = GiftCard::query()->visibleTo(auth()->user())->where('identifier', (string) ($pendingGiftCard['identifier'] ?? ''))
+                ->where('status', 'unsold')->where('branch_id', $store->branch_id)->first();
+        }
         $ids = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->unique()->values();
         $products = Product::query()->with(['parent.images.attachment', 'images.attachment', 'variantValues.group', 'variantValues.value'])->whereIn('id', $ids)->get()->keyBy('id');
         $prices = $this->prices->resolveForStore($ids->all(), (int) $store->id);
@@ -62,6 +74,11 @@ final class PosCartSnapshot
             $error = __('Tax cannot be enabled until exactly one effective company default tax rule with a configured rate exists.');
         }
         try {
+            if ($giftCardSale !== null) {
+                $preview = $this->calculator->calculate([['quantity' => '1', 'unit_price' => (string) $giftCardSale->issued_value, 'discount_amount' => '0.00']]);
+
+                return [...compact('cart', 'products', 'lines', 'preview', 'error', 'taxSetting', 'discountType', 'discountValue', 'giftCardSale'), 'taxApplicable' => false];
+            }
             $calculationLines = array_map(fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines);
             $beforeDiscount = $lines === [] ? null : $this->calculator->calculate($calculationLines);
             $invoiceDiscount = InvoiceDiscount::amount($discountType, $discountValue, (string) ($beforeDiscount['taxable_base'] ?? '0.00'));
@@ -71,6 +88,6 @@ final class PosCartSnapshot
             $error = UserSafeError::message($exception);
         }
 
-        return compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting', 'discountType', 'discountValue');
+        return [...compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting', 'discountType', 'discountValue'), 'giftCardSale' => null];
     }
 }
