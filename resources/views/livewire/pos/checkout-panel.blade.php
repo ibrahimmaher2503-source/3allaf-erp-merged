@@ -20,7 +20,7 @@
         @endcan
     </div>
 
-    @can('gift_cards.redeem')
+    @can('pos_sales.create')
         <div class="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-border p-2" data-gift-card-scan>
             <label class="min-w-0 flex-1 text-xs font-semibold">{{ __('Search or scan Gift Card') }}<span class="relative mt-1 block"><flux:icon name="magnifying-glass" class="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-text-muted" /><input type="search" wire:model="giftCardScan" wire:keydown.enter="scanGiftCard" autocomplete="off" dir="auto" class="h-10 w-full rounded-lg border border-border bg-surface px-3 ps-10 font-mono text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25" placeholder="{{ __('Type or scan Gift Card code') }}"></span></label>
             <button type="button" wire:click="scanGiftCard" class="min-h-10 rounded-lg bg-primary px-3 text-xs font-bold text-white hover:brightness-110 active:scale-[.98]">{{ __('Use Gift Card') }}</button>
@@ -34,7 +34,7 @@
             @csrf
             <input type="hidden" name="identifier" value="{{ $giftCardSalePreview['identifier'] }}">
             <input type="hidden" name="idempotency_key" value="{{ $giftCardSaleToken }}">
-            <div class="flex flex-wrap items-center justify-between gap-2"><strong>{{ str_starts_with(app()->getLocale(), 'ar') ? 'بيع بطاقة هدايا' : 'Sell Gift Card' }}</strong><span class="rounded bg-white px-2 py-1 text-xs font-bold dark:bg-zinc-900">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير مباعة' : 'Unsold' }}</span></div>
+            <div class="flex flex-wrap items-center justify-between gap-2"><strong>{{ str_starts_with(app()->getLocale(), 'ar') ? 'بطاقة الهدايا في السلة' : 'Gift Card in cart' }}</strong><span class="rounded bg-white px-2 py-1 text-xs font-bold dark:bg-zinc-900">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير مباعة' : 'Unsold' }}</span></div>
             <p><bdi dir="ltr" class="font-mono">{{ $giftCardSalePreview['identifier'] }}</bdi> · {{ str_starts_with(app()->getLocale(), 'ar') ? 'القيمة الاسمية' : 'Face value' }}: <x-money :amount="$giftCardSalePreview['face_value']" :currency="$currency" /></p>
             <template x-for="(payment, index) in payments" :key="index"><div class="grid gap-2 rounded-lg border border-emerald-200 bg-white p-2 dark:border-emerald-900 dark:bg-zinc-900 sm:grid-cols-2">
                 <label class="text-xs font-semibold">{{ __('Payment method') }}<select :name="`payments[${index}][method_id]`" required class="mt-1 h-10 w-full rounded-lg border border-border bg-surface text-sm" x-model="payment.methodId">@foreach($methods as $method)@if((string) $method->type !== 'gift_card')<option value="{{ $method->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en }}</option>@endif @endforeach</select></label>

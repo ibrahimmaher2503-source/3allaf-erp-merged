@@ -57,12 +57,16 @@ final class BarcodeLabelService
     }
 
     /** @param array<int,array<string,mixed>> $rows @return array<string,mixed> */
-    public function compose(User $actor, array $rows, array $profile, ?int $storeId = null, array $serverPrices = []): array
+    public function compose(User $actor, array $rows, array $profile, ?int $storeId = null, array $serverPrices = [], bool $documentSource = false): array
     {
         if (! $storeId) {
             throw ValidationException::withMessages(['store_id' => __('Select a selling outlet')]);
         }
-        $store = $storeId ? Store::visibleTo($actor)->where('status', 'active')->where('type', 'selling')->findOrFail($storeId) : null;
+        $storeQuery = Store::query()->where('status', 'active')->where('type', 'selling');
+        if (! $documentSource) {
+            $storeQuery->visibleTo($actor);
+        }
+        $store = $storeQuery->findOrFail($storeId);
         $list = $store ? app(PriceListResolver::class)->listForOutlet($store) : null;
         $prices = $store ? app(BarcodeSellingPriceResolver::class)->resolveForStore(array_column($rows, 'product_id'), $store) : collect();
         $labels = [];

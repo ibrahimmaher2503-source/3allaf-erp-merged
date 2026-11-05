@@ -680,11 +680,6 @@ new #[Title('Supplier Masters')] class extends Component
                                 <p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</p>
                             </x-context-help>
                         </div>
-                        @if ($canCreate)
-                            <flux:button icon="folder-plus" variant="primary" wire:click="openCreateSupplierGroupModal">
-                                {{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة مجموعة موردين' : __('Add supplier group') }}
-                            </flux:button>
-                        @endif
                     </div>
 
                     <div class="grid gap-3 sm:grid-cols-3">

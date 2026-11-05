@@ -18,7 +18,7 @@
                 }));
                 this.$nextTick(() => {
                     this.selectedStoreId = this.$el.querySelector('[name="store_id"]')?.value || '';
-                    this.refreshPrices(this.selectedStoreId);
+                    if (! @js((bool) $documentStoreId)) this.refreshPrices(this.selectedStoreId);
                 });
             },
 

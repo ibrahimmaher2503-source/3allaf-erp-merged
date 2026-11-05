@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ReverseInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SaveInventoryAdjustmentAction;
+use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
@@ -21,6 +22,30 @@ use Tests\TestCase;
 final class ApproveInventoryAdjustmentActionTest extends TestCase
 {
     use DatabaseTransactions;
+
+    public function test_open_price_product_can_be_added_directly_without_a_selling_price_cost_link(): void
+    {
+        $this->grantPermissions('inventory_stock_card.create', 'inventory_stock_card.view', 'inventory_stock_card.approve');
+        $actor = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
+        $this->actingAs($actor)->withoutVite();
+        $company = Company::factory()->create();
+        $branch = Branch::factory()->create(['company_id' => $company->id]);
+        $store = Store::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'type' => 'warehouse']);
+        $product = Product::factory()->create(['open_price' => true, 'sale_price' => '1.00', 'average_cost' => '1.00']);
+        $product->barcodes()->create(['barcode' => 'QA-ENTRY-'.uniqid(), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
+
+        $this->post(route('inventory.documents.store', ['documentType' => 'entry']), [
+            'store_id' => $store->id,
+            'reason_code' => 'direct_addition',
+            'lines' => [['product_id' => $product->id, 'quantity_delta' => 2, 'unit_cost' => null]],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $adjustment = InventoryAdjustment::query()->latest('id')->firstOrFail();
+        self::assertSame('entry', $adjustment->adjustment_type);
+        app(ApproveInventoryAdjustmentAction::class)->execute($adjustment->id);
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->value('on_hand'));
+        self::assertSame('1.00', (string) $product->fresh()->sale_price);
+    }
 
     public function test_inventory_approval_audit_is_visible_to_branch_and_store_scopes(): void
     {

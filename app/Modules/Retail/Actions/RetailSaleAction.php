@@ -447,7 +447,7 @@ final class RetailSaleAction
             $openPriceApproverId = null;
             if ($isOpenPrice) {
                 abort_unless($cashier->can('pos_sales.open_price'), 403);
-                if (! $price->open_price_allowed) {
+                if (! $product->open_price || ! $price->open_price_allowed) {
                     throw new InvalidArgumentException(__('Open price is not enabled for this product price.'));
                 }
                 $unitPrice = DecimalMoney::normalize((string) $requested['open_price_amount'], 4);

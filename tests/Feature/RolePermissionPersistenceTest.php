@@ -25,6 +25,22 @@ final class RolePermissionPersistenceTest extends TestCase
         app(ProductionSeeder::class)->seedAuthorizationOnly();
     }
 
+    public function test_launch_role_migration_adds_operational_grants_without_replacing_custom_grants(): void
+    {
+        $cashier = Role::query()->where('code', 'cashier')->firstOrFail();
+        $custom = $this->customRole();
+        $customPermission = Permission::query()->where('code', 'products_categories_brands.view')->firstOrFail();
+        $custom->permissions()->sync([$customPermission->id]);
+        $receive = Permission::query()->where('code', 'transfers.receive')->firstOrFail();
+        $cashier->permissions()->detach($receive->id);
+
+        $migration = require database_path('migrations/2026_11_05_064701_add_launch_operational_role_grants.php');
+        $migration->up();
+
+        self::assertTrue($cashier->fresh()->permissions()->where('permissions.id', $receive->id)->exists());
+        self::assertSame([$customPermission->id], $custom->fresh()->permissions()->pluck('permissions.id')->all());
+    }
+
     public function test_permission_group_selection_persists_and_reloads_from_the_livewire_screen(): void
     {
         $administrator = $this->systemAdministrator();

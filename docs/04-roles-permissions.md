@@ -86,3 +86,7 @@ Cell values name the permitted roles followed by status code. `—` means no rol
 ## Owner Approval Required
 
 The owner must approve exact role aliases, branch/store assignments, own-record rules, approval separation, amount/quantity limits, override reasons, cross-branch visibility, cost visibility, customer-sensitive-field access, export limits, audit redaction, and every `P`/`R` cell before production use.
+
+## 2026-11-05 launch operational grants (owner-authorized Core amendment)
+
+Capabilities remain permission-gated and location-scoped; custom roles retain their assignments. Built-in cashier grants include dashboard, POS Open Price, Gift Card redemption, transfer view/receipt, and existing shift operations. Branch Manager receives branch-relevant transfer create/edit/send/receive/difference grants. Warehouse Manager receives transfer and stocktake operations; Stock Counter receives count view/edit. Menu A/B show Incoming Transfers only with `transfers.receive`. Server receiving reads only allocated, visible destination stores; source Send requires source scope. Transfer pages authorize `transfers.view` in both route middleware and the shared page renderer, so a transfer grant is sufficient without an unrelated inventory-view grant. The additive migration inserts only absent role-permission pairs; it does not rewrite staff, documents, or custom-role grants. Existing explicit administrator/company-owner privilege semantics remain as documented above.

@@ -242,3 +242,7 @@ Do not recursively read the repository, all `docs/`, whole historical logs, unre
 ## Maintenance
 
 Update this index when a task is added/renumbered, a policy/specification is added, a dependency or authority changes, a screen ID is added, a document is renamed, or a milestone/phase gate changes. This index routes reading; it never replaces authoritative sources.
+
+## 2026-11-05 launch stabilization source routing
+
+Owner-approved A–N stabilization is tracked in `.ai/CURRENT_TASK.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, and `.ai/PENDING_CHANGE_BATCH.md`. Operational rules are in `docs/04-roles-permissions.md`; product/barcode rules in `docs/23-product-barcode-policy.md`; POS rules in `docs/31-pos-sales-specification.md`; inventory/stocktake notes in `docs/58-inventory-tutorial-guide.md`. Branch `hotfix/launch-stabilization-20261104` remains unmerged/undeployed.

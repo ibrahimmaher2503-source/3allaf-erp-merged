@@ -47,6 +47,19 @@ final class CheckoutPanel extends Component
         /** @var User $user */
         $user = auth()->user();
         $context = $contexts->resolve($user);
+        $pendingCard = request()->session()->get('pos.gift_card_sale');
+        if (is_array($pendingCard) && $context->isReady() && $context->store !== null && $context->shift !== null
+            && (int) ($pendingCard['user_id'] ?? 0) === (int) $user->id
+            && (int) ($pendingCard['store_id'] ?? 0) === (int) $context->store->id
+            && (int) ($pendingCard['shift_id'] ?? 0) === (int) $context->shift->id) {
+            $card = GiftCard::query()->visibleTo($user)->where('identifier', $pendingCard['identifier'] ?? '')->where('status', 'unsold')->first();
+            if ($card !== null) {
+                $this->giftCardSalePreview = ['identifier' => $card->identifier, 'face_value' => (string) $card->issued_value, 'status' => 'unsold'];
+                $this->giftCardSaleToken = (string) $pendingCard['token'];
+            } else {
+                request()->session()->forget('pos.gift_card_sale');
+            }
+        }
         $order = $orders->active(request(), $user, $context, ! is_numeric(request()->session()->get('pos.completed_sale_id')));
         if ($order === null) {
             return;
@@ -67,7 +80,13 @@ final class CheckoutPanel extends Component
     }
 
     #[On('pos-cart-updated')]
-    public function refreshCheckout(): void {}
+    public function refreshCheckout(): void
+    {
+        if ($this->giftCardSalePreview !== [] && (request()->session()->get('pos.cart', []) !== [] || ! is_array(request()->session()->get('pos.gift_card_sale')))) {
+            $this->giftCardSalePreview = [];
+            request()->session()->forget('pos.gift_card_sale');
+        }
+    }
 
     #[On('pos-gift-card-scanned')]
     public function scanGiftCard(?string $identifier = null): void
@@ -88,14 +107,30 @@ final class CheckoutPanel extends Component
         $card = GiftCard::query()->visibleTo($user)->where('identifier', $identifier)
             ->where('branch_id', $store->branch_id)->first();
         if ($card?->status === 'unsold') {
+            if (request()->session()->get('pos.cart', []) !== []) {
+                $this->addError('giftCardScan', __('Complete or clear the product cart before selling a Gift Card.'));
+
+                return;
+            }
             $this->giftCardPreview = [];
             $this->giftCardSalePreview = ['identifier' => $card->identifier, 'face_value' => (string) $card->issued_value, 'status' => 'unsold'];
             $this->giftCardSaleToken = (string) Str::uuid();
+            request()->session()->put('pos.gift_card_sale', [
+                'identifier' => $card->identifier, 'token' => $this->giftCardSaleToken,
+                'user_id' => $user->id, 'store_id' => $store->id, 'shift_id' => $context->shift?->id,
+            ]);
+            $this->dispatch('pos-cart-updated');
 
             return;
         }
-        Gate::authorize('gift_cards.redeem');
+        if (Gate::denies('gift_cards.redeem')) {
+            $this->addError('giftCardScan', __('Gift Card redemption permission is required.'));
+
+            return;
+        }
         $this->giftCardSalePreview = [];
+        request()->session()->forget('pos.gift_card_sale');
+        $this->dispatch('pos-cart-updated');
         if ($card !== null && (int) $card->store_id !== (int) $store->id) {
             $card = null;
         }

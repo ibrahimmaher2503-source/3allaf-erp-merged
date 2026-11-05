@@ -2,13 +2,13 @@
 
 namespace App\Modules\Pricing\Services;
 
-use App\Modules\Pricing\Enums\PriceVersionState;
-use App\Modules\Pricing\Models\PriceLine;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\Database\Query\JoinClause;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Pricing\Enums\PriceVersionState;
+use App\Modules\Pricing\Models\PriceLine;
+use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 final class EffectivePriceResolver
 {
@@ -31,14 +31,22 @@ final class EffectivePriceResolver
             })
             ->orderByDesc('price_version_id')
             ->first();
-        if ($special !== null) return $special;
+        if ($special !== null) {
+            return $special;
+        }
 
         $product = Product::query()->sellable()->find($productId);
-        if ($product === null || $product->sale_price === null || bccomp((string) $product->sale_price, '0', 2) <= 0) return null;
+        if ($product === null || $product->sale_price === null || bccomp((string) $product->sale_price, '0', 2) <= 0) {
+            return null;
+        }
         $store = Store::query()->find($storeId);
-        if ($store === null) return null;
-        $fallback = new PriceLine(['product_id'=>$product->id,'store_id'=>$store->id,'amount'=>(string)$product->sale_price,'reference_amount'=>(string)$product->sale_price,'open_price_allowed'=>(bool)$product->open_price]);
-        $fallback->setRelation('product',$product); $fallback->setRelation('store',$store);
+        if ($store === null) {
+            return null;
+        }
+        $fallback = new PriceLine(['product_id' => $product->id, 'store_id' => $store->id, 'amount' => (string) $product->sale_price, 'reference_amount' => (string) $product->sale_price, 'open_price_allowed' => (bool) $product->open_price, 'open_price_minimum' => $product->open_price ? '0.0001' : null, 'open_price_maximum' => $product->open_price ? '999999999.9999' : null]);
+        $fallback->setRelation('product', $product);
+        $fallback->setRelation('store', $store);
+
         return $fallback;
     }
 
@@ -84,10 +92,13 @@ final class EffectivePriceResolver
             ->where('price_lines.store_id', $storeId)
             ->get()
             ->keyBy('product_id');
-        $missing = array_values(array_diff($productIds, $resolved->keys()->map(fn ($id)=>(int)$id)->all()));
-        if ($missing !== []) Product::query()->sellable()->whereKey($missing)->whereNotNull('sale_price')->where('sale_price','>',0)->get()->each(function(Product $product) use ($resolved,$storeId): void {
-            $resolved->put($product->id, new PriceLine(['product_id'=>$product->id,'store_id'=>$storeId,'amount'=>(string)$product->sale_price,'reference_amount'=>(string)$product->sale_price,'open_price_allowed'=>(bool)$product->open_price]));
-        });
+        $missing = array_values(array_diff($productIds, $resolved->keys()->map(fn ($id) => (int) $id)->all()));
+        if ($missing !== []) {
+            Product::query()->sellable()->whereKey($missing)->whereNotNull('sale_price')->where('sale_price', '>', 0)->get()->each(function (Product $product) use ($resolved, $storeId): void {
+                $resolved->put($product->id, new PriceLine(['product_id' => $product->id, 'store_id' => $storeId, 'amount' => (string) $product->sale_price, 'reference_amount' => (string) $product->sale_price, 'open_price_allowed' => (bool) $product->open_price, 'open_price_minimum' => $product->open_price ? '0.0001' : null, 'open_price_maximum' => $product->open_price ? '999999999.9999' : null]));
+            });
+        }
+
         return $resolved;
     }
 }

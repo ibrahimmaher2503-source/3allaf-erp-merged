@@ -10,6 +10,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
+use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\SaveStockTransferReceivingDraftAction;
 use App\Modules\Inventory\Actions\SubmitStockTransferAction;
 use App\Modules\Inventory\Actions\UpdateStockTransferDraftAction;
@@ -79,6 +80,26 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         DB::rollBack();
         Auth::logout();
         parent::tearDown();
+    }
+
+    public function test_send_dispatches_draft_once_without_source_approval(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute(
+            $this->source->id,
+            $this->destinationA->id,
+            [['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']]],
+            idempotencyKey: 'qa-send-'.uniqid(),
+        );
+
+        $sent = app(SubmitStockTransferAction::class)->execute($transfer->id);
+
+        self::assertSame('in_transit', $sent->status);
+        self::assertSame('5.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->value('on_hand'));
+        self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('in_transit'));
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('in_transit'));
+        self::assertSame(0, ApprovalRecord::query()->where('source_type', 'stock_transfers')->where('source_id', (string) $transfer->id)->count());
+        self::assertSame(1, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_dispatch')->count());
+        self::assertThrows(fn () => app(SubmitStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
     }
 
     public function test_dispatches_one_line_to_two_destinations_once_and_preserves_independence(): void
@@ -597,7 +618,9 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
             ['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']],
         ], idempotencyKey: 'qa-final-review-'.uniqid());
-        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $transfer->forceFill(['status' => 'submitted'])->save();
+        self::assertSame('submitted', $transfer->fresh()->status);
+        app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
         $this->actingAs($this->user)->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))
             ->assertOk()->assertSee('Final transfer review')->assertDontSee('name="lines[0][quantity_requested]"', false)->assertSee('data-review-total', false);
         $payload = $this->reviewPayload($transfer, '2', '4', '6');
@@ -625,7 +648,9 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
             ['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']],
         ], idempotencyKey: 'qa-review-failure-'.uniqid());
-        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $transfer->forceFill(['status' => 'submitted'])->save();
+        self::assertSame('submitted', $transfer->fresh()->status);
+        app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
         $this->balance($this->source, 0);
         $this->actingAs($this->user)->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))->assertOk();
         $payload = $this->reviewPayload($transfer, '2', '4', '6');

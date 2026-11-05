@@ -39,6 +39,7 @@ return [
         ['route' => 'inventory.balances', 'permission' => 'inventory_stock_card.view', 'icon' => 'archive-box', 'label' => ['ar' => 'الأرصدة وحركة المخزون', 'en' => 'Balances & movements']],
         ['type' => 'heading', 'label' => ['ar' => 'التحويلات', 'en' => 'Transfers']],
         ['route' => 'inventory.transfers', 'permission' => 'transfers.view', 'icon' => 'arrows-right-left', 'label' => ['ar' => 'التحويلات', 'en' => 'Stock transfers']],
+        ['route' => 'inventory.transfers.receiving-inbox', 'permission' => 'transfers.receive', 'icon' => 'inbox-arrow-down', 'label' => ['ar' => 'التحويلات الواردة', 'en' => 'Incoming transfers']],
         ['route' => 'inventory.adjustments.create', 'parameters' => ['type' => 'entry'], 'permission' => 'inventory_stock_card.create', 'icon' => 'plus-circle', 'label' => ['ar' => 'إذن إضافة', 'en' => 'Stock addition']],
         ['route' => 'inventory.adjustments.create', 'parameters' => ['type' => 'exit'], 'permission' => 'inventory_stock_card.create', 'icon' => 'minus-circle', 'label' => ['ar' => 'إذن خصم', 'en' => 'Stock deduction']],
         ['route' => 'inventory.counts', 'permission' => 'inventory_stock_card.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'الجرد والتسويات', 'en' => 'Counts & adjustments']],
