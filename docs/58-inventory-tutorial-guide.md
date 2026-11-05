@@ -172,3 +172,7 @@ Use a disposable QA company, products, warehouse, POS shift, and supplier docume
 | Mobile 390 px | Count cards, scan controls, progress, and review fit without horizontal overflow | QA; Production read-only layout check is safe |
 
 Automated browser validation with a simulated mobile camera **PASS**. Physical-device camera scanning is **PENDING OWNER UAT** and should be recorded by Ahmed; it does not alone block code merge readiness.
+
+## 2026-11-05 launch inventory and transfer amendment
+
+A draft transfer may be edited by the source. Send now dispatches once in the same transaction; each destination opens Receive, records actual quantity and reasoned variance, then confirms. Historical submitted approval records remain accessible for older transfers, while new Send creates audit submit/dispatch records and does not require another source review. Receiving shows product, item code, consumer price, transfer quantity, allocated destination quantity, actual, difference, and status. Entry and Exit Permit routes open dedicated forms without generic inventory widgets or movement-type reselection. Direct Open Price stock addition accepts absent cost through the canonical movement poster; sales price remains independent. Stocktake creation shows scoped locations and eligible team members, with validation errors shown on the form.

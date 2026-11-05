@@ -69,3 +69,7 @@ The owner explicitly authorized the nine-area Core change batch and its deployme
 ## Authorized post-baseline POS quantity hotfix — 2026-10-29
 
 Owner-authorized application `9d1363cadecc99c475c0e795cbd1702d4ef05712` synchronizes visible and canonical POS cart quantity and enforces the established selling-store stock cap across product-card, quantity controls, and checkout payload. It does not move the permanent `v2.0.0-core-operations` tag or alter the protected baseline release. No migration was required.
+
+## 2026-11-05 owner-authorized A–N Core amendment review
+
+The owner authorized the specified protected transfer, inventory, POS, pricing, and permission changes on isolated branch `hotfix/launch-stabilization-20261104`. Protected tag `v2.0.0-core-operations`, its release, database/storage snapshots, and existing production application `toyjoy-v2-consolidated-c6f4607` remain untouched. One additive operational role-grant migration is pending production review; code-only rollback requires compatibility review and never reverses posted transactions or grants. Validation evidence: `.ai/TEST_RESULTS.md`.
