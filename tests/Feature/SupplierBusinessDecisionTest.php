@@ -20,6 +20,16 @@ final class SupplierBusinessDecisionTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_supplier_groups_has_one_primary_add_action(): void
+    {
+        $actor = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
+        $this->actingAs($actor)->withoutVite();
+        Gate::before(static fn (): bool => true);
+
+        $response = $this->get(route('catalog.suppliers', ['section' => 'supplier-groups']))->assertOk();
+        self::assertSame(1, substr_count($response->getContent(), 'data-guide="supplier-groups-add-action"'));
+    }
+
     public function test_tax_id_unique_constraint_allows_multiple_missing_values_but_rejects_duplicates(): void
     {
         DB::table('suppliers')->insert([

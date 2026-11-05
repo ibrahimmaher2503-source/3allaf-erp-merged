@@ -32,10 +32,6 @@
             </div>
         </div>
 
-        <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-200" data-stocktake-notes-field>{{ $t('ملاحظات وتعليمات الجرد', 'Stocktake notes and instructions') }}
-            <textarea name="notes" rows="3" class="{{ $field }}" placeholder="{{ $t('تعليمات النطاق أو المناطق', 'Scope or zone instructions') }}">{{ old('notes') }}</textarea>
-        </label>
-
         <section class="rounded-xl border border-zinc-200 dark:border-zinc-800" aria-labelledby="stocktake-settings-heading" data-stocktake-settings>
             <h3 id="stocktake-settings-heading" class="border-b border-zinc-100 px-4 py-3 text-sm font-bold text-zinc-700 dark:border-zinc-800 dark:text-zinc-200">{{ $t('إعدادات الجرد', 'Count settings') }}</h3>
             <div class="grid min-w-0 gap-4 p-4 sm:grid-cols-2">
@@ -48,10 +44,14 @@
                     <label data-stocktake-supplier class="block text-xs font-semibold text-zinc-600">{{ $t('المورد', 'Supplier') }}<select name="supplier_id" class="{{ $field }}"><option value="">{{ $t('اختر المورد', 'Select supplier') }}</option>@foreach($countSuppliers as $supplier)<option value="{{ $supplier->id }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ \App\Support\HumanName::name($supplier) }}</option>@endforeach</select></label>
                 </div>
                 <fieldset class="min-w-0 space-y-2 sm:col-span-2" data-stocktake-execution><legend class="text-xs font-bold text-zinc-600">{{ $t('طريقة تنفيذ الجرد', 'Count execution method') }}</legend><div class="flex flex-wrap gap-4 text-sm"><label class="flex items-center gap-2"><input type="radio" name="execution_method" value="scan" @checked(old('execution_method', 'scan') === 'scan')>{{ $t('مسح ضوئي', 'Scanning') }}</label><label data-stocktake-excel class="flex items-center gap-2"><input type="radio" name="execution_method" value="excel" @checked(old('execution_method') === 'excel')>{{ $t('ملف Excel', 'Excel file') }}</label><label class="flex items-center gap-2"><input type="radio" name="execution_method" value="mobile" @checked(old('execution_method') === 'mobile')>{{ $t('موبايل', 'Mobile') }}</label></div></fieldset>
-                <label class="text-xs font-semibold text-zinc-600">{{ $t('مدير الجلسة والمراجع', 'Session manager / reviewer') }}<select name="manager_id" class="{{ $field }}" required>@foreach($countAssignees as $assignee)<option value="{{ $assignee->id }}" @selected((string) old('manager_id') === (string) $assignee->id)>{{ $assignee->name }}</option>@endforeach</select></label>
-                <fieldset class="min-w-0 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 sm:col-span-2"><legend class="px-1 text-xs font-bold">{{ $t('فريق الجرد', 'Count team') }}</legend><div class="grid max-h-32 gap-1.5 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">@foreach($countAssignees as $assignee)<label class="flex min-w-0 items-center gap-2 text-xs"><input type="checkbox" name="member_ids[]" value="{{ $assignee->id }}" @checked(in_array($assignee->id, array_map('intval', (array) old('member_ids', [])), true))><span class="truncate">{{ $assignee->name }}</span></label>@endforeach</div></fieldset>
+                <label class="text-xs font-semibold text-zinc-600">{{ $t('مدير الجلسة والمراجع', 'Session manager / reviewer') }}<select name="manager_id" class="{{ $field }}" required>@foreach($countAssignees->filter(fn ($candidate) => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.close')) as $assignee)<option value="{{ $assignee->id }}" @selected((string) old('manager_id') === (string) $assignee->id)>{{ $assignee->name }}</option>@endforeach</select></label>
+                <fieldset class="min-w-0 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 sm:col-span-2"><legend class="px-1 text-xs font-bold">{{ $t('فريق الجرد', 'Count team') }}</legend><div class="grid max-h-32 gap-1.5 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">@foreach($countAssignees as $assignee)<label class="flex min-w-0 items-center gap-2 text-xs" data-count-team-candidate data-eligible-stores="{{ implode(',', $countTeamEligibility[$assignee->id] ?? []) }}"><input type="checkbox" name="member_ids[]" value="{{ $assignee->id }}" @checked(in_array($assignee->id, array_map('intval', (array) old('member_ids', [])), true))><span class="truncate">{{ $assignee->name }}</span></label>@endforeach</div><p class="mt-2 text-xs text-zinc-500">{{ $t('تظهر فقط الأسماء المصرح لها بالعد في جميع المواقع المحددة.', 'Only members authorized to count in every selected location remain available.') }}</p></fieldset>
             </div>
         </section>
+
+        <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-200" data-stocktake-notes-field>{{ $t('ملاحظات وتعليمات الجرد', 'Stocktake notes and instructions') }}
+            <textarea name="notes" rows="3" class="{{ $field }}" placeholder="{{ $t('تعليمات النطاق أو المناطق', 'Scope or zone instructions') }}">{{ old('notes') }}</textarea>
+        </label>
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800"><p class="text-xs text-zinc-500">{{ $t('إنشاء الجلسة لا يغير رصيد المخزون.', 'Creating a session does not change stock balances.') }}</p><button type="submit" class="{{ $button }} min-h-10 bg-emerald-700 px-6 text-white">{{ $t('إنشاء الجرد', 'Create stocktake') }}</button></div>
     </form>
@@ -59,9 +59,19 @@
 <script>
     document.querySelectorAll('[data-stocktake-location-picker]').forEach((picker) => {
         const summary = picker.querySelector('[data-stocktake-location-summary]');
+        const candidates = document.querySelectorAll('[data-count-team-candidate]');
         const update = () => {
-            const names = [...picker.querySelectorAll('input[name="location_ids[]"]:checked')].map((input) => input.closest('label').querySelector('strong').textContent.trim());
+            const selected = [...picker.querySelectorAll('input[name="location_ids[]"]:checked')];
+            const names = selected.map((input) => input.closest('label').querySelector('strong').textContent.trim());
             summary.textContent = names.length ? names.join('، ') : @js($t('اختر المخزن أو المنفذ', 'Choose warehouse or store'));
+            candidates.forEach((candidate) => {
+                const eligible = new Set(candidate.dataset.eligibleStores.split(',').filter(Boolean));
+                const available = selected.length > 0 && selected.every((input) => eligible.has(input.value));
+                candidate.hidden = !available;
+                const checkbox = candidate.querySelector('input');
+                checkbox.disabled = !available;
+                if (!available) checkbox.checked = false;
+            });
         };
         picker.addEventListener('change', update);
         update();

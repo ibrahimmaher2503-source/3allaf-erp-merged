@@ -1674,7 +1674,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
         $store = $context->store;
         $price = app(EffectivePriceResolver::class)->resolve((int) $line['product_id'], $store->id);
-        abort_if($price === null || ! $price->open_price_allowed, 422, __('Open price is not enabled for this product.'));
+        abort_if($price === null || ! $price->open_price_allowed || ! Product::query()->whereKey((int) $line['product_id'])->where('open_price', true)->exists(), 422, __('Open price is not enabled for this product.'));
         $reference = DecimalMoney::normalize((string) ($price->reference_amount ?? $price->amount), 4);
         $policy->validateOrThrow(
             referenceAmount: $reference,
@@ -1950,9 +1950,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
             'payments.*.evidence' => ['nullable', 'file'],
         ]);
+        $pendingCard = $request->session()->get('pos.gift_card_sale');
+        if (! is_array($pendingCard)
+            || ! hash_equals((string) ($pendingCard['identifier'] ?? ''), trim($data['identifier']))
+            || ! hash_equals((string) ($pendingCard['token'] ?? ''), $data['idempotency_key'])
+            || (int) ($pendingCard['user_id'] ?? 0) !== (int) $user->id
+            || $request->session()->get('pos.cart', []) !== []) {
+            return back()->withInput()->withErrors(['card' => __('Scan the unsold Gift Card into an empty cart before checkout.')]);
+        }
         $context = $contexts->resolve($user);
         if (! $context->isReady() || $context->store === null) {
             return back()->withInput()->withErrors(['card' => $context->disabledReason ?? __('Open an assigned cashier shift before selling a Gift Card.')]);
+        }
+        if ((int) ($pendingCard['store_id'] ?? 0) !== (int) $context->store->id || (int) ($pendingCard['shift_id'] ?? 0) !== (int) $context->shift?->id) {
+            return back()->withInput()->withErrors(['card' => __('The Gift Card cart belongs to another cashier shift. Scan it again.')]);
         }
         $card = GiftCard::query()->visibleTo($user)->where('identifier', trim($data['identifier']))->first();
         if ($card === null) {
@@ -1987,6 +1998,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         usort($tenders, static fn (array $a, array $b): int => (int) $a['is_cash'] <=> (int) $b['is_cash']);
         try {
             $completed = $action->execute($user, $card, $tenders, $data['idempotency_key']);
+            $request->session()->forget('pos.gift_card_sale');
 
             return to_route('pos')->with('success', __('Gift Card sold and activated: :code', ['code' => $completed->giftCard->identifier]));
         } catch (ValidationException $exception) {

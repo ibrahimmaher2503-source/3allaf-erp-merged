@@ -45,6 +45,7 @@ return [
     $group('inventory', 'archive-box', 'المخزون', 'Inventory', [
         $item('inventory.index', 'نظرة عامة عن المخزون', 'Inventory overview'),
         $item('inventory.transfers', 'التحويلات', 'Transfers'),
+        $additional('inventory.transfers.receiving-inbox', 'transfers.receive', 'inbox-arrow-down', 'التحويلات الواردة', 'Incoming transfers'),
         $item('inventory.adjustments.create', 'إذن إضافة', 'Stock addition', ['type' => 'entry']),
         $item('inventory.adjustments.create', 'إذن خصم', 'Stock deduction', ['type' => 'exit']),
         $additional('inventory.counts.create', 'stock_counts.create', 'clipboard-document-check', 'تحضير الجرد', 'Stocktake preparation'),

@@ -75,6 +75,25 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
         self::assertNotSame('12', $prepared['prices'][$this->product->id]);
     }
 
+    public function test_invoice_label_mode_infers_receiving_warehouse_and_selling_outlet(): void
+    {
+        $this->destinationPrice('175');
+        $supplier = Supplier::query()->create(['code' => 'QA-'.Str::random(8), 'name_ar' => 'مورد', 'name_en' => 'Supplier', 'status' => 'active']);
+        $invoice = PurchaseInvoice::query()->create([
+            'invoice_number' => 'QA-PI-'.Str::random(8), 'supplier_id' => $supplier->id,
+            'store_id' => $this->destination->id, 'status' => 'approved', 'idempotency_key' => (string) Str::uuid(),
+        ]);
+        $invoice->lines()->create(['product_id' => $this->product->id, 'quantity' => '3', 'unit_cost' => '12']);
+
+        $prepared = app(BarcodeDocumentSource::class)->prepare($this->actor, 'purchase_invoice', $invoice->invoice_number);
+        self::assertSame($this->destination->id, $prepared['destination']->id);
+        self::assertSame($this->selling->id, $prepared['selling_store_id']);
+        self::assertSame([$this->product->id => 3], $prepared['quantities']);
+        self::assertSame('175.000', $prepared['prices'][$this->product->id]);
+        $this->get(route('pricing.labels', ['source' => 'purchase_invoice', 'number' => $invoice->invoice_number]))
+            ->assertOk()->assertSee('Purchase Invoice items')->assertSee('3');
+    }
+
     public function test_label_preview_and_print_resolve_the_selected_store_price_each_time(): void
     {
         Gate::before(static fn (): bool => true);

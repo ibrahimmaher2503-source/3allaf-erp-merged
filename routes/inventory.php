@@ -61,7 +61,7 @@ use Illuminate\Validation\ValidationException;
 
 $router = app('router');
 $renderInventory = static function (?int $productId = null, ?string $focus = null, ?StockTransfer $transfer = null, ?InventoryAdjustment $adjustment = null, ?StockCount $count = null) {
-    Gate::authorize($focus === 'count-create' ? 'stock_counts.create' : (str_starts_with((string) $focus, 'count') ? 'stock_counts.view' : 'inventory_stock_card.view'));
+    Gate::authorize($focus === 'count-create' ? 'stock_counts.create' : (str_starts_with((string) $focus, 'count') ? 'stock_counts.view' : (str_starts_with((string) $focus, 'transfer') ? 'transfers.view' : 'inventory_stock_card.view')));
     $user = Auth::user();
     abort_unless($user instanceof User, 403);
     $visibleStores = Store::query()->with('branch')->visibleTo($user)->orderBy('branch_id')->orderBy('name_ar')->orderBy('code')->limit(200)->get();
@@ -194,6 +194,11 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         });
     })->orderBy('item_code')->limit(200)->get() : collect();
     $countAssignees = $focus === 'count-create' ? User::query()->where('status', 'active')->limit(200)->get(['id', 'name', 'email', 'is_super_admin'])->filter(static fn (User $candidate): bool => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.edit') || $candidate->hasPermission('stock_counts.close'))->values() : collect();
+    $countTeamEligibility = $focus === 'count-create' ? $countAssignees->mapWithKeys(static fn (User $candidate): array => [
+        $candidate->id => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.edit')
+            ? Store::query()->visibleTo($candidate)->whereIn('id', $visibleStoreIds)->pluck('id')->map(fn ($id): int => (int) $id)->all()
+            : [],
+    ])->all() : [];
     $countCategories = $focus === 'count-create' ? Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : ($focus === 'count-entry' && $count ? Category::query()->whereIn('id', Product::query()->whereIn('id', $count->lines()->select('product_id'))->select('category_id'))->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : collect());
     $countSuppliers = $focus === 'count-create' ? Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
     $countReviewTotals = $focus === 'count-reconcile' && $count && in_array($count->status, ['submitted', 'reconciled'], true)
@@ -208,7 +213,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
             ->first()
         : null;
 
-    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'countReviewTotals', 'visibleStores', 'visibleStoreIds', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost', 'movementReferences'));
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'countReviewTotals', 'visibleStores', 'visibleStoreIds', 'products', 'countAssignees', 'countTeamEligibility', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost', 'movementReferences'));
 };
 
 $deriveTransferLines = static function (array $lines): array {
@@ -393,7 +398,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     $router->get('inventory/adjustments', fn () => $renderInventory(null, 'adjustments'))->middleware('can:inventory_stock_card.view')->name('inventory.adjustments');
     $router->get('inventory/additions', fn () => $renderInventory(null, 'addition'))->middleware('can:inventory_stock_card.view')->name('inventory.additions');
     $router->get('inventory/deductions', fn () => $renderInventory(null, 'deduction'))->middleware('can:inventory_stock_card.view')->name('inventory.deductions');
-    $router->get('inventory/adjustments/create', fn () => $renderInventory(null, 'adjustment-create'))->middleware('can:inventory_stock_card.create')->name('inventory.adjustments.create');
+    $router->get('inventory/adjustments/create', fn () => $renderInventory(null, request('type') === 'exit' ? 'deduction' : 'addition'))->middleware('can:inventory_stock_card.create')->name('inventory.adjustments.create');
     $router->get('inventory/adjustments/{adjustment}/edit', function (InventoryAdjustment $adjustment) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->execute((int) $adjustment->store_id);
 
@@ -462,7 +467,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         try {
             $action->execute($transfer->id);
 
-            return back()->with('success', __('Transfer submitted for approval.'));
+            return redirect()->route('inventory.transfers')->with('success', __('Transfer sent to its destinations for receiving.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
@@ -651,6 +656,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return redirect()->route('inventory.adjustments.edit', $document)->with('success', __('Inventory movement saved as draft.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['document' => $exception->getMessage()]);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -728,6 +735,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return redirect()->route('inventory.counts.entry', [$count, 'mode' => $validated['execution_method']])->with('success', __('Count session created. Review its scope and open it when the team is ready.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['stocktake' => $exception->getMessage()]);
         } catch (Throwable $exception) {
             report($exception);
 

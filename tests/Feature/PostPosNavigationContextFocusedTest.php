@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ApplicationNavigation;
 use App\Modules\Platform\Support\WorkContext;
@@ -15,6 +17,28 @@ use Tests\TestCase;
 final class PostPosNavigationContextFocusedTest extends TestCase
 {
     use DatabaseTransactions;
+
+    public function test_cashier_and_branch_manager_grants_show_scoped_incoming_transfers(): void
+    {
+        require_once base_path('scripts/qa/fixture.php');
+        $fixture = qaFixture();
+        $cashier = $fixture['user'];
+        $cashier->roles()->attach(Role::query()->where('code', 'cashier')->firstOrFail());
+        $cashier->storeScopes()->create(['store_id' => $fixture['receiving']->id, 'status' => 'active']);
+        $this->actingAs($cashier)->withoutVite();
+
+        $this->get(route('dashboard'))->assertOk();
+        $this->get(route('inventory.transfers.receiving-inbox'))->assertOk();
+        $cashierItems = collect(app(ApplicationNavigation::class)->for($cashier, 'en'))->flatMap(fn (array $group): array => $group['items'] ?? []);
+        self::assertNotNull($cashierItems->firstWhere('url', route('inventory.transfers.receiving-inbox')));
+
+        $manager = User::factory()->create(['status' => 'active']);
+        $manager->roles()->attach(Role::query()->where('code', 'branch-manager')->firstOrFail());
+        $manager->branchScopes()->create(['branch_id' => $fixture['branch']->id, 'status' => 'active']);
+        $this->actingAs($manager);
+        $this->get(route('inventory.transfers'))->assertOk();
+        $this->get(route('inventory.transfers.receiving-inbox'))->assertOk();
+    }
 
     public function test_transfer_navigation_uses_canonical_add_and_deduct_routes_with_permission_filtering(): void
     {
@@ -32,6 +56,23 @@ final class PostPosNavigationContextFocusedTest extends TestCase
         $restrictedItems = collect($navigation->for($fixture['user'], 'ar-EG'))->flatMap(fn (array $group): array => $group['items'] ?? []);
         self::assertNull($restrictedItems->firstWhere('label', 'إذن إضافة'));
         self::assertNull($restrictedItems->firstWhere('label', 'إذن خصم'));
+    }
+
+    public function test_entry_and_exit_routes_render_dedicated_permits_without_inventory_dashboard_controls(): void
+    {
+        require_once base_path('scripts/qa/fixture.php');
+        $fixture = qaFixture();
+        $this->actingAs($fixture['admin'])->withoutVite();
+
+        foreach (['entry' => 'Stock Addition / Entry Permit', 'exit' => 'Stock Deduction / Exit Permit'] as $type => $title) {
+            $this->get(route('inventory.adjustments.create', ['type' => $type]))
+                ->assertOk()
+                ->assertSee($title)
+                ->assertDontSee('Filter inventory')
+                ->assertDontSee('New transfer')
+                ->assertDontSee('Opening inventory entry')
+                ->assertDontSee('id="adjustment-type"', false);
+        }
     }
 
     public function test_selected_work_store_inherits_pos_shift_drawer_while_general_context_keeps_choice(): void

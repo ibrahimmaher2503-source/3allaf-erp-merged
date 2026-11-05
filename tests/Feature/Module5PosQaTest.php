@@ -137,6 +137,40 @@ final class Module5PosQaTest extends TestCase
         }
     }
 
+    public function test_unsold_card_scan_places_face_value_in_cart_then_checkout_activates_and_later_scan_redeems(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash', 'status' => 'active']);
+        PaymentMethod::factory()->create(['type' => 'gift_card', 'status' => 'active']);
+        $card = app(GiftCardAction::class)->issue($this->cashier, '75.00', (int) $this->store->branch_id,
+            (int) $this->store->id, 'manual', 'scan-sale', 'scan-sale-'.Str::uuid());
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context)->lines()->delete();
+        session()->forget('pos.cart');
+
+        $panel = new CheckoutPanel;
+        $panel->mount(app(PosOpenOrderManager::class), app(PosContextResolver::class));
+        $panel->scanGiftCard((string) $card->identifier);
+
+        self::assertFalse($panel->getErrorBag()->any());
+        self::assertSame('75.00', $panel->giftCardSalePreview['face_value']);
+        self::assertSame($card->identifier, session('pos.gift_card_sale.identifier'));
+        $this->get(route('pos'))->assertOk()->assertSee('data-gift-card-cart-line', false);
+
+        $response = $this->post(route('pos.gift-cards.sell'), [
+            'identifier' => $card->identifier,
+            'idempotency_key' => $panel->giftCardSaleToken,
+            'payments' => [['method_id' => $cash->id, 'amount' => '75.00', 'tendered' => '75.00']],
+        ]);
+        $response->assertRedirect(route('pos'));
+        self::assertSame('active', $card->fresh()->status);
+        self::assertSame(1, GiftCardPosSale::query()->where('gift_card_id', $card->id)->count());
+        self::assertNull(session('pos.gift_card_sale'));
+
+        $panel->scanGiftCard((string) $card->identifier);
+        self::assertSame($card->identifier, $panel->giftCardPreview['identifier']);
+        self::assertSame([], $panel->giftCardSalePreview);
+    }
+
     public function test_manual_gift_card_issue_requires_a_branch_warehouse(): void
     {
         $unlinked = Store::factory()->standaloneWarehouse($this->store->company)->create(['name_ar' => 'مخزن عام', 'name_en' => 'Global Warehouse']);
@@ -189,7 +223,7 @@ final class Module5PosQaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'gift_cards.redeem', 'gift_cards.issue', 'company_settings.view', 'company_settings.edit'] as $code) {
+        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.open_price', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'gift_cards.redeem', 'gift_cards.issue', 'company_settings.view', 'company_settings.edit'] as $code) {
             Permission::query()->firstOrCreate(['code' => $code], ['module' => strstr($code, '.', true), 'action' => substr(strstr($code, '.'), 1), 'status' => 'active']);
         }
         $this->cashier = User::factory()->create(['status' => 'active']);
@@ -320,6 +354,31 @@ final class Module5PosQaTest extends TestCase
         }
         $this->expectException(\InvalidArgumentException::class);
         InvoiceDiscount::amount('percentage', '101', '30.00');
+    }
+
+    public function test_open_price_product_changes_unit_selling_price_without_changing_cost_or_fixed_products(): void
+    {
+        $this->product->update(['open_price' => true]);
+        $this->withSession(['pos.cart' => [['product_id' => $this->product->id, 'quantity' => '1', 'pricing_revision' => 0]]]);
+        $this->post(route('pos.cart.open-price'), [
+            'product_id' => $this->product->id,
+            'amount' => '99.00',
+            'reason' => 'Customer quoted price',
+            'expected_revision' => 0,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        self::assertSame('99.0000', session('pos.cart.0.open_price_amount'));
+        self::assertSame(0, bccomp('10', (string) StockBalance::query()->where('product_id', $this->product->id)->value('average_cost'), 4));
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        self::assertSame('99.00', (string) app(PosCartSnapshot::class)->build($context)['preview']['total']);
+
+        $this->product->update(['open_price' => false]);
+        $this->post(route('pos.cart.open-price'), [
+            'product_id' => $this->product->id,
+            'amount' => '120.00',
+            'reason' => 'Not allowed for fixed price',
+            'expected_revision' => 1,
+        ])->assertStatus(422);
     }
 
     public function test_cart_discount_is_posted_on_sale_and_line_for_returns(): void

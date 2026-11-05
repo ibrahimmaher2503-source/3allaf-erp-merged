@@ -14,6 +14,10 @@
             <input type="hidden" name="barcode_action" value="manual">
             <input type="hidden" name="return_search" x-model="query">
 
+            @if($documentStoreId)
+                <input type="hidden" name="store_id" value="{{ $documentStoreId }}">
+                <p class="text-sm font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? 'جهة المستند' : 'Document destination' }}: {{ \App\Support\HumanName::name($documentDestination) }}</p>
+            @else
             <flux:select name="store_id" :label="__('Selling outlet')" x-on:change="refreshPrices($event.target.value)" required>
                 <flux:select.option value="">{{ __('Select a selling outlet') }}</flux:select.option>
                 @foreach ($stores as $store)
@@ -22,6 +26,7 @@
                     </flux:select.option>
                 @endforeach
             </flux:select>
+            @endif
             @error('store_id')<p class="text-sm text-rose-600" role="alert">{{ $message }}</p>@enderror
 
             <div class="grid gap-3 lg:grid-cols-2">

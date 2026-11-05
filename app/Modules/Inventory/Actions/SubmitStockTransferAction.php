@@ -22,7 +22,7 @@ final class SubmitStockTransferAction
 
         return DB::transaction(function () use ($id): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
-            $this->scope->transfer($transfer);
+            $this->scope->transfer($transfer, source: true, destination: false);
             if ($transfer->status !== 'draft') {
                 throw new InvalidArgumentException(__('Only draft transfers can be submitted.'));
             }
@@ -43,11 +43,10 @@ final class SubmitStockTransferAction
                 }
             }
             $before = $transfer->only(['status', 'requested_by', 'lock_version']);
-            $transfer->mutateApprovedDocument(['status' => 'submitted', 'requested_by' => Auth::id(), 'lock_version' => $transfer->lock_version + 1]);
+            $transfer->mutateApprovedDocument(['status' => 'approved', 'requested_by' => Auth::id(), 'lock_version' => $transfer->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('inventory', 'submit_stock_transfer', $transfer, $before, $transfer->only(['status', 'requested_by', 'lock_version']), storeId: $transfer->source_store_id, metadata: ['destination_store_id' => $transfer->destination_store_id, 'line_count' => $transfer->lines->count()]);
-            app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
 
-            return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
+            return app(DispatchStockTransferAction::class)->dispatchApproved($transfer->id);
         });
     }
 }

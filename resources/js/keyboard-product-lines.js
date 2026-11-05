@@ -177,8 +177,11 @@ class ProductLookup {
                 const secondaryName = document.documentElement.lang === 'ar' ? english : arabic;
                 const secondaryDirection = document.documentElement.lang === 'ar' ? 'ltr' : 'rtl';
                 const names = `<strong class="block">${escapeHtml(primaryName)}</strong>${secondaryName && secondaryName !== primaryName ? `<span class="mt-0.5 block text-xs text-zinc-600 dark:text-zinc-300" dir="${secondaryDirection}">${escapeHtml(secondaryName)}</span>` : ''}`;
-                if (this.root.dataset.resultPresentation === 'name-code') {
-                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30"><strong class="block">${escapeHtml(primaryName)}</strong><small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)}</small></button>`;
+                const identifiers = [item.barcodes?.[0], item.model_number || item.item_code]
+                    .map((value) => String(value || '').trim())
+                    .filter((value, position, values) => value && values.indexOf(value) === position);
+                if (this.root.dataset.resultPresentation === 'name-code' || this.root.dataset.context === 'catalog') {
+                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30"><strong class="block">${escapeHtml(primaryName)}</strong>${identifiers.length ? `<small class="mt-1 block font-mono text-zinc-500" dir="ltr">${identifiers.map(escapeHtml).join(' / ')}</small>` : ''}</button>`;
                 }
                 const identity = `${names}<small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small>`;
                 if (this.root.dataset.context !== 'purchasing') {

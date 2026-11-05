@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Tests\Feature\Catalog;
 
 use App\Models\User;
+use App\Modules\Catalog\Actions\DeleteProductOptionAction;
 use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductOptionGroup;
+use App\Modules\Catalog\Models\ProductOptionValue;
 use App\Modules\Platform\Models\Company;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -18,6 +22,24 @@ use Tests\TestCase;
 final class ProductCardMetadataFormTest extends TestCase
 {
     use DatabaseTransactions;
+
+    public function test_referenced_filter_value_archives_or_replaces_without_losing_product_assignment(): void
+    {
+        $group = ProductOptionGroup::factory()->create();
+        $old = ProductOptionValue::factory()->create(['product_option_group_id' => $group->id]);
+        $replacement = ProductOptionValue::factory()->create(['product_option_group_id' => $group->id]);
+        $product = Product::factory()->create();
+        DB::table('product_filter_values')->insert(['product_id' => $product->id, 'product_option_value_id' => $old->id, 'created_at' => now(), 'updated_at' => now()]);
+        $this->actingAs($this->administrator);
+
+        app(DeleteProductOptionAction::class)->value($old->id, 'archive');
+        self::assertSame('inactive', $old->fresh()->status);
+        self::assertTrue(DB::table('product_filter_values')->where('product_id', $product->id)->where('product_option_value_id', $old->id)->exists());
+
+        app(DeleteProductOptionAction::class)->value($old->id, 'replace', $replacement->id);
+        self::assertNull($old->fresh());
+        self::assertTrue(DB::table('product_filter_values')->where('product_id', $product->id)->where('product_option_value_id', $replacement->id)->exists());
+    }
 
     private User $administrator;
 
