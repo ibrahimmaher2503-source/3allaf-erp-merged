@@ -44,13 +44,13 @@ use App\Modules\Retail\Actions\ResolveOfflineConflictAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
 use App\Modules\Retail\Actions\SaveSalesInvoiceDraftAction;
-use App\Modules\Retail\Actions\SellGiftCardAtPosAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Actions\SyncOfflineTransactionsAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\GiftCardPosSale;
 use App\Modules\Retail\Models\OfflineConflict;
 use App\Modules\Retail\Models\OfflineDevice;
 use App\Modules\Retail\Models\OfflineTransaction;
@@ -1937,77 +1937,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return redirect()->route('sales.show', $sale)->with('success', __('Sale completed successfully.'));
     })->middleware('can:pos_sales.create')->name('pos.checkout.legacy');
 
-    Route::post('pos/gift-cards/sell', function (Request $request, SellGiftCardAtPosAction $action, PosContextResolver $contexts) {
-        /** @var User $user */
-        $user = $request->user();
-        $data = $request->validate([
-            'identifier' => ['required', 'string', 'max:100'],
-            'idempotency_key' => ['required', 'uuid'],
-            'payments' => ['required', 'array', 'min:1', 'max:12'],
-            'payments.*.method_id' => ['required', 'integer', 'exists:payment_methods,id'],
-            'payments.*.amount' => ['nullable', 'numeric', 'gte:0'],
-            'payments.*.tendered' => ['nullable', 'numeric', 'gte:0'],
-            'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
-            'payments.*.evidence' => ['nullable', 'file'],
-        ]);
-        $pendingCard = $request->session()->get('pos.gift_card_sale');
-        if (! is_array($pendingCard)
-            || ! hash_equals((string) ($pendingCard['identifier'] ?? ''), trim($data['identifier']))
-            || ! hash_equals((string) ($pendingCard['token'] ?? ''), $data['idempotency_key'])
-            || (int) ($pendingCard['user_id'] ?? 0) !== (int) $user->id
-            || $request->session()->get('pos.cart', []) !== []) {
-            return back()->withInput()->withErrors(['card' => __('Scan the unsold Gift Card into an empty cart before checkout.')]);
-        }
-        $context = $contexts->resolve($user);
-        if (! $context->isReady() || $context->store === null) {
-            return back()->withInput()->withErrors(['card' => $context->disabledReason ?? __('Open an assigned cashier shift before selling a Gift Card.')]);
-        }
-        if ((int) ($pendingCard['store_id'] ?? 0) !== (int) $context->store->id || (int) ($pendingCard['shift_id'] ?? 0) !== (int) $context->shift?->id) {
-            return back()->withInput()->withErrors(['card' => __('The Gift Card cart belongs to another cashier shift. Scan it again.')]);
-        }
-        $card = GiftCard::query()->visibleTo($user)->where('identifier', trim($data['identifier']))->first();
-        if ($card === null) {
-            return back()->withInput()->withErrors(['card' => __('Gift Card not found.')]);
-        }
-        $tenders = [];
-        foreach ($data['payments'] as $index => $payment) {
-            $method = PaymentMethod::query()->whereKey($payment['method_id'])->where('status', 'active')->first();
-            if ($method === null || (string) $method->type === 'gift_card') {
-                return back()->withInput()->withErrors(['payments' => __('Use an active normal payment method to buy a Gift Card.')]);
-            }
-            $attachmentId = null;
-            if ($request->hasFile("payments.{$index}.evidence")) {
-                abort_unless($user->can('pos_sales.payment_evidence_upload'), 403);
-                $attachmentId = app(StoreAttachment::class)->execute(
-                    $request->file("payments.{$index}.evidence"), 'payment_evidence',
-                    new AttachmentSourceReference(branchId: (int) $context->store->branch_id, storeId: (int) $context->store->id, visibility: 'private'),
-                )->id;
-            }
-            $tenders[] = [
-                'method_id' => (int) $method->id,
-                'amount' => (string) ($payment['amount'] ?? '0.00'),
-                'tendered' => isset($payment['tendered']) ? (string) $payment['tendered'] : null,
-                'evidence_reference' => $payment['evidence_reference'] ?? null,
-                'evidence_attachment_id' => $attachmentId,
-                'is_cash' => $method->isCash(),
-            ];
-        }
-        if (collect($tenders)->where('is_cash', true)->count() > 1) {
-            return back()->withInput()->withErrors(['payments' => __('Use only one cash payment portion.')]);
-        }
-        usort($tenders, static fn (array $a, array $b): int => (int) $a['is_cash'] <=> (int) $b['is_cash']);
-        try {
-            $completed = $action->execute($user, $card, $tenders, $data['idempotency_key']);
-            $request->session()->forget('pos.gift_card_sale');
-
-            return to_route('pos')->with('success', __('Gift Card sold and activated: :code', ['code' => $completed->giftCard->identifier]));
-        } catch (ValidationException $exception) {
-            return back()->withInput()->withErrors($exception->errors());
-        } catch (Throwable $exception) {
-            return back()->withInput()->withErrors(['card' => UserSafeError::message($exception)]);
-        }
-    })->middleware('can:pos_sales.create')->name('pos.gift-cards.sell');
-
     Route::get('pos/suspended', function (Request $request, PosContextResolver $contexts) {
         /** @var User $user */
         $user = $request->user();
@@ -2342,8 +2271,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('pos_sales.view'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
         $sale->load(['store', 'cashier', 'lines.product', 'shift.cashDrawer', 'payments.paymentMethod', 'payments.evidenceAttachment']);
+        $giftCardSale = $sale->status === 'gift_card_sold'
+            ? GiftCardPosSale::query()->with('giftCard')->where('sale_id', $sale->id)->first()
+            : null;
 
-        return view('pages.sales.show', compact('sale'));
+        return view('pages.sales.show', compact('sale', 'giftCardSale'));
     })->middleware('can:pos_sales.view')->name('sales.show');
 
     Route::get('sales/{sale}/print', function (Request $request, Sale $sale) {

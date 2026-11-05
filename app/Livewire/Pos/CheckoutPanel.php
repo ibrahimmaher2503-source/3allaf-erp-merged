@@ -15,7 +15,6 @@ use App\Modules\Retail\Support\PosOpenOrderManager;
 use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -39,28 +38,28 @@ final class CheckoutPanel extends Component
     /** @var array<string, string> */
     public array $giftCardSalePreview = [];
 
-    public string $giftCardSaleToken = '';
-
     public function mount(PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {
         Gate::authorize('pos_sales.view');
         /** @var User $user */
         $user = auth()->user();
         $context = $contexts->resolve($user);
+        $order = $orders->active(request(), $user, $context, ! is_numeric(request()->session()->get('pos.completed_sale_id')));
         $pendingCard = request()->session()->get('pos.gift_card_sale');
         if (is_array($pendingCard) && $context->isReady() && $context->store !== null && $context->shift !== null
             && (int) ($pendingCard['user_id'] ?? 0) === (int) $user->id
             && (int) ($pendingCard['store_id'] ?? 0) === (int) $context->store->id
-            && (int) ($pendingCard['shift_id'] ?? 0) === (int) $context->shift->id) {
+            && (int) ($pendingCard['shift_id'] ?? 0) === (int) $context->shift->id
+            && (string) ($pendingCard['open_order_uuid'] ?? '') === (string) $order?->uuid) {
             $card = GiftCard::query()->visibleTo($user)->where('identifier', $pendingCard['identifier'] ?? '')->where('status', 'unsold')->first();
             if ($card !== null) {
                 $this->giftCardSalePreview = ['identifier' => $card->identifier, 'face_value' => (string) $card->issued_value, 'status' => 'unsold'];
-                $this->giftCardSaleToken = (string) $pendingCard['token'];
             } else {
                 request()->session()->forget('pos.gift_card_sale');
             }
+        } elseif (is_array($pendingCard)) {
+            request()->session()->forget('pos.gift_card_sale');
         }
-        $order = $orders->active(request(), $user, $context, ! is_numeric(request()->session()->get('pos.completed_sale_id')));
         if ($order === null) {
             return;
         }
@@ -114,9 +113,18 @@ final class CheckoutPanel extends Component
             }
             $this->giftCardPreview = [];
             $this->giftCardSalePreview = ['identifier' => $card->identifier, 'face_value' => (string) $card->issued_value, 'status' => 'unsold'];
-            $this->giftCardSaleToken = (string) Str::uuid();
+            $order = app(PosOpenOrderManager::class)->active(request(), $user, $context);
+            if ($order === null || $order->lines()->exists()) {
+                $this->addError('giftCardScan', __('Complete or clear the product cart before selling a Gift Card.'));
+
+                return;
+            }
+            app(PosOpenOrderManager::class)->setTax(request(), $user, $context, false);
+            app(PosOpenOrderManager::class)->setInvoiceDiscount(request(), $user, $context, null, '0.00');
+            $this->mode = PaymentMethod::query()->where('type', 'cash')->where('status', 'active')->exists() ? 'cash' : 'card';
+            $this->prepareMode($this->mode);
             request()->session()->put('pos.gift_card_sale', [
-                'identifier' => $card->identifier, 'token' => $this->giftCardSaleToken,
+                'identifier' => $card->identifier, 'open_order_uuid' => $order->uuid,
                 'user_id' => $user->id, 'store_id' => $store->id, 'shift_id' => $context->shift?->id,
             ]);
             $this->dispatch('pos-cart-updated');
@@ -319,7 +327,7 @@ final class CheckoutPanel extends Component
         $cashPayable = null;
         $cashAdjustment = '0.00';
         $cashRoundingError = null;
-        if (($this->mode === 'cash' || $hasCashDraft) && ($data['preview'] ?? null)) {
+        if (($this->mode === 'cash' || $hasCashDraft) && ($data['preview'] ?? null) && ($data['giftCardSale'] ?? null) === null) {
             try {
                 $cashAdjustment = app(PosCalculationService::class)->cashRoundingAdjustment($invoiceTotal);
                 $cashPayable = bcadd($invoiceTotal, $cashAdjustment, 2);

@@ -14,6 +14,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Retail\Actions\CompletePosOpenOrderAction;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\GiftCardPosSale;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\PaymentReferenceGuard;
@@ -99,7 +100,7 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
 
     $completedSale = null;
     if (is_numeric($completedSaleId)) {
-        $completedSale = Sale::query()->visibleTo($user)->whereKey((int) $completedSaleId)->where('status', 'approved')->first();
+        $completedSale = Sale::query()->visibleTo($user)->whereKey((int) $completedSaleId)->whereIn('status', ['approved', 'gift_card_sold'])->first();
     }
 
     return view('pages.pos.index', [
@@ -285,12 +286,12 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
         }
         $order = $orders->findScoped($user, $context, $validated['open_order_uuid']);
         if ($order === null && ($completedOrder = $orders->completedCheckout($user, $context, $validated['open_order_uuid'], $validated['checkout_token'])) !== null) {
-            $completedSale = Sale::query()->visibleTo($user)->approved()
+            $completedSale = Sale::query()->visibleTo($user)->whereIn('status', ['approved', 'gift_card_sold'])
                 ->whereKey($completedOrder->completed_sale_id)
-                ->where('idempotency_key', 'CHECKOUT:'.$user->id.':'.$validated['checkout_token'])
+                ->whereIn('idempotency_key', ['CHECKOUT:'.$user->id.':'.$validated['checkout_token'], 'GIFT-CARD-POS:'.$validated['checkout_token']])
                 ->first();
             if ($completedSale !== null) {
-                $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
+                $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id', 'pos.gift_card_sale']);
                 $request->session()->flash('pos.completed_sale_id', $completedSale->id);
 
                 return to_route('pos')->with('success', __('Sale completed successfully'));
@@ -368,7 +369,23 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
             throw new InvalidArgumentException(__('The selected payment portions do not match the checkout mode.'));
         }
 
-        $sale = $sales->execute($user, $context, $order, $tenders, false, $validated['notes'] ?? null);
+        $pendingCard = $request->session()->get('pos.gift_card_sale');
+        if (is_array($pendingCard)) {
+            if ((string) ($pendingCard['open_order_uuid'] ?? '') !== (string) $order->uuid
+                || (int) ($pendingCard['user_id'] ?? 0) !== (int) $user->id
+                || (int) ($pendingCard['store_id'] ?? 0) !== (int) $context->store->id
+                || (int) ($pendingCard['shift_id'] ?? 0) !== (int) $context->shift?->id
+                || $request->session()->get('pos.cart', []) !== []) {
+                throw new InvalidArgumentException(__('Rescan the unsold Gift Card in the active empty order.'));
+            }
+            $card = GiftCard::query()->visibleTo($user)->where('identifier', (string) ($pendingCard['identifier'] ?? ''))->where('status', 'unsold')->first();
+            if ($card === null) {
+                throw new InvalidArgumentException(__('This Gift Card has already been sold or is unavailable.'));
+            }
+            $sale = $sales->executeGiftCard($user, $context, $order, $card, $tenders);
+        } else {
+            $sale = $sales->execute($user, $context, $order, $tenders, false, $validated['notes'] ?? null);
+        }
 
         try {
             $delivery = app(InvoiceDeliveryService::class)->deliver($sale);
@@ -382,7 +399,7 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
             $request->session()->flash('pos.invoice_delivery_warning', __('The sale is complete, but the invoice email could not be delivered. Print the receipt instead.'));
         }
 
-        $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
+        $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id', 'pos.gift_card_sale']);
         $request->session()->flash('pos.completed_sale_id', $sale->id);
 
         return to_route('pos')->with('success', __('Sale completed successfully'));
@@ -396,6 +413,9 @@ Route::get('pos/sales/{sale}/receipt', function (Request $request, Sale $sale, P
     $user = $request->user();
     $profile = $profiles->resolve($user, $sale);
     $sale->load(['store.company', 'branch', 'cashier', 'customer', 'lines', 'payments.paymentMethod']);
+    $giftCardSale = $sale->status === 'gift_card_sold'
+        ? GiftCardPosSale::query()->with('giftCard')->where('sale_id', $sale->id)->first()
+        : null;
     app(RecordAuditEvent::class)->execute(
         category: 'retail', event: 'sale_receipt_previewed', source: $sale,
         branchId: (int) $sale->branch_id, storeId: (int) $sale->store_id,
@@ -404,6 +424,7 @@ Route::get('pos/sales/{sale}/receipt', function (Request $request, Sale $sale, P
 
     return view($profile['format'] === 'thermal' ? 'pages.sales.thermal' : 'pages.sales.print', [
         'sale' => $sale,
+        'giftCardSale' => $giftCardSale,
         'receiptProfile' => $profile,
         'receiptPreview' => true,
     ]);

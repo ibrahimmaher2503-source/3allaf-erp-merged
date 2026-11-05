@@ -61,17 +61,7 @@ final class BarcodeDocumentSource
             $destinationQuery->visibleTo($actor);
         }
         $destination = $destinationQuery->findOrFail($destinationStoreId);
-        if ($sellingStoreId === null) {
-            $mappedStoreId = $destination->branch?->activeSellingStoreMapping?->store_id;
-            $sellingStoreId = (int) ($mappedStoreId ?: Store::query()->where('company_id', $destination->company_id)
-                ->where('branch_id', $destination->branch_id)->where('type', 'selling')->where('status', 'active')->value('id'));
-        }
-        $sellingStore = Store::query()->where('status', 'active')->where('type', 'selling')->findOrFail($sellingStoreId);
-        if ((int) $destination->company_id !== (int) $sellingStore->company_id
-            || $destination->branch_id === null
-            || (int) $destination->branch_id !== (int) $sellingStore->branch_id) {
-            throw ValidationException::withMessages(['store_id' => __('Select a selling outlet in the destination branch.')]);
-        }
+        $sellingStore = $this->sellingStoreForDestination($destination, $sellingStoreId);
 
         $quantities = match ($source) {
             'purchase_invoice' => $this->purchase($actor, $number, $destination),
@@ -94,6 +84,23 @@ final class BarcodeDocumentSource
         }
 
         return ['quantities' => $quantities, 'prices' => $prices, 'destination' => $destination, 'selling_store_id' => $sellingStore->id];
+    }
+
+    public function sellingStoreForDestination(Store $destination, ?int $sellingStoreId = null): Store
+    {
+        if ($sellingStoreId === null) {
+            $mappedStoreId = $destination->branch?->activeSellingStoreMapping?->store_id;
+            $sellingStoreId = (int) ($mappedStoreId ?: Store::query()->where('company_id', $destination->company_id)
+                ->where('branch_id', $destination->branch_id)->where('type', 'selling')->where('status', 'active')->value('id'));
+        }
+        $sellingStore = Store::query()->where('status', 'active')->where('type', 'selling')->findOrFail($sellingStoreId);
+        if ((int) $destination->company_id !== (int) $sellingStore->company_id
+            || $destination->branch_id === null
+            || (int) $destination->branch_id !== (int) $sellingStore->branch_id) {
+            throw ValidationException::withMessages(['store_id' => __('Select a selling outlet in the destination branch.')]);
+        }
+
+        return $sellingStore;
     }
 
     /** @return array<int, int> */

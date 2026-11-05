@@ -46,6 +46,30 @@ final class InventoryLiveStocktakeFocusedTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_stocktake_create_manual_hierarchy_and_independent_location(): void
+    {
+        $setup = $this->setupInventory();
+        $this->get(route('inventory.counts.create'))->assertOk()
+            ->assertSee('data-stocktake-primary-fields', false)
+            ->assertSee('data-stocktake-location-picker', false)
+            ->assertSee('value="manual"', false)
+            ->assertSee('data-stocktake-branch', false)
+            ->assertSee('name="manager_id"', false)
+            ->assertSee('name="member_ids[]"', false)
+            ->assertSee('data-stocktake-notes-field', false);
+
+        $before = StockCount::query()->count();
+        $response = $this->post(route('inventory.counts.store'), [
+            'branch_id' => null, 'location_ids' => [$setup['branchless']->id],
+            'count_type' => 'full', 'scope_type' => 'full', 'execution_method' => 'manual',
+            'manager_id' => $setup['admin']->id, 'member_ids' => [$setup['admin']->id], 'notes' => 'Manual acceptance',
+        ]);
+        $response->assertRedirect();
+        self::assertSame($before + 1, StockCount::query()->count());
+        self::assertStringContainsString('mode=manual', $response->headers->get('Location'));
+        self::assertSame((int) $setup['branchless']->id, (int) StockCount::query()->latest('id')->firstOrFail()->store_id);
+    }
+
     /** @return array{admin:User, user:User, store:Store, branchless:Store, product:Product} */
     private function setupInventory(): array
     {

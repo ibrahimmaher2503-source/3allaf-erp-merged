@@ -46,6 +46,8 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\WorkContext;
+use App\Modules\Pricing\Services\BarcodeDocumentSource;
+use App\Modules\Pricing\Services\BarcodeSellingPriceResolver;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Support\DataExchange\MasterDataDocument;
@@ -53,6 +55,7 @@ use App\Support\HumanName;
 use App\Support\ProductQuantity;
 use App\Support\UserSafeError;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -387,8 +390,18 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         $destination = $selectedId ? $destinations->firstWhere('id', $selectedId) : null;
         abort_if($selectedId && $destination === null, 403);
         $draft = $destination ? StockTransferReceivingDraft::query()->where('stock_transfer_id', $transfer->id)->where('destination_store_id', $destination->id)->first() : null;
+        $receivingPrices = collect();
+        $receivingPriceError = null;
+        if ($destination !== null && $destination->branch_id !== null) {
+            try {
+                $sellingStore = app(BarcodeDocumentSource::class)->sellingStoreForDestination($destination);
+                $receivingPrices = app(BarcodeSellingPriceResolver::class)->resolveForStore($transfer->lines->pluck('product_id')->unique()->all(), $sellingStore);
+            } catch (ModelNotFoundException|ValidationException $exception) {
+                $receivingPriceError = __('No effective selling outlet or price list is configured for this destination.');
+            }
+        }
 
-        return view('inventory.transfer-receiving-review', compact('transfer', 'destinations', 'destination', 'draft'));
+        return view('inventory.transfer-receiving-review', compact('transfer', 'destinations', 'destination', 'draft', 'receivingPrices', 'receivingPriceError'));
     })->middleware('can:transfers.receive')->name('inventory.transfers.receive-page');
     $router->get('inventory/transfers/{transfer}/differences', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
@@ -714,7 +727,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->whereNumber('count')->middleware('can:stock_counts.submit')->name('inventory.counts.submit');
 
     $router->post('inventory/counts', function (SaveStockCountAction $action) {
-        $validated = request()->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id'], 'location_ids' => ['required', 'array', 'min:1'], 'location_ids.*' => ['integer', 'distinct', 'exists:stores,id'], 'member_ids' => ['required', 'array', 'min:1'], 'member_ids.*' => ['integer', 'distinct', 'exists:users,id'], 'manager_id' => ['required', 'integer', 'exists:users,id'], 'count_type' => ['required', 'in:full,partial,random'], 'scope_type' => ['required', 'in:full,category,supplier,partial,random'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'execution_method' => ['required', 'in:scan,excel,mobile'], 'notes' => ['nullable', 'string', 'max:1000'], 'assignments' => ['nullable', 'array'], 'assignments.*.store_id' => ['integer'], 'assignments.*.user_id' => ['integer'], 'assignments.*.zone' => ['nullable', 'string', 'max:120']]);
+        $validated = request()->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id'], 'location_ids' => ['required', 'array', 'min:1'], 'location_ids.*' => ['integer', 'distinct', 'exists:stores,id'], 'member_ids' => ['required', 'array', 'min:1'], 'member_ids.*' => ['integer', 'distinct', 'exists:users,id'], 'manager_id' => ['required', 'integer', 'exists:users,id'], 'count_type' => ['required', 'in:full,partial,random'], 'scope_type' => ['required', 'in:full,category,supplier,partial,random'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'execution_method' => ['required', 'in:manual,scan,excel,mobile'], 'notes' => ['nullable', 'string', 'max:1000'], 'assignments' => ['nullable', 'array'], 'assignments.*.store_id' => ['integer'], 'assignments.*.user_id' => ['integer'], 'assignments.*.zone' => ['nullable', 'string', 'max:120']]);
         $requestedType = $validated['count_type'];
         $expectedScopes = ['full' => ['full'], 'partial' => ['category', 'supplier'], 'random' => ['random']];
         if (! in_array($validated['scope_type'], $expectedScopes[$requestedType], true) || ($requestedType === 'random' && $validated['execution_method'] === 'excel')) {

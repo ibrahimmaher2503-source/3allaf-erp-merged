@@ -17,6 +17,7 @@
                         <flux:button href="{{ route('gift.receipts.index', ['sale_id' => $sale->id]) }}" variant="subtle" icon="gift">{{ __('Issue Gift Receipt') }}</flux:button>
                     @endcan
                 @endif
+                @if($giftCardSale)@can('pos_sales.print')<flux:button href="{{ route('pos.receipt.preview', $sale) }}" target="_blank" variant="subtle" icon="printer">{{ __('Print receipt') }}</flux:button>@endcan@endif
                 <flux:button href="{{ route('sales.index') }}" variant="subtle">{{ __('Back') }}</flux:button>
             </div>
         </div>
@@ -34,6 +35,7 @@
             <table class="data-table min-w-[980px] text-sm" aria-label="{{ __('Sale lines') }}">
                 <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="text-end">{{ __('Quantity') }}</th><th scope="col" class="text-end">{{ __('Original price') }}</th><th scope="col" class="text-end">{{ __('Selling price') }}</th><th scope="col" class="text-end">{{ __('Gross') }}</th><th scope="col" class="text-end">{{ __('Discount') }}</th><th scope="col" class="text-end">{{ __('Line total') }}</th><th scope="col">{{ __('Pricing context') }}</th></tr></thead>
                 <tbody>
+                    @if($giftCardSale)<tr><td><strong>{{ __('Gift Card') }}</strong><div class="font-mono text-xs" dir="ltr">{{ $giftCardSale->giftCard?->identifier }}</div></td><td class="text-end">1</td><td class="text-end"><x-money :amount="$giftCardSale->giftCard?->issued_value" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="$giftCardSale->giftCard?->issued_value" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="$sale->subtotal" :currency="$sale->currency_code" /></td><td class="text-end">—</td><td class="text-end"><x-money :amount="$sale->total" :currency="$sale->currency_code" /></td><td>{{ __('Face value') }}</td></tr>@endif
                     @foreach ($sale->lines as $line)
                         <tr>
                             <td><div class="font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>

@@ -25,12 +25,12 @@
     </div>
     @if($giftCardSale && ! $preview)<footer class="shrink-0 border-t border-border bg-surface px-3 py-2"><div class="flex items-center justify-between"><span class="text-xs font-semibold text-text-muted">{{ __('Cart total') }}</span><strong class="text-lg"><x-money :amount="$giftCardSale->issued_value" :currency="$currency" /></strong></div></footer>@endif
     @if($preview)<footer class="max-h-[45vh] shrink-0 overflow-y-auto border-t border-border bg-surface px-3 py-2">
-        @can('pos_sales.apply_discount')
+        @if(! $giftCardSale) @can('pos_sales.apply_discount')
             <details wire:ignore.self class="mb-2 text-xs" data-cart-discount><summary class="cursor-pointer font-bold text-primary">{{ $discountType ? (str_starts_with(app()->getLocale(), 'ar') ? 'تعديل خصم السلة' : 'Edit cart discount') : (str_starts_with(app()->getLocale(), 'ar') ? 'إضافة خصم' : 'Add discount') }}</summary>
                 <div class="mt-2 flex flex-wrap items-end gap-2"><label class="min-w-24 flex-1">{{ __('Discount type') }}<select wire:model="invoiceDiscountType" class="mt-1 w-full rounded border border-border bg-surface p-1"><option value="fixed">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مبلغ ثابت' : 'Fixed amount' }}</option><option value="percentage">{{ __('Percentage') }} %</option></select></label><label class="min-w-24 flex-1">{{ str_starts_with(app()->getLocale(), 'ar') ? 'قيمة الخصم' : 'Discount value' }}<input wire:model="invoiceDiscountValue" type="number" min="0" max="{{ $invoiceDiscountType === 'percentage' ? 100 : '' }}" step="0.01" class="mt-1 w-full rounded border border-border bg-surface p-1" placeholder="{{ $discountType ? $discountValue : '0.00' }}"></label><button type="button" wire:click="saveInvoiceDiscount" class="rounded bg-primary px-3 py-1.5 font-bold text-white">{{ __('Apply') }}</button>@if($discountType)<button type="button" wire:click="removeInvoiceDiscount" class="rounded border border-rose-300 px-3 py-1.5 text-rose-700">{{ __('Remove') }}</button>@endif</div>
                 @error('invoiceDiscountValue')<p role="alert" class="mt-1 text-rose-700">{{ $message }}</p>@enderror
                 @if($discountType)<p class="mt-1 text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'خصم السلة' : 'Cart discount' }}: <x-money :amount="$preview['invoice_discount']" :currency="$currency" /></p>@endif
             </details>
-        @endcan
+        @endcan @endif
         <div class="flex items-center justify-between"><span class="text-xs font-semibold text-text-muted">{{ __('Cart total') }}</span><strong class="text-lg text-text-primary"><x-money :amount="$preview['total']" :currency="$currency" /></strong></div></footer>@endif
 </section>
