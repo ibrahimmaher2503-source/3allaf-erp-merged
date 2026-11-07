@@ -9,9 +9,10 @@ use App\Modules\Catalog\Services\ConvertProductQuantity;
 use App\Support\ProductQuantity;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
-use BcMath\Number;
+use App\Modules\Purchasing\Services\PurchaseOrderCalculator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -56,22 +57,44 @@ class SavePurchaseOrderAction
                 throw new InvalidArgumentException(__('Cannot create or update a purchase order for an inactive supplier.'));
             }
 
+            $actor = Auth::user();
+            abort_unless($actor instanceof User, 403);
+            $branchId = (int) ($data['branch_id'] ?? 0);
+            $branch = Branch::query()->where('status', 'active')
+                ->when(! $actor->hasGlobalApplicationAccess() || $actor->canBypassApproval(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($actor)->whereNotNull('branch_id')->select('branch_id')))
+                ->findOrFail($branchId);
             $storeId = (int) ($data['store_id'] ?? 0);
-            if ($storeId < 1) throw new InvalidArgumentException(__('A receiving store or warehouse is required so the purchase order has an explicit branch.'));
+            if ($storeId < 1) {
+                throw new InvalidArgumentException(__('A receiving store or warehouse is required so the purchase order has an explicit branch.'));
+            }
             $store = Store::query()->findOrFail($storeId);
             $this->assertStoreScope($storeId);
-            $branchId = $store->branch_id;
-            if ($branchId === null) throw new InvalidArgumentException(__('The receiving store must belong to a branch.'));
-            if ($po !== null && $po->branch_id !== null && (int)$po->branch_id !== (int)$branchId) {
+            if ($store->branch_id === null || (int) $store->branch_id !== $branch->id) {
+                throw new InvalidArgumentException(__('The receiving store must belong to the selected creating branch.'));
+            }
+            if ($po !== null && $po->branch_id !== null && (int) $po->branch_id !== (int) $branchId) {
                 throw new InvalidArgumentException(__('A numbered draft cannot move to another branch; create a new purchase order for that branch.'));
             }
 
             $validatedLines = [];
-            $lineSubtotalSum = new Number('0');
+            $existingLines = $po?->lines()->lockForUpdate()->get()->keyBy('product_id') ?? collect();
+            // Migration 000115 deliberately does not invent line tax snapshots for
+            // legacy orders. Retain any pre-existing header tax that cannot be
+            // explained by stored line snapshots as an undistributed legacy amount.
+            $storedLineTax = $existingLines->reduce(
+                fn (string $carry, $line): string => bcadd($carry, (string) $line->tax_amount, 4),
+                '0.0000',
+            );
+            $legacyHeaderTax = $po === null
+                ? '0.0000'
+                : bcsub((string) $po->tax_amount, $storedLineTax, 4);
+            if (bccomp($legacyHeaderTax, '0', 4) < 0) {
+                $legacyHeaderTax = '0.0000';
+            }
 
             foreach ($lines as $index => $line) {
                 $productId = (int) ($line['product_id'] ?? 0);
-                $product = Product::query()->sellable()->with('baseProductUnit.unit')->findOrFail($productId);
+                $product = Product::query()->sellable()->availableToCompany((int) $branch->company_id)->with('baseProductUnit.unit')->findOrFail($productId);
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be ordered.', ['name' => $product->name_en ?: $product->name_ar]));
                 }
@@ -89,11 +112,14 @@ class SavePurchaseOrderAction
                 $enteredQuantity = (string) ProductQuantity::normalize($line['quantity_ordered'] ?? null, "lineItems.$index.quantity_ordered", decimalPlaces: $precision);
                 $enteredPrice = $this->decimal($line['unit_cost'] ?? null, 4, 'Unit cost', true);
                 $factor = $productUnit?->conversion_factor ?? '1.000000';
-                $qty = new Number($productUnit ? app(ConvertProductQuantity::class)->execute($product, $productUnit, $enteredQuantity) : $enteredQuantity);
-                $unitCost = new Number(bcdiv((string) $enteredPrice, (string) $factor, 4));
+                // Base-unit quantity and cost feed rajeh's PurchaseOrderCalculator (discount/tax snapshots).
+                $qty = $productUnit ? app(ConvertProductQuantity::class)->execute($product, $productUnit, $enteredQuantity) : $enteredQuantity;
+                $unitCost = bcdiv((string) $enteredPrice, (string) $factor, 4);
 
-                $lineSubtotal = (new Number($enteredQuantity))->mul($enteredPrice)->round(4);
-                $lineSubtotalSum = $lineSubtotalSum->add($lineSubtotal)->round(4);
+                $existingLine = $existingLines->get($product->id);
+                $legacyCommercialSnapshot = $existingLine === null
+                    ? ['discount_type' => null, 'discount_value' => '0.0000', 'tax_rate' => '0.0000', 'tax_code' => null, 'tax_inclusive' => false]
+                    : ['discount_type' => $existingLine->discount_type, 'discount_value' => (string) $existingLine->discount_value, 'tax_rate' => (string) $existingLine->tax_rate, 'tax_code' => $existingLine->tax_code, 'tax_inclusive' => (bool) $existingLine->tax_inclusive];
 
                 $validatedLines[] = [
                     'product_id' => $product->id,
@@ -106,14 +132,15 @@ class SavePurchaseOrderAction
                     'quantity_ordered' => (string) $qty,
                     'quantity_received' => '0.000000',
                     'unit_cost' => (string) $unitCost,
-                    'subtotal' => (string) $lineSubtotal,
+                    ...$legacyCommercialSnapshot,
                     'notes' => ! empty($line['notes']) ? trim((string) $line['notes']) : null,
                     'updated_by' => $userId,
                 ];
             }
 
-            $taxAmount = new Number('0'); // Explicit local zero or TBD tax
-            $totalAmount = $lineSubtotalSum->add($taxAmount)->round(4);
+            $totals = app(PurchaseOrderCalculator::class)->calculateDocument($validatedLines);
+            $headerTax = bcadd($totals['taxAmount'], $legacyHeaderTax, 4);
+            $headerTotal = bcadd($totals['totalAmount'], $legacyHeaderTax, 4);
 
             $poNumber = $po !== null ? $po->po_number : app(AllocatePurchaseOrderNumberAction::class)->execute((int) $branchId);
 
@@ -127,9 +154,9 @@ class SavePurchaseOrderAction
                 'expected_delivery_date' => ! empty($data['expected_delivery_date']) ? $data['expected_delivery_date'] : null,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
                 'notes' => ! empty($data['notes']) ? trim((string) $data['notes']) : null,
-                'subtotal' => (string) $lineSubtotalSum,
-                'tax_amount' => (string) $taxAmount,
-                'total_amount' => (string) $totalAmount,
+                'subtotal' => $totals['subtotal'],
+                'tax_amount' => $headerTax,
+                'total_amount' => $headerTotal,
                 'updated_by' => $userId,
             ];
 
@@ -150,9 +177,11 @@ class SavePurchaseOrderAction
                 $po->lines()->delete();
             }
 
-            foreach ($validatedLines as $lineData) {
+            foreach ($totals['calculated'] as $index => $calculated) {
+                $lineData = $validatedLines[$index];
                 $po->lines()->create([
                     ...$lineData,
+                    ...$calculated,
                     'created_by' => $userId,
                 ]);
                 app(SyncSupplierProductAssociation::class)->associate($supplier->id, (int) $lineData['product_id'], (int) $userId);
@@ -176,37 +205,12 @@ class SavePurchaseOrderAction
     private function assertStoreScope(int $storeId): void
     {
         $user = Auth::user();
-        if (! $user instanceof User || $user->is_super_admin) {
+        if (! $user instanceof User || ($user->hasGlobalApplicationAccess() && ! $user->canBypassApproval())) {
             return;
         }
 
         if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
             throw new InvalidArgumentException(__('You are not authorized for the selected purchase-order store.'));
-        }
-    }
-
-    private function decimal(mixed $value, int $scale, string $label, bool $allowZero): Number
-    {
-        $value = trim((string) $value);
-        $this->assertDecimalFormat($value, $scale, $label);
-
-        $normalized = new Number($value);
-        if (! $allowZero && $normalized->compare(new Number('0')) <= 0) {
-            throw new InvalidArgumentException(__(':label must be greater than zero.', ['label' => $label]));
-        }
-
-        return $normalized->round($scale);
-    }
-
-    /** @phpstan-assert numeric-string $value */
-    private function assertDecimalFormat(string $value, int $scale, string $label): void
-    {
-        $pattern = $scale === 0
-            ? '/^\d+$/D'
-            : '/^\d+(?:\.\d{1,'.$scale.'})?$/D';
-
-        if ($value === '' || preg_match($pattern, $value) !== 1) {
-            throw new InvalidArgumentException(__(':label must be a valid decimal with up to :scale decimal places.', ['label' => $label, 'scale' => $scale]));
         }
     }
 }

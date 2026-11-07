@@ -93,7 +93,7 @@
         'count_submitted' => __('Count submitted'),
         'closing_submitted' => __('Closing submitted'),
         'variance_review' => __('In Review'),
-        'awaiting_distribution' => __('Awaiting Distribution'),
+        'awaiting_distribution' => __('Awaiting approval'),
         'pending_approval' => __('Pending approval'),
         'difference_review' => __('Difference review'),
         'suspended' => __('Suspended'),

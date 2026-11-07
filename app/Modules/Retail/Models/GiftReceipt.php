@@ -7,6 +7,7 @@ namespace App\Modules\Retail\Models;
 use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,16 +19,46 @@ final class GiftReceipt extends Model
 
     protected $casts = ['used_at' => 'datetime'];
 
-    public function sale(): BelongsTo { return $this->belongsTo(Sale::class); }
-    public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
-    public function store(): BelongsTo { return $this->belongsTo(Store::class); }
-    public function issuer(): BelongsTo { return $this->belongsTo(User::class, 'issued_by'); }
-    public function lines(): HasMany { return $this->hasMany(GiftReceiptLine::class); }
-    public function printEvents(): HasMany { return $this->hasMany(GiftReceiptPrintEvent::class); }
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function issuer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'issued_by');
+    }
+
+    public function lines(): HasMany
+    {
+        return $this->hasMany(GiftReceiptLine::class);
+    }
+
+    public function printEvents(): HasMany
+    {
+        return $this->hasMany(GiftReceiptPrintEvent::class);
+    }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) return $query;
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
+            return $query;
+        }
+
         return $query->where(function (Builder $scope) use ($user): void {
             $scope->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))
                 ->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id'));

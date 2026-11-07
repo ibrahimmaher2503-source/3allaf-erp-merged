@@ -7,6 +7,7 @@ namespace App\Modules\Customer\Models;
 use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -55,7 +56,7 @@ final class ProductWalletLedger extends Model
     /** @param array<string, mixed> $attributes */
     public static function appendEntry(array $attributes): self
     {
-        $entry = new self();
+        $entry = new self;
         $entry->appendMutation = true;
         try {
             $entry->fill($attributes)->save();
@@ -99,7 +100,11 @@ final class ProductWalletLedger extends Model
     /** @param Builder<ProductWalletLedger> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

@@ -106,6 +106,10 @@ purpose, owner type/id, uploader, scope, names, disk/path, MIME, size, hash, dim
 
 immutable item code, bilingual names/descriptions, type, status, UOM, category, brand, preferred supplier, average cost, reorder threshold, attributes, fractional flag, version.
 
+### product_filter_values
+
+Descriptive product-to-option-value assignments reuse `product_option_groups` / `product_option_values` from Product Filters management. Unique `(product_id, product_option_value_id)` and restricted foreign keys preserve references. These assignments are independent of `product_family_option_groups`, `product_family_option_values`, and child `product_variant_values`; they never generate SKUs. Migration 000119 copies legacy ordinary-product selections without deleting legacy data or interpreting actual family options as filters.
+
 ### categories
 
 parent_id, code/name, status; cycle prevention.
@@ -142,7 +146,11 @@ supplier, source PO, receiving store, supplier reference, tax/discount, status, 
 
 ### purchase_returns / lines
 
-supplier, source invoice, store, reason, status, cost/reference quantities.
+supplier, optional source invoice, active return source store, reason, status, cost source and snapshotted unit cost/reference quantities. Invoice-linked lines use their historical invoice-line cost; invoice-free lines use the product card's current cost at creation. Approved returns post one stock debit and one supplier payable debit.
+
+### supplier_payable_entries
+
+Append-only supplier payable amounts scoped to company and supplier, with source type/id, store, posted time and actor. Approved purchase invoices increase payable; approved supplier returns decrease it. Reversals post opposite entries. Negative computed balances are valid. Historical approved invoices are not silently backfilled and no opening balance is invented.
 
 ## 8. Pricing
 
@@ -329,3 +337,7 @@ Include user/device/branch binding, schema/policy version, payload hash, idempot
 ## 20. Manual Verification
 
 Use browser workflows and database inspection only when authorized to confirm constraints, source linkage, immutability, scope, duplicate prevention, and reconciliation. No automated tests under current directive.
+
+## Stocktake and transfer data contract — 2026-10-20
+
+Stock count lines retain baseline `reference_on_hand`, `reference_movement_id`, physical `counted_quantity`, `counted_at`, `counted_movement_id`, and `counted_by`. Canonical `stock_movements` remain the only movement history and settlement posting path. Transfer drafts persist the optional `invoice_reference` independently from the existing purchase-invoice foreign key and retain a stable idempotency key across retries. Warehouse `branch_id` may be null.

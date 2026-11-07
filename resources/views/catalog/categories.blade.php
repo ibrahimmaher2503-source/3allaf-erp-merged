@@ -187,9 +187,9 @@ new #[Title('Category Masters')] class extends Component
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
-    <flux:text class="text-sm text-text-muted" data-guide="categories-order-help">
-        {{ __('Sort each category within its main category so the list stays organized.') }}
-    </flux:text>
+    <x-context-help :title="__('Category order')" :label="__('Open contextual help')" data-guide="categories-order-help">
+        <p>{{ __('Sort each category within its main category so the list stays organized.') }}</p>
+    </x-context-help>
 
     @if ($errors->any())
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Category action could not be completed') }}">
@@ -219,7 +219,7 @@ new #[Title('Category Masters')] class extends Component
         <flux:card class="space-y-3 p-10 text-center" data-guide="categories-empty">
             <flux:icon name="squares-2x2" class="mx-auto size-12 text-zinc-400" />
             <flux:heading size="lg">{{ __('No categories found') }}</flux:heading>
-            <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('Create a root category, then add child categories from the same form.') }}</flux:text>
+            <x-context-help :title="__('No categories found')" :label="__('Open contextual help')"><p>{{ __('Create a root category, then add child categories from the same form.') }}</p></x-context-help>
             @can('products_categories_brands.create')
                 <div class="flex justify-center pt-2"><flux:button type="button" variant="primary" icon="plus" wire:click="openCreateCategoryModal">{{ __('Create root category') }}</flux:button></div>
             @endcan
@@ -258,10 +258,10 @@ new #[Title('Category Masters')] class extends Component
     @endif
 
     <flux:modal wire:model="showCategoryModal" class="max-w-xl">
-        <div class="catalog-modal-section space-y-1"><flux:heading size="lg">{{ $editingCategoryId ? __('Edit category') : __('Create category') }}</flux:heading><flux:subheading>{{ __('Choose no parent for a root category. Server validation rejects self-parenting and descendant cycles.') }}</flux:subheading></div>
+        <div class="catalog-modal-section flex items-center gap-2"><flux:heading size="lg">{{ $editingCategoryId ? __('Edit category') : __('Create category') }}</flux:heading><x-context-help :title="$editingCategoryId ? __('Edit category') : __('Create category')" :label="__('Open contextual help')"><p>{{ __('Choose no parent for a root category. Server validation rejects self-parenting and descendant cycles.') }}</p></x-context-help></div>
         <form wire:submit="saveCategory" novalidate class="space-y-4">
             <div class="grid gap-4 md:grid-cols-2"><div class="flex items-end gap-2"><label for="category-code" class="sr-only">{{ __('Category code') }}</label><flux:input id="category-code" class="min-w-0 flex-1" wire:model="categoryForm.code" :label="__('Category code')" required :disabled="$editingCategoryId !== null" />@if ($editingCategoryId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateCategoryCode" wire:loading.attr="disabled" wire:target="generateCategoryCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div><label for="category-sort-order" class="sr-only">{{ __('Display order') }}</label><flux:input id="category-sort-order" wire:model="categoryForm.sort_order" type="number" min="0" :label="__('Display order')" required /></div>
-            <div class="grid gap-4 md:grid-cols-2"><label for="category-name-ar" class="sr-only">{{ __('Arabic name') }}</label><flux:input id="category-name-ar" wire:model="categoryForm.name_ar" :label="__('Arabic name')" required /><label for="category-name-en" class="sr-only">{{ __('English name (optional)') }}</label><flux:input id="category-name-en" wire:model="categoryForm.name_en" :label="__('English name (optional)')" /><p class="text-xs text-text-muted md:col-start-2">{{ __('English name (optional)') }}</p></div>
+            <div class="grid gap-4 md:grid-cols-2"><label for="category-name-ar" class="sr-only">{{ __('Arabic name') }}</label><flux:input id="category-name-ar" wire:model="categoryForm.name_ar" :label="__('Arabic name')" required /><label for="category-name-en" class="sr-only">{{ __('English name (optional)') }}</label><flux:input id="category-name-en" wire:model="categoryForm.name_en" :label="__('English name (optional)')" /></div>
             <flux:select wire:model="categoryForm.parent_id" :label="__('Parent category')"><flux:select.option value="">{{ __('No parent (root)') }}</flux:select.option>@foreach ($parentOptions as $parent)<flux:select.option :value="$parent->id">{{ $parent->code }} · {{ str_starts_with(app()->getLocale(), 'ar') || blank($parent->name_en) ? $parent->name_ar : $parent->name_en }}</flux:select.option>@endforeach</flux:select>
             <flux:select wire:model="categoryForm.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
             <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end"><flux:button type="button" variant="subtle" wire:click="$set('showCategoryModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveCategory">{{ __('Save') }}</flux:button></div>

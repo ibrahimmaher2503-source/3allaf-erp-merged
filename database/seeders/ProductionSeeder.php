@@ -93,7 +93,11 @@ final class ProductionSeeder extends Seeder
             'company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'purchase_returns', 'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts', 'pos_sales', 'suspended_sales', 'shifts_cash_movements', 'customers_children', 'loyalty', 'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments', 'party_bookings_invoices', 'party_operating_orders_consumables', 'rental_assets', 'quotations', 'dashboard_reports', 'audit_logs', 'offline_queue_conflicts',
         ];
         foreach ($modules as $module) {
-            foreach (['view', 'create', 'edit', 'submit', 'logical_delete', 'print', 'approve', 'reject', 'export', 'reverse', 'cancel', 'override'] as $action) {
+            $actions = $module === 'audit_logs'
+                ? ['view', 'export', 'print']
+                : ['view', 'create', 'edit', 'submit', 'logical_delete', 'print', 'approve', 'reject', 'export', 'reverse', 'cancel', 'override'];
+
+            foreach ($actions as $action) {
                 Permission::query()->updateOrCreate(['code' => $module.'.'.$action], ['module' => $module, 'action' => $action, 'sensitivity' => in_array($action, ['approve', 'submit', 'reject', 'export', 'reverse', 'cancel', 'override', 'logical_delete'], true) ? 'sensitive' : 'normal', 'status' => 'active']);
             }
         }
@@ -105,6 +109,7 @@ final class ProductionSeeder extends Seeder
         foreach ([
             ['code' => 'suppliers.preferred_change', 'module' => 'suppliers', 'action' => 'preferred_change'],
             ['code' => 'inventory_stock_card.cost_view', 'module' => 'inventory_stock_card', 'action' => 'cost_view'],
+            ['code' => 'products_categories_brands.cost_view', 'module' => 'products_categories_brands', 'action' => 'cost_view'],
             ['code' => 'transfers.dispatch', 'module' => 'transfers', 'action' => 'dispatch'],
             ['code' => 'transfers.receive', 'module' => 'transfers', 'action' => 'receive'],
             ['code' => 'transfers.difference', 'module' => 'transfers', 'action' => 'difference'],
@@ -140,6 +145,7 @@ final class ProductionSeeder extends Seeder
             ['code' => 'returns.submit', 'module' => 'returns', 'action' => 'submit', 'sensitivity' => 'sensitive'],
             ['code' => 'returns.approve', 'module' => 'returns', 'action' => 'approve', 'sensitivity' => 'sensitive'],
             ['code' => 'returns.complete', 'module' => 'returns', 'action' => 'complete', 'sensitivity' => 'sensitive'],
+            ['code' => 'returns.unverified', 'module' => 'returns', 'action' => 'unverified', 'sensitivity' => 'sensitive'],
             ['code' => 'returns.print', 'module' => 'returns', 'action' => 'print', 'sensitivity' => 'normal'],
             ['code' => 'gift_cards.view', 'module' => 'gift_cards', 'action' => 'view', 'sensitivity' => 'normal'],
             ['code' => 'gift_cards.print', 'module' => 'gift_cards', 'action' => 'print', 'sensitivity' => 'normal'],
@@ -310,9 +316,14 @@ final class ProductionSeeder extends Seeder
         ] as $method) {
             PaymentMethod::query()->firstOrCreate(['code' => $method['code']], $method + ['status' => 'active']);
         }
-        TaxSetting::query()->firstOrCreate(['code' => 'ZERO'], [
+        TaxSetting::query()->firstOrCreate(['company_id' => $company->id, 'code' => 'ZERO'], [
             'name_ar' => 'ضريبة صفرية', 'name_en' => 'Zero Rated', 'rate' => '0.00',
-            'treatment' => 'zero_rated', 'is_default' => true, 'is_tax_inclusive' => true, 'status' => 'active',
+            'treatment' => 'zero_rated', 'is_default' => false, 'is_tax_inclusive' => true, 'status' => 'active',
+        ]);
+        TaxSetting::query()->firstOrCreate(['company_id' => $company->id, 'code' => 'EG-VAT-14'], [
+            'name_ar' => 'ضريبة القيمة المضافة المصرية', 'name_en' => 'Egypt VAT', 'rate' => '14.00',
+            'treatment' => 'standard', 'is_default' => true, 'is_tax_inclusive' => false, 'status' => 'active',
+            'policy_notes' => 'Configurable Egypt default; confirm applicable exemptions and inclusive pricing per product.',
         ]);
         foreach ([
             'retail_sale' => 'SAL-', 'purchase_order' => 'PO-', 'purchase_invoice' => 'PIN-',
@@ -337,16 +348,10 @@ final class ProductionSeeder extends Seeder
     /**
      * Production grants for operational roles other than System Administrator.
      *
-     * docs/04-roles-permissions.md line 12: "P and R entries are not production
-     * grants." This is exactly the TSK-008 Foundation scope DEC-038 froze as the
-     * approved-without-amendment Canonical Authorization Matrix. The bootstrap
-     * System Administrator receives every active permission so the owner can
-     * complete Production setup through guarded UI flows. Every other module
-     * implemented since (TSK-014..TSK-022: suppliers, purchase orders/invoices/
-     * returns, pricing, inventory, transfers, stock counts) was authorized
-     * Local/Dev-only (DEC-051/052/054/058/059) and must not reach a Production
-     * grant until the owner ratifies a docs/04 amendment. See
-     * testing/results/DEFECTS.md QA-002.
+     * The bootstrap System Administrator receives every active permission.
+     * Other built-in grants are limited to the ratified operational capabilities
+     * in docs/04-roles-permissions.md, including the owner-authorized 2026-11-05
+     * launch amendment. Custom role grants remain independent.
      *
      * @return array<string, list<string>>
      */
@@ -354,7 +359,7 @@ final class ProductionSeeder extends Seeder
     {
         return [
             'system-administrator' => [],
-            'branch-manager' => ['branches_stores.view', 'pos_sales.view'],
+            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'dashboard_reports.view', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.receive', 'transfers.difference'],
             'cashier' => [
                 'pos_sales.view', 'pos_sales.create', 'pos_sales.print',
                 'pos_sales.payment_view', 'pos_sales.payment_create',
@@ -363,14 +368,15 @@ final class ProductionSeeder extends Seeder
                 'shifts_cash_movements.view', 'shifts_cash_movements.create',
                 'shifts_cash_movements.edit', 'shifts_cash_movements.submit', 'shifts_cash_movements.print',
                 'products_categories_brands.view', 'inventory_stock_card.view',
+                'dashboard_reports.view', 'transfers.view', 'transfers.receive', 'pos_sales.open_price', 'gift_cards.redeem',
                 'customers.view', 'customers.create', 'customers.edit',
             ],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view'],
             'purchasing-officer' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change'],
-            'warehouse-manager' => [],
+            'warehouse-manager' => ['inventory_stock_card.view', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.open', 'stock_counts.close'],
             'pricing-officer' => [],
             'party-manager' => [],
-            'stock-counter' => [],
+            'stock-counter' => ['stock_counts.view', 'stock_counts.edit'],
         ];
     }
 }

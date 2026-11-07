@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
-use App\Modules\Platform\Actions\AllocateDocumentNumber;
+use App\Modules\Inventory\Actions\AllocateStockTransferNumberAction;
+use App\Modules\Platform\Models\Store;
 
 final class AllocatePurchaseReturnNumberAction
 {
-    public function execute(?int $branchId = null): string
+    public function execute(Store $sourceStore): string
     {
-        return $branchId === null
-            ? app(AllocateDocumentNumber::class)->execute('supplier_return')
-            : app(AllocateDocumentNumber::class)->executeForBranch('supplier_return', $branchId);
+        return app(AllocateStockTransferNumberAction::class)->executeFor($sourceStore, 'supplier_return');
     }
 }

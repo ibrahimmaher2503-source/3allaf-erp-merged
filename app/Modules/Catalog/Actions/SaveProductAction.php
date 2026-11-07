@@ -4,22 +4,25 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Exceptions\ImmutableItemCodeChangeException;
 use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
+use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
-use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductUnit;
+use App\Modules\Catalog\Models\ProductOptionValue;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class SaveProductAction
@@ -38,11 +41,13 @@ class SaveProductAction
 
         try {
             return DB::transaction(function () use ($data, $id, $expectedVersion): Product {
-                $itemCode = strtoupper(trim((string) ($data['item_code'] ?? $data['model_number'] ?? '')));
+                $saveAsDraft = (bool) ($data['_save_as_draft'] ?? false);
+                $suppliedItemCode = strtoupper(trim((string) ($data['item_code'] ?? '')));
+                $itemCode = $suppliedItemCode === '' ? null : $suppliedItemCode;
                 $nameAr = trim((string) ($data['name_ar'] ?? ''));
                 $nameEn = trim((string) ($data['name_en'] ?? ''));
                 $productType = trim((string) ($data['product_type'] ?? 'standard'));
-                $status = trim((string) ($data['status'] ?? 'active'));
+                $status = $saveAsDraft ? 'inactive' : trim((string) ($data['status'] ?? 'active'));
                 $feedKind = $this->nullableString($data['feed_kind'] ?? null);
                 $animalType = $this->nullableString($data['animal_type'] ?? null);
 
@@ -76,14 +81,13 @@ class SaveProductAction
                     throw new InvalidArgumentException(__('The selected brand must exist and be active.'));
                 }
 
+                $actor = Auth::user() ?? throw new InvalidArgumentException(__('An authenticated user is required.'));
+                $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
                 $taxSettingId = ! empty($data['tax_setting_id']) ? (int) $data['tax_setting_id'] : null;
                 if ($taxSettingId !== null) {
-                    if (Company::query()->count() !== 1 || ! Company::query()->where('status', 'active')->exists()) {
-                        throw new InvalidArgumentException(__('A single active company is required before assigning product tax.'));
-                    }
-
                     $taxSetting = TaxSetting::query()
                         ->whereKey($taxSettingId)
+                        ->where('company_id', $company->id)
                         ->where('status', 'active')
                         ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
                         ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))
@@ -94,7 +98,6 @@ class SaveProductAction
                     }
                 }
 
-                $pricing = app(ProductPricingContract::class)->forProductCard($data['average_cost'] ?? null, $data['sale_price'] ?? null);
                 $supplierId = (int) ($data['preferred_supplier_id'] ?? 0);
                 $supplier = $supplierId > 0
                     ? Supplier::query()->whereKey($supplierId)->where('status', 'active')->first()
@@ -109,7 +112,7 @@ class SaveProductAction
                     throw new InvalidArgumentException(__('Variation descriptive fields are owned by the family. Open the family variation matrix to manage this SKU.'));
                 }
 
-                if ($product !== null && $product->item_code !== $itemCode) {
+                if ($product !== null && $product->item_code !== null && $suppliedItemCode !== '' && $product->item_code !== $suppliedItemCode) {
                     throw new ImmutableItemCodeChangeException(__('The internal item code is immutable after product creation.'));
                 }
 
@@ -117,13 +120,31 @@ class SaveProductAction
                     throw new StaleCatalogRecordException(__('This product changed in another session. Reload it before saving.'));
                 }
 
+                // Blank or omitted cost on edit retains the locked saved value.
+                // A caller without cost access cannot supply a replacement cost.
+                $pricingData = $data;
+                if (! $actor->hasPermission('products_categories_brands.cost_view') || blank($data['average_cost'] ?? null)) {
+                    $pricingData['average_cost'] = $product?->average_cost;
+                    unset($data['average_cost']);
+                }
+                $pricing = $saveAsDraft
+                    ? $this->draftPricing($pricingData)
+                    : app(ProductPricingContract::class)->forProductCard($pricingData['average_cost'] ?? null, $pricingData['sale_price'] ?? null);
+
                 if ($product !== null && ! array_key_exists('product_type', $data)) {
                     $productType = $product->product_type;
                 }
 
+                if ($product?->item_code !== null) {
+                    $itemCode = $product->item_code;
+                }
+
                 $identity = null;
-                if ($product === null) {
+                if ($itemCode !== null && $product === null) {
                     $identity = app(ReserveProductIdentityAction::class)->reserve($itemCode, $supplierId ?: null);
+                    $itemCode = $identity['item_code'];
+                } elseif ($itemCode === null && ! $saveAsDraft) {
+                    $identity = app(ReserveProductIdentityAction::class)->reserve(null, $supplierId ?: null);
                     $itemCode = $identity['item_code'];
                 }
 
@@ -137,7 +158,7 @@ class SaveProductAction
                     'full_description_ar' => $this->nullableString($data['full_description_ar'] ?? null), 'full_description_en' => $this->nullableString($data['full_description_en'] ?? null),
                     'meta_title_ar' => $this->nullableString($data['meta_title_ar'] ?? null), 'meta_title_en' => $this->nullableString($data['meta_title_en'] ?? null), 'meta_description_ar' => $this->nullableString($data['meta_description_ar'] ?? null), 'meta_description_en' => $this->nullableString($data['meta_description_en'] ?? null),
                     'seo_slug' => $this->nullableSlug($data['seo_slug'] ?? null, $id), 'publish_visibility' => $this->nullableString($data['publish_visibility'] ?? null), 'sort_order' => ($data['sort_order'] ?? null) === null || ($data['sort_order'] ?? '') === '' ? null : max(0, (int) $data['sort_order']),
-                    'model_number' => $this->nullableString($data['model_number'] ?? null),
+                    'model_number' => array_key_exists('model_number', $data) ? $this->nullableString($data['model_number']) : $product?->model_number,
                     'product_type' => $productType,
                     'feed_kind' => $feedKind,
                     'animal_type' => $animalType,
@@ -148,7 +169,7 @@ class SaveProductAction
                     'category_id' => (int) $data['category_id'],
                     'brand_id' => ! empty($data['brand_id']) ? (int) $data['brand_id'] : null,
                     'tax_setting_id' => $taxSettingId,
-                    'originating_supplier_id' => ! empty($data['preferred_supplier_id'] ?? null) ? (int) $data['preferred_supplier_id'] : null,
+                    'originating_supplier_id' => $supplierId > 0 ? $supplierId : null,
                     'barcode_registration_type' => $this->nullableString($data['barcode_registration_type'] ?? null),
                     'status' => $status,
                     'reorder_threshold' => in_array($productType, ['service', 'digital'], true) ? null : $this->nullableNumeric($data['reorder_threshold'] ?? null),
@@ -200,6 +221,9 @@ class SaveProductAction
                             unset($attributes[$optionalField]);
                         }
                     }
+                    if (! array_key_exists('preferred_supplier_id', $data)) {
+                        unset($attributes['originating_supplier_id']);
+                    }
                 }
 
                 if ($product === null) {
@@ -222,19 +246,54 @@ class SaveProductAction
                     }
                 }
 
+                if ($identity !== null) {
+                    app(ReserveProductIdentityAction::class)->createPrimaryBarcode($product, $identity['item_code'], $identity['barcode_source']);
+                    $product->update(['barcode_mode' => $identity['barcode_source']]);
+                }
+
                 foreach ([['age_label_ids', 'ages'], ['character_ids', 'characters'], ['colour_ids', 'colours'], ['gender_ids', 'genders']] as [$input, $relation]) {
                     if (array_key_exists($input, $data)) {
                         $product->{$relation}()->sync(array_values(array_filter(array_map('intval', (array) $data[$input]))));
                     }
                 }
+                if (array_key_exists('filter_value_ids', $data)) {
+                    $this->syncFilters($product, $data['filter_value_ids']);
+                }
                 if (array_key_exists('preferred_supplier_id', $data)) {
-                    $product->productSuppliers()->update(['is_preferred' => false]);
+                    $previousPreferred = $product->productSuppliers()
+                        ->where('is_preferred', true)
+                        ->lockForUpdate()
+                        ->get();
+                    foreach ($previousPreferred as $previousRelation) {
+                        $previousBefore = $previousRelation->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']);
+                        $previousRelation->update(['is_preferred' => false]);
+                        app(RecordAuditEvent::class)->execute(
+                            category: 'master_data',
+                            event: 'change_product_supplier_preference',
+                            source: $previousRelation,
+                            before: $previousBefore,
+                            after: $previousRelation->fresh()->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']),
+                            metadata: ['source' => 'product_card'],
+                        );
+                    }
 
                     if ($supplier !== null) {
-                        $product->productSuppliers()->updateOrCreate(['supplier_id' => $supplier->id], [
+                        $relation = $product->productSuppliers()->firstOrNew(['supplier_id' => $supplier->id]);
+                        $beforeRelation = $relation->exists
+                            ? $relation->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes'])
+                            : null;
+                        $relation->fill([
                             'is_preferred' => true,
-                            'supplier_item_code' => $this->nullableString($data['supplier_item_code'] ?? null),
-                        ]);
+                            'supplier_item_code' => $this->nullableString($data['supplier_item_code'] ?? null) ?? $relation->supplier_item_code,
+                        ])->save();
+                        app(RecordAuditEvent::class)->execute(
+                            category: 'master_data',
+                            event: 'change_product_supplier_preference',
+                            source: $relation,
+                            before: $beforeRelation,
+                            after: $relation->fresh()->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']),
+                            metadata: ['source' => 'product_card'],
+                        );
                     }
                 }
 
@@ -251,7 +310,7 @@ class SaveProductAction
                 );
 
                 return $product->fresh();
-            });
+            }, attempts: 3);
         } catch (ImmutableItemCodeChangeException $exception) {
             $product = $id === null ? null : Product::query()->find($id);
 
@@ -276,6 +335,9 @@ class SaveProductAction
 
         return DB::transaction(function () use ($id): Product {
             $product = Product::query()->lockForUpdate()->findOrFail($id);
+            if ($product->status !== 'active' && $product->hasIncompleteCard()) {
+                throw new InvalidArgumentException(__('Complete the required product card fields and allocate its final code before activation.'));
+            }
             $before = ['status' => $product->status, 'lock_version' => $product->lock_version];
             $product->update([
                 'status' => $product->status === 'active' ? 'inactive' : 'active',
@@ -314,7 +376,20 @@ class SaveProductAction
         return $value === '' ? null : $value;
     }
 
-    private function nullableSlug(mixed $value, ?int $id): ?string { $slug = trim((string) ($value ?? '')); if ($slug === '') return null; $query = Product::query()->where('seo_slug', $slug); if ($id !== null) $query->where('id', '<>', $id); if (! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) || $query->exists()) throw new InvalidArgumentException(__('The SEO slug must be lowercase, URL-safe, and unique.')); return $slug; }
+    private function nullableSlug(mixed $value, ?int $id): ?string
+    {
+        $slug = trim((string) ($value ?? ''));
+        if ($slug === '') {
+            return null;
+        } $query = Product::query()->where('seo_slug', $slug);
+        if ($id !== null) {
+            $query->where('id', '<>', $id);
+        } if (! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) || $query->exists()) {
+            throw new InvalidArgumentException(__('The SEO slug must be lowercase, URL-safe, and unique.'));
+        }
+
+        return $slug;
+    }
 
     private function nullableNumeric(mixed $value): float|int|null
     {
@@ -398,12 +473,62 @@ class SaveProductAction
         $product->update(['unit_of_measure' => $baseUnit->code, 'fractional_quantity' => $baseUnit->decimal_places > 0]);
     }
 
+    /** @param array<string, mixed> $data
+     * @return array{average_cost: string|null, sale_price: string|null}
+     */
+    private function draftPricing(array $data): array
+    {
+        $averageCost = $data['average_cost'] ?? null;
+        $salePrice = $data['sale_price'] ?? null;
+
+        if (($averageCost === null || $averageCost === '') && ($salePrice === null || $salePrice === '')) {
+            return ['average_cost' => null, 'sale_price' => null];
+        }
+
+        return [
+            'average_cost' => app(ProductPricingContract::class)->optionalCost($averageCost),
+            'sale_price' => blank($salePrice) ? null : app(ProductPricingContract::class)->explicitConsumerPrice($salePrice),
+        ];
+    }
+
     private function nullableLookupId(mixed $value, string $model): ?int
     {
-        if ($value === null || $value === '') return null;
+        if ($value === null || $value === '') {
+            return null;
+        }
         $lookup = $model::query()->whereKey((int) $value)->where('status', 'active')->first();
-        if ($lookup === null) throw new InvalidArgumentException(__('The selected catalog lookup value must exist and be active.'));
+        if ($lookup === null) {
+            throw new InvalidArgumentException(__('The selected catalog lookup value must exist and be active.'));
+        }
+
         return (int) $lookup->id;
+    }
+
+    /** @param array<int, int|string> $valueIds */
+    private function syncFilters(Product $product, array $valueIds): void
+    {
+        $validated = validator(['filter_value_ids' => $valueIds], [
+            'filter_value_ids' => ['array'],
+            'filter_value_ids.*' => ['integer', 'distinct'],
+        ])->validate();
+        $ids = array_map('intval', $validated['filter_value_ids']);
+        $savedIds = $product->filterValues()->pluck('product_option_values.id')->map(fn ($id): int => (int) $id)->all();
+        $values = ProductOptionValue::query()->with('group')->whereIn('id', $ids)->get();
+        if ($values->count() !== count($ids) || $values->contains(fn ($value): bool => ($value->status !== 'active' || $value->group->status !== 'active') && ! in_array($value->id, $savedIds, true)
+        )) {
+            throw ValidationException::withMessages([
+                'productForm.filter_value_ids' => __('Select active Product Filter values or retain the existing saved selections.'),
+            ]);
+        }
+
+        $product->filterValues()->sync($ids);
+        app(RecordAuditEvent::class)->execute(
+            category: 'master_data',
+            event: 'update_product_filters',
+            source: $product,
+            before: ['filter_value_ids' => $savedIds],
+            after: ['filter_value_ids' => $ids],
+        );
     }
 
     private function syncFamilyDescriptions(Product $family): void

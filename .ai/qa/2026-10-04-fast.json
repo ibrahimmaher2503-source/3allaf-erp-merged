@@ -1,0 +1,66 @@
+{
+  "elapsed_seconds": 15,
+  "mode": "fast",
+  "status": "PASS",
+  "generated_at": "2026-10-04T11:21:10.047220+00:00",
+  "checks": [
+    {
+      "name": "tool self-check",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; PASS Node 20.20.2 PASS browser executable available PASS required gate tools and assets are available "
+    },
+    {
+      "name": "CodeGraph current-root/index",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-fast.json; "
+    },
+    {
+      "name": "PHP syntax changed/relevant files",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; PASS PHP syntax checked 12 changed/critical files. "
+    },
+    {
+      "name": "Larastan/PHPStan controlled baseline",
+      "status": "PASS",
+      "seconds": "3",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; {\"tool\":\"phpstan\",\"result\":\"passed\",\"errors\":0} "
+    },
+    {
+      "name": "focused critical regression suite",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-fast.json; 14 tests / 79 assertions: original 7 successes preserved; failed quantity case fixed; 6 new boundary tests passed. See continuation logs."
+    },
+    {
+      "name": "isolated MariaDB integrity scanner",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-fast.json; Original identity/filter successes plus resumed cost create/edit, stale/immutable/denied writes and actual invariant scanner passed in qa_rajh_20261004110243_20992; migrations preserved."
+    },
+    {
+      "name": "queue/scheduler/runtime configuration",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-fast.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-fast.json; Actual schedule:list, about and isolated queue/cache/session/mysql checks passed; no production configuration used."
+    },
+    {
+      "name": "compact browser smoke",
+      "status": "PASS",
+      "seconds": "14",
+      "detail": "Disposable database (before creation): qa_rajh_20261004110243_20992; socket /tmp/rajeh-qa-mariadb.voHpmS/mariadb.sock; networking disabled PASS browser 10 assertions: Guest login/logout, allow/deny, forms, English/Arabic, desktop/mobile, console and overflow. Preserved QA runtime: /tmp/rajeh-qa-mariadb.voHpmS; DB qa_rajh_20261004110243_20992 "
+    }
+  ],
+  "counts": {
+    "PASS": 8,
+    "PASS WITH WARNINGS": 0,
+    "FAIL": 0,
+    "SKIPPED": 0
+  },
+  "application_tree": "7bb73f1a1f98a13e38bc8f478dc37110bbdaea1c0bc7a3b0afcbabf9a71113c6",
+  "source_baseline": "1ab5ab534ea76d60b2da2e732fcb6992b3fd7985",
+  "duration_note": "Elapsed time is the final resumed invocation; completed sections retain their evidence and were not rerun.",
+  "continuation_gate_seconds": 22
+}

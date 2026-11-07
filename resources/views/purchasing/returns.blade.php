@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\ApprovePurchaseReturnAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseReturnAction;
@@ -36,6 +39,14 @@ new #[Title('Supplier Returns')] class extends Component
 
     public ?int $selectedInvoiceId = null;
 
+    public ?int $selectedStoreId = null;
+
+    public string $createKey = '';
+
+    public string $returnNotes = '';
+
+    public bool $isCreatePage = false;
+
     public ?int $selectedSupplierId = null;
 
     public string $returnProductEntry = '';
@@ -65,7 +76,9 @@ new #[Title('Supplier Returns')] class extends Component
 
     public function mount(): void
     {
-        Gate::authorize('purchase_returns.view');
+        $this->isCreatePage = request()->routeIs('purchasing.returns.create');
+        Gate::authorize($this->isCreatePage ? 'purchase_returns.create' : 'purchase_returns.view');
+        $this->createKey = (string) \Illuminate\Support\Str::uuid();
     }
 
     public function updatingSearch(): void
@@ -92,6 +105,9 @@ new #[Title('Supplier Returns')] class extends Component
         $this->selectedReasonId = null;
         $this->returnLines = [];
         $this->showFormModal = true;
+        if (! SupplierReturnReason::query()->active()->exists()) {
+            Flux::toast(__('No active supplier return reasons are configured yet.'), variant: 'warning');
+        }
     }
 
     public function editDraft(int $id): void
@@ -107,9 +123,11 @@ new #[Title('Supplier Returns')] class extends Component
         $this->selectedReturnId = $return->id;
         $this->selectedInvoiceId = $return->purchase_invoice_id;
         $this->selectedSupplierId = $return->supplier_id;
+        $this->selectedStoreId = $return->store_id;
         $this->confirmedSupplierId = (string) $return->supplier_id;
         $this->selectedReasonId = $return->reason_id;
-        $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => str_starts_with(app()->getLocale(), 'ar') ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id)])->values()->all();
+        $this->returnNotes = (string) $return->notes;
+        $this->returnLines = $return->lines->map(fn ($line): array => ['product_id' => (string) $line->product_id, 'purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => str_starts_with(app()->getLocale(), 'ar') ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id)])->values()->all();
         $this->showFormModal = true;
     }
 
@@ -162,14 +180,62 @@ new #[Title('Supplier Returns')] class extends Component
             ->where('status', 'approved')
             ->where('supplier_id', $this->selectedSupplierId)
             ->findOrFail($invoiceId);
+        $this->selectedStoreId = $invoice->store_id;
         $this->returnProductEntry = '';
         $this->dispatch('purchasing-product-focus');
+    }
+
+    public function updatedSelectedStoreId(): void
+    {
+        $this->returnLines = [];
     }
 
     public function selectReturnProduct(int $productId): void
     {
         $actor = Auth::user();
-        abort_unless($actor instanceof User && $this->selectedInvoiceId !== null && $this->selectedSupplierId !== null, 422, __('Select a supplier and approved invoice before adding products.'));
+        abort_unless($actor instanceof User, 403);
+        if ($this->selectedInvoiceId === null) {
+            $supplierIds = ProductSupplier::query()->where('product_id', $productId)
+                ->whereIn('supplier_id', Supplier::query()->active()->select('id'))->pluck('supplier_id');
+            if ($supplierIds->isEmpty()) {
+                $this->addError('returnProductEntry', 'لا يوجد مورد نشط مرتبط بهذا الصنف.');
+
+                return;
+            }
+            if ($this->selectedSupplierId === null && $supplierIds->count() !== 1) {
+                $this->addError('selectedSupplierId', 'هذا الصنف مرتبط بأكثر من مورد. اختر المورد أولاً.');
+
+                return;
+            }
+            if ($this->selectedSupplierId === null) {
+                $this->selectedSupplierId = (int) $supplierIds->first();
+                $this->confirmedSupplierId = (string) $this->selectedSupplierId;
+            }
+            if (! $supplierIds->contains($this->selectedSupplierId) || $this->selectedStoreId === null) {
+                $this->addError('returnProductEntry', 'اختر موردًا مرتبطًا بالصنف ومخزن إرجاع نشطًا.');
+
+                return;
+            }
+            $product = Product::query()->findOrFail($productId);
+            $balance = StockBalance::query()->where('store_id', $this->selectedStoreId)->where('product_id', $productId)->first();
+            $available = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);
+            if (bccomp($available, '0', 6) <= 0 || $product->average_cost === null || bccomp((string) $product->average_cost, '0', 4) <= 0) {
+                $this->addError('returnProductEntry', 'لا توجد كمية متاحة أو تكلفة حالية صالحة لهذا الصنف.');
+
+                return;
+            }
+            if (collect($this->returnLines)->contains(fn (array $line): bool => (int) ($line['product_id'] ?? 0) === $productId)) {
+                $this->addError('returnProductEntry', 'الصنف مضاف بالفعل إلى المرتجع.');
+
+                return;
+            }
+            $this->returnLines[] = ['product_id' => (string) $productId, 'purchase_invoice_line_id' => '', 'quantity' => '1', 'unit_cost' => (string) $product->average_cost, 'available' => $available, 'product' => str_starts_with(app()->getLocale(), 'ar') ? ($product->name_ar ?: $product->name_en) : ($product->name_en ?: $product->name_ar)];
+            $this->returnProductEntry = '';
+            $this->dispatch('supplier-return-product-added', focusSearch: true);
+
+            return;
+        }
+        abort_unless($this->selectedSupplierId !== null, 422, __('Select a supplier and approved invoice before adding products.'));
         $invoice = PurchaseInvoice::query()
             ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
             ->where('status', 'approved')
@@ -190,6 +256,7 @@ new #[Title('Supplier Returns')] class extends Component
         }
         $this->returnLines[] = $entry;
         $this->returnProductEntry = '';
+        $this->dispatch('supplier-return-product-added', focusSearch: false);
         $this->dispatch('return-line-focus', index: array_key_last($this->returnLines));
     }
 
@@ -210,7 +277,8 @@ new #[Title('Supplier Returns')] class extends Component
             ->whereHas('purchaseReturn', fn ($query) => $query->whereNotIn('status', ['cancelled', 'rejected', 'reversed']))
             ->sum('quantity');
         $remaining = bcsub((string) $line->quantity_received, (string) $returned, 6);
-        $onHand = (string) (StockBalance::query()->where('store_id', $invoice->store_id)->where('product_id', $line->product_id)->value('on_hand') ?? '0');
+        $balance = StockBalance::query()->where('store_id', $this->selectedStoreId ?? $invoice->store_id)->where('product_id', $line->product_id)->first();
+        $onHand = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);
         $available = bccomp($remaining, $onHand, 6) <= 0 ? $remaining : $onHand;
         if (bccomp($available, '0', 6) <= 0) {
             return null;
@@ -233,17 +301,21 @@ new #[Title('Supplier Returns')] class extends Component
         $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
         $this->validate([
             'selectedInvoiceId' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('purchase_invoices', 'id')->where(
                     fn ($query) => $query->whereIn('store_id', Store::query()->visibleTo($actor)->select('id')),
                 ),
             ],
             'selectedReasonId' => 'required|integer|exists:supplier_return_reasons,id',
+            'selectedSupplierId' => 'required|integer|exists:suppliers,id',
+            'selectedStoreId' => 'required|integer|exists:stores,id',
             'returnLines' => 'required|array|min:1',
-            'returnLines.*.purchase_invoice_line_id' => 'required|integer',
+            'returnLines.*.purchase_invoice_line_id' => $this->selectedInvoiceId === null ? 'nullable' : 'required|integer',
+            'returnLines.*.product_id' => $this->selectedInvoiceId === null ? 'required|integer' : 'nullable',
             'returnLines.*.quantity' => 'required|integer|min:1',
-        ]);
+            'returnNotes' => [Rule::requiredIf(SupplierReturnReason::query()->whereKey($this->selectedReasonId)->first()?->requiresNotes() ?? false), 'nullable', 'string', 'max:500'],
+        ], ['returnNotes.required' => 'يرجى توضيح سبب المرتجع عند اختيار «أخرى».']);
         $existingReturn = $this->selectedReturnId === null
             ? null
             : PurchaseReturn::query()
@@ -252,11 +324,16 @@ new #[Title('Supplier Returns')] class extends Component
 
         try {
             $return = $this->selectedReturnId === null
-                ? $create->execute($this->selectedInvoiceId, $this->selectedReasonId, $this->returnLines)
-                : $update->execute($this->selectedReturnId, $this->selectedReasonId, $this->returnLines, $existingReturn->lock_version);
+                ? ($this->selectedInvoiceId === null
+                    ? $create->executeWithoutInvoice($this->selectedSupplierId, $this->selectedStoreId, $this->selectedReasonId, $this->returnLines, $this->createKey, $this->returnNotes)
+                    : $create->execute($this->selectedInvoiceId, $this->selectedReasonId, $this->returnLines, $this->createKey, $this->returnNotes, $this->selectedStoreId))
+                : $update->execute($this->selectedReturnId, $this->selectedReasonId, $this->returnLines, $existingReturn->lock_version, $this->returnNotes);
             $this->showFormModal = false;
             Flux::toast(__('Supplier return saved as draft.'), variant: 'success');
             $this->dispatch('supplier-return-created', id: $return->id);
+            if ($this->isCreatePage) {
+                $this->redirectRoute('purchasing.returns.show', ['return' => $return->id]);
+            }
         } catch (Throwable $exception) {
             Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
@@ -372,25 +449,18 @@ new #[Title('Supplier Returns')] class extends Component
             ->selectRaw('purchase_invoice_line_id, SUM(quantity) as quantity')
             ->groupBy('purchase_invoice_line_id')
             ->pluck('quantity', 'purchase_invoice_line_id');
-        $balances = StockBalance::query()
-            ->whereIn('store_id', $visibleStoreIds)
-            ->whereIn('product_id', $sourceInvoices->flatMap(fn ($invoice) => $invoice->lines->pluck('product_id'))->unique())
-            ->get()
-            ->keyBy(fn ($balance) => $balance->store_id.':'.$balance->product_id);
-        $sourceInvoices = $sourceInvoices->filter(fn ($invoice): bool => $invoice->lines->contains(function ($line) use ($invoice, $returnedQuantities, $balances): bool {
+        $sourceInvoices = $sourceInvoices->filter(fn ($invoice): bool => $invoice->lines->contains(function ($line) use ($returnedQuantities): bool {
             $remaining = bcsub((string) $line->quantity_received, (string) ($returnedQuantities[$line->id] ?? '0'), 6);
-            $onHand = (string) ($balances[$invoice->store_id.':'.$line->product_id]?->on_hand ?? '0');
-
-            $available = bccomp($remaining, $onHand, 6) <= 0 ? $remaining : $onHand;
-
-            return bccomp($available, '0', 6) > 0;
+            return bccomp($remaining, '0', 6) > 0;
         }))->values();
 
-        return view('purchasing.returns', [
+        return view($this->isCreatePage ? 'purchasing.return-create' : 'purchasing.returns', [
             'returns' => $returns,
             'sourceInvoices' => $sourceInvoices,
             'reasons' => SupplierReturnReason::query()->active()->orderBy('code')->get(),
             'hasReasonCatalog' => SupplierReturnReason::query()->active()->exists(),
+            'suppliers' => Supplier::query()->active()->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']),
+            'returnStores' => Store::query()->visibleTo($actor)->where('status', 'active')->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']),
         ]);
     }
 };
@@ -410,14 +480,12 @@ new #[Title('Supplier Returns')] class extends Component
             <flux:button href="{{ route('purchasing.returns.settings') }}" variant="subtle" icon="adjustments-horizontal">{{ __('Return settings') }}</flux:button>
         @endcan
         @can('purchase_returns.create')
-            <flux:button wire:click="openCreateModal" variant="primary" icon="plus">{{ __('New supplier return') }}</flux:button>
+            <flux:button href="{{ route('purchasing.returns.create') }}" variant="primary" icon="plus">مرتجع مورد جديد</flux:button>
         @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
-    <flux:callout variant="info" icon="information-circle">
-        {{ __('Phase 1 rule: every return line must reference an approved purchase invoice line. No WAC or fallback cost is accepted.') }}
-    </flux:callout>
+    <flux:callout variant="info" icon="information-circle">يمكن إنشاء المرتجع من فاتورة شراء معتمدة أو من أصناف المورد دون فاتورة.</flux:callout>
 
     <flux:card id="supplier-returns-filters" class="scroll-mt-24">
         <div class="flex flex-wrap items-end gap-3">
@@ -455,7 +523,7 @@ new #[Title('Supplier Returns')] class extends Component
                 @forelse ($returns as $return)
                     <flux:table.row :key="$return->id">
                         <flux:table.cell data-primary><a class="font-medium underline" href="{{ route('purchasing.returns.show', $return) }}">{{ $return->return_number ?: '#'.$return->id }}</a></flux:table.cell>
-                        <flux:table.cell data-label="{{ __('Original invoice') }}">{{ $return->purchaseInvoice?->invoice_number ?: '#'.$return->purchase_invoice_id }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Original invoice') }}">{{ $return->purchaseInvoice?->invoice_number ?: 'بدون فاتورة' }}</flux:table.cell>
                         <flux:table.cell data-label="{{ __('Supplier') }}">{{ str_starts_with(app()->getLocale(), 'ar') ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</flux:table.cell>
                         <flux:table.cell data-label="{{ __('Reason') }}">{{ $return->reason?->code ?: __('Unavailable') }}</flux:table.cell>
                         <flux:table.cell data-label="{{ __('Total cost') }}"><x-money :amount="$return->total_amount" currency="EGP" /></flux:table.cell>
@@ -471,7 +539,7 @@ new #[Title('Supplier Returns')] class extends Component
                                 @endcan
                             @elseif ($return->status === 'submitted')
                                 @can('purchase_returns.approve')
-                                    <x-actions.button semantic="approve" :label="__('Approve & post')" wire:click="approveReturn({{ $return->id }})">{{ __('Approve & post') }}</x-actions.button>
+                                    <x-actions.button semantic="approve" :label="__('Approve')" wire:click="approveReturn({{ $return->id }})">{{ __('Approve') }}</x-actions.button>
                                 @endcan
                                 @can('purchase_returns.reject')
                                     <x-actions.button semantic="reject" :label="__('Reject')" wire:click="openTransitionModal({{ $return->id }}, 'reject')">{{ __('Reject') }}</x-actions.button>
@@ -494,7 +562,7 @@ new #[Title('Supplier Returns')] class extends Component
                             <div class="flex flex-col items-center gap-2 py-10 text-center">
                                 <flux:icon name="arrow-uturn-left" class="size-8 text-text-muted" />
                                 <flux:heading size="sm">{{ __('No supplier returns yet.') }}</flux:heading>
-                                <flux:text>{{ __('Create a supplier return from an approved purchase invoice.') }}</flux:text>
+                                <x-context-help :title="__('No supplier returns yet.')" :label="__('Open contextual help')"><p>{{ __('Create a supplier return from an approved purchase invoice.') }}</p></x-context-help>
                             </div>
                         </flux:table.cell>
                     </flux:table.row>
@@ -522,17 +590,8 @@ new #[Title('Supplier Returns')] class extends Component
         <flux:modal wire:model.self="showFormModal" class="md:w-[min(96vw,900px)]">
             <form wire:submit="saveDraft" class="space-y-5" data-product-line-editor>
                 <flux:heading size="lg">{{ __('New supplier return draft') }}</flux:heading>
-                @unless($hasReasonCatalog)
-                    <flux:callout variant="warning" icon="exclamation-triangle">
-                        {{ __('Add at least one active supplier return reason before saving a return.') }}
-                        @can('company_settings.view')
-                            <flux:link href="{{ route('purchasing.returns.settings') }}" wire:navigate>{{ __('Open return settings') }}</flux:link>
-                        @endcan
-                    </flux:callout>
-                @endunless
-                <flux:callout variant="warning" icon="shield-check">
-                    {{ __('The source invoice and line cost are server-authoritative. The cost field below is read-only and cannot be replaced with current WAC.') }}
-                </flux:callout>
+                @unless($hasReasonCatalog)<flux:callout variant="danger" icon="exclamation-triangle">{{ __('No active supplier return reasons are configured yet. Add a reason in Return settings before saving.') }}</flux:callout>@endunless
+                <flux:callout variant="warning" icon="shield-check">{{ $selectedInvoiceId ? 'تكلفة الوحدة من فاتورة الشراء الأصلية.' : 'تكلفة الوحدة محفوظة من بطاقة الصنف عند إنشاء المسودة.' }}</flux:callout>
                 <flux:select wire:model.live="selectedSupplierId" :label="__('Supplier')" :disabled="$selectedReturnId !== null">
                     <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
                     @foreach($sourceInvoices->pluck('supplier')->filter()->unique('id') as $supplier)
@@ -553,20 +612,22 @@ new #[Title('Supplier Returns')] class extends Component
                             <flux:button type="button" size="xs" variant="subtle" icon="plus" onclick="this.closest('[data-product-line-editor]').querySelector('[data-product-search]')?.focus()" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null">{{ __('Add item') }}</flux:button>
                         </div>
                     </div>
-                    <x-product-line-lookup wire:model="returnProductEntry" :label="__('Product')" :purchasing="true" :supplier-id="$selectedSupplierId" :supplier-only="$supplierProductsOnly" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null" x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
-                    @if($selectedSupplierId !== null && $selectedInvoiceId === null)<p class="text-xs text-zinc-500">{{ __('Select an approved invoice before searching its returnable products.') }}</p>@endif
+                    <x-product-line-lookup wire:model="returnProductEntry" :label="__('Product')" :purchasing="true" :supplier-id="$selectedSupplierId" :supplier-only="$supplierProductsOnly" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null" data-supplier-return-search x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
+                    @if($selectedSupplierId !== null && $selectedInvoiceId === null)<x-context-help :title="__('Return product lines')" :label="__('Open contextual help')"><p>{{ __('Select an approved invoice before searching its returnable products.') }}</p></x-context-help>@endif
                 </div>
-                <flux:select wire:model="selectedReasonId" :label="__('Return reason')">
+                <flux:select wire:model.live="selectedReasonId" :label="__('Return reason')">
                     <flux:select.option value="">{{ __('Select required reason') }}</flux:select.option>
                     @foreach ($reasons as $reason)
                         <flux:select.option value="{{ $reason->id }}">{{ $reason->code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? ($reason->label_ar ?: $reason->label_en) : ($reason->label_en ?: $reason->label_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
+                <flux:textarea wire:model="returnNotes" :label="__('Notes')" rows="2" :required="$reasons->firstWhere('id', $selectedReasonId)?->requiresNotes() ?? false" />
+                @error('returnNotes')<p class="text-sm text-rose-700">{{ $message }}</p>@enderror
                 @if ($returnLines !== [])
                     <div class="space-y-3">
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>
                         @foreach ($returnLines as $index => $line)
-                            <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-6" wire:key="return-line-{{ $line['purchase_invoice_line_id'] }}" data-product-line data-product-value="{{ $line['purchase_invoice_line_id'] }}" x-on:return-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())">
+                            <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-6" wire:key="return-line-{{ $line['purchase_invoice_line_id'] ?: ($line['product_id'] ?? $index) }}" data-product-line data-product-value="{{ $line['purchase_invoice_line_id'] ?: ($line['product_id'] ?? $index) }}" x-on:return-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())">
                                 <div class="md:col-span-2">
                                     <flux:label>{{ __('Product') }}</flux:label>
                                     <flux:text class="mt-2 font-medium">{{ $line['product'] }}</flux:text>

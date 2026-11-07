@@ -4,6 +4,7 @@ namespace App\Modules\Platform\Policies;
 
 use App\Models\User;
 use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\Company;
 
 class ApprovalRecordPolicy
 {
@@ -13,7 +14,7 @@ class ApprovalRecordPolicy
             return false;
         }
 
-        return $user->is_super_admin
+        return $user->canBypassApproval()
             || $record->requester_id === $user->id
             || $user->hasPermission('audit_logs.view')
             || ($record->request_permission !== null && $user->hasPermission($record->request_permission))
@@ -23,10 +24,16 @@ class ApprovalRecordPolicy
 
     public function decide(User $user, ApprovalRecord $record): bool
     {
+        $canBypass = match (true) {
+            $record->source_type === 'purchase_invoices' && $record->requested_action === 'approve' => $user->canBypassPurchaseInvoiceApproval(),
+            $record->source_type === 'pos_shifts' && $record->requested_action === 'approve_close' => $user->canBypassShiftCloseApproval(),
+            default => $user->canBypassApproval(),
+        };
+
         return ! $record->approval_state->isTerminal()
-            && ($record->requester_id !== $user->id || $user->canBypassApproval())
+            && ($record->requester_id !== $user->id || $canBypass)
             && $this->hasScope($user, $record)
-            && ($user->is_super_admin || $user->hasPermission($record->decisionPermission()));
+            && ($user->canBypassApproval() || $user->hasPermission($record->decisionPermission()));
     }
 
     public function withdraw(User $user, ApprovalRecord $record): bool
@@ -40,13 +47,27 @@ class ApprovalRecordPolicy
     {
         return ! $record->approval_state->isTerminal()
             && $this->hasScope($user, $record)
-            && ($user->is_super_admin || $user->hasPermission($record->source_type.'.cancel'));
+            && ($user->canBypassApproval() || $user->hasPermission($record->source_type.'.cancel'));
     }
 
     private function hasScope(User $user, ApprovalRecord $record): bool
     {
-        if ($user->is_super_admin) {
-            return true;
+        if ($user->canBypassApproval()) {
+            if ($record->branch_id !== null && ! $user->canAccessBranch((int) $record->branch_id)) {
+                return false;
+            }
+            if ($record->store_id !== null && ! $user->canAccessStore((int) $record->store_id)) {
+                return false;
+            }
+
+            if ($record->branch_id !== null || $record->store_id !== null) {
+                return true;
+            }
+
+            $activeCompanyId = Company::query()->where('status', 'active')->count() === 1
+                ? Company::query()->where('status', 'active')->value('id') : null;
+
+            return $activeCompanyId !== null && $user->canOperateInCompany((int) $activeCompanyId);
         }
 
         if ($record->branch_id === null && $record->store_id === null) {

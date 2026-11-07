@@ -5,16 +5,26 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Models;
 
 use App\Models\User;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Platform\Contracts\ImmutableSourceContract;
+use Database\Factories\CashMovementFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
 final class CashMovement extends Model implements ImmutableSourceContract
 {
+    use HasFactory;
+
+    protected static function newFactory(): Factory
+    {
+        return CashMovementFactory::new();
+    }
+
     public const TYPE_CASH_IN = 'cash_in';
 
     public const TYPE_CASH_OUT = 'cash_out';
@@ -81,10 +91,26 @@ final class CashMovement extends Model implements ImmutableSourceContract
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function sourceType(): string { return self::class; }
-    public function sourceId(): string { return (string) $this->getKey(); }
-    public function sourceState(): string { return 'posted'; }
-    public function sourceVersion(): ?string { return null; }
+    public function sourceType(): string
+    {
+        return self::class;
+    }
+
+    public function sourceId(): string
+    {
+        return (string) $this->getKey();
+    }
+
+    public function sourceState(): string
+    {
+        return 'posted';
+    }
+
+    public function sourceVersion(): ?string
+    {
+        return null;
+    }
+
     public function sourceHash(): ?string
     {
         $attributes = $this->getAttributes();
@@ -93,6 +119,14 @@ final class CashMovement extends Model implements ImmutableSourceContract
 
         return hash('sha256', json_encode($attributes, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
-    public function sourceBranchId(): ?int { return $this->branch_id === null ? null : (int) $this->branch_id; }
-    public function sourceStoreId(): ?int { return $this->store_id === null ? null : (int) $this->store_id; }
+
+    public function sourceBranchId(): ?int
+    {
+        return $this->branch_id === null ? null : (int) $this->branch_id;
+    }
+
+    public function sourceStoreId(): ?int
+    {
+        return $this->store_id === null ? null : (int) $this->store_id;
+    }
 }

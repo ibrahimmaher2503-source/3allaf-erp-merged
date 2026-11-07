@@ -2,7 +2,9 @@
 
 use App\Modules\Catalog\Actions\RemoveProductAction;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Services\ProductDependencyService;
+use App\Modules\Platform\Models\AuditLog;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -38,11 +40,27 @@ new #[Title('Product Details')] class extends Component {
     {
         $this->product->loadMissing(['category', 'brand', 'barcodes', 'images.attachment', 'productSuppliers.supplier']);
         $canRemove = Gate::allows('products_categories_brands.logical_delete');
+        $supplierHistory = collect();
+        if (Gate::allows('audit_logs.view')) {
+            $supplierHistory = AuditLog::query()
+                ->where('source_type', ProductSupplier::class)
+                ->whereIn('source_id', $this->product->productSuppliers->pluck('id'))
+                ->whereIn('event', ['change_product_supplier_preference', 'update_product_supplier', 'create_product_supplier'])
+                ->latest('id')
+                ->limit(20)
+                ->get();
+        }
+        $supplierNames = $this->product->productSuppliers->mapWithKeys(fn (ProductSupplier $relation): array => [
+            (int) $relation->supplier_id => \App\Support\HumanName::name($relation->supplier, fallback: $relation->supplier?->code ?: '#'.$relation->supplier_id),
+        ]);
+
         return view('catalog.product-detail', [
             'canEdit' => Gate::allows('products_categories_brands.edit'),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
             'canRemove' => $canRemove,
             'removalReport' => $canRemove ? app(ProductDependencyService::class)->inspect($this->product) : null,
+            'supplierHistory' => $supplierHistory,
+            'supplierNames' => $supplierNames,
         ]);
     }
 }; ?>
@@ -74,15 +92,19 @@ new #[Title('Product Details')] class extends Component {
                     </div>
                     <div class="space-y-5 p-5 sm:p-7">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="catalog-code-chip">{{ $product->item_code }}</span>
-                            <flux:badge size="sm" color="{{ $product->status === 'active' ? 'emerald' : 'zinc' }}">{{ __($product->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
+                            <span class="catalog-code-chip">{{ $product->item_code ?: __('Pending code') }}</span>
+                            @if (! $product->item_code)
+                                <span class="text-xs text-amber-700">{{ __('Complete the supplier and required product details to generate an item code.') }}</span>
+                            @endif
+                            <flux:badge size="sm" color="{{ $product->status === 'active' ? 'emerald' : ($product->status === 'draft' ? 'amber' : 'zinc') }}">{{ __(ucfirst($product->status)) }}</flux:badge>
                             <flux:badge size="sm" color="sky">{{ __(ucfirst($product->product_type)) }}</flux:badge>
                         </div>
                         <div>
-                            <flux:heading size="xl">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_ar : $product->name_en }}</flux:heading>
+                            <flux:heading size="xl">{{ \App\Support\HumanName::name($product) }}</flux:heading>
                             <flux:text class="mt-2 text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_en : $product->name_ar }}</flux:text>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
+                            <div><div class="catalog-detail-label">{{ __('Base consumer selling price') }}</div><div class="font-medium">@if ($product->sale_price !== null)<x-money :amount="$product->sale_price" currency="EGP" />@else {{ __('Pricing pending') }} @endif</div></div>
                             <div><div class="catalog-detail-label">{{ __('Category') }}</div><div class="font-medium">{{ $product->category?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category?->name_ar : $product->category?->name_en }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Brand') }}</div><div class="font-medium">{{ $product->brand ? $product->brand->code.' · '.(str_starts_with(app()->getLocale(), 'ar') ? $product->brand->name_ar : $product->brand->name_en) : __('No brand') }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Model / item number') }}</div><div class="font-medium">{{ $product->model_number ?: __('Not provided') }}</div></div>
@@ -130,13 +152,31 @@ new #[Title('Product Details')] class extends Component {
                                 @endif
                             </div>
                             <div class="text-xs text-text-muted text-end">
-                                <div>{{ __('Last Price') }}: {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '—' }}</div>
+                                <div>{{ __('Last Price') }}: @if ($ps->last_purchase_price !== null)<x-money :amount="$ps->last_purchase_price" />@else — @endif</div>
                             </div>
                         </div>
                     @empty
                         <x-state.empty :title="__('No supplier linked')" :description="__('Supplier preferences and product history can be managed from the Suppliers menu.')" icon="truck"><x-slot:action><flux:button href="{{ route('catalog.suppliers') }}" variant="subtle" icon="arrow-top-right-on-square">{{ __('Open supplier masters') }}</flux:button></x-slot:action></x-state.empty>
                     @endforelse
                 </div>
+                @can('audit_logs.view')
+                    <div class="border-t border-border pt-4" data-supplier-preference-history>
+                        <flux:heading size="sm">{{ __('Supplier preference history') }}</flux:heading>
+                        <div class="mt-3 space-y-2">
+                            @forelse ($supplierHistory as $history)
+                                <div class="rounded-lg border border-border px-3 py-2 text-xs">
+                                    <div class="flex flex-wrap justify-between gap-2">
+                                        <span class="font-medium">{{ __($history->event === 'change_product_supplier_preference' ? 'Preferred supplier changed' : 'Supplier link updated') }}</span>
+                                        <span class="text-text-muted">{{ $history->created_at?->format('Y-m-d H:i') }} · {{ $history->actor_name ?: __('System') }}</span>
+                                    </div>
+                                    <div class="mt-1 text-text-muted">{{ __('Before') }}: {{ $supplierNames[(int) ($history->before_values['supplier_id'] ?? 0)] ?? __('None') }} / {{ ($history->before_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }} · {{ __('After') }}: {{ $supplierNames[(int) ($history->after_values['supplier_id'] ?? 0)] ?? __('None') }} / {{ ($history->after_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }}</div>
+                                </div>
+                            @empty
+                                <p class="text-xs text-text-muted">{{ __('No supplier preference changes recorded yet.') }}</p>
+                            @endforelse
+                        </div>
+                    </div>
+                @endcan
             </flux:card>
         </div>
 
@@ -162,7 +202,7 @@ new #[Title('Product Details')] class extends Component {
             </flux:card>
 
             @if ($canViewCost)
-                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost price') }}</flux:heading><flux:text>{{ $product->average_cost ?? __('Not provided') }}</flux:text></flux:card>
+                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost price') }}</flux:heading><flux:text>@if ($product->average_cost !== null)<x-money :amount="$product->average_cost" />@else {{ __('Not provided') }} @endif</flux:text></flux:card>
             @else
                 <flux:callout variant="info" icon="lock-closed" title="{{ __('Cost field protected') }}">{{ __('Cost information is restricted to authorized purchasing and finance users.') }}</flux:callout>
             @endif
@@ -193,7 +233,7 @@ new #[Title('Product Details')] class extends Component {
                 </flux:card>
             @endif
 
-            <flux:callout variant="success" icon="shield-check" title="{{ __('Audit and scope protected') }}">{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</flux:callout>
+            <x-context-help :title="__('Audit and scope protected')" :label="__('Open contextual help')"><p>{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</p></x-context-help>
         </aside>
     </div>
 </x-app.page>

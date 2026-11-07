@@ -1,0 +1,23 @@
+# Existing numeric-string inference debt, captured 2026-10-04; exact messages/files/counts.
+parameters:
+    ignoreErrors:
+        -
+            rawMessage: "Parameter #1 $num1 of function bcadd expects numeric-string, non-empty-string given."
+            count: 1
+            path: app/Modules/Catalog/Support/ProductPricingContract.php
+        -
+            rawMessage: "Parameter #1 $num1 of function bcadd expects numeric-string, non-empty-string given."
+            count: 3
+            path: app/Modules/Retail/Support/DecimalMoney.php
+        -
+            rawMessage: "Parameter #2 $num2 of function bcadd expects numeric-string, literal-string&non-falsy-string given."
+            count: 1
+            path: app/Modules/Retail/Support/DecimalMoney.php
+        -
+            rawMessage: "Method App\\Modules\\Retail\\Support\\DecimalMoney::round() should return numeric-string but returns non-falsy-string."
+            count: 1
+            path: app/Modules/Retail/Support/DecimalMoney.php
+        -
+            rawMessage: "Parameter #1 $num1 of function bccomp expects numeric-string, string given."
+            count: 6
+            path: app/Support/ProductQuantity.php

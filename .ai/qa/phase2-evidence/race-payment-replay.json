@@ -1,0 +1,43 @@
+{
+    "signature": "833fdcffe9d8567a13cc3d8227f1945aa970ade59d2fb78057b00ec9877832a1",
+    "workers": 2,
+    "independent_connections": [
+        16,
+        17
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 16,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `sales` where `sales`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 17,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `sales` where `sales`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 2
+        },
+        {
+            "status": "success",
+            "id": 2
+        }
+    ]
+}

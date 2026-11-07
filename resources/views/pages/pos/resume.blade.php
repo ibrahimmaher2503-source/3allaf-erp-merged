@@ -6,9 +6,9 @@
 
     <div class="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div class="flex items-center gap-2">
                 <flux:heading size="xl">{{ __('Complete suspended sale') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Review the saved items, take payment, and complete the sale.') }}</flux:text>
+                <x-context-help :title="__('Complete suspended sale')" :label="__('Open contextual help')"><p>{{ __('Review the saved items, take payment, and complete the sale.') }}</p></x-context-help>
             </div>
             <flux:button href="{{ route('pos.suspended') }}" variant="subtle" icon="arrow-left">{{ __('Back to suspended sales') }}</flux:button>
         </div>
@@ -25,7 +25,7 @@
             <section class="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="border-b border-zinc-200 p-4 dark:border-zinc-800">
                     <div class="flex flex-wrap items-center justify-between gap-2"><flux:heading size="lg">{{ __('Saved items') }}</flux:heading><flux:badge color="emerald">{{ __('Ready for payment') }}</flux:badge></div>
-                    <flux:text class="mt-1 text-sm">{{ __('Active drawer') }}: {{ $preview['shift']->cashDrawer?->code }} · {{ __('Prices and stock are checked again when you complete payment.') }}</flux:text>
+                    <div class="mt-1 flex items-center gap-2 text-sm"><span>{{ __('Active drawer') }}: {{ $preview['shift']->cashDrawer?->code }}</span><x-context-help :title="__('Complete suspended sale')" :label="__('Open contextual help')"><p>{{ __('Prices and stock are checked again when you complete payment.') }}</p></x-context-help></div>
                 </div>
                 <div class="space-y-2 p-3" role="region" aria-label="{{ __('Saved suspended-sale items') }}">
                     @foreach ($preview['lines'] as $index => $line)
@@ -47,8 +47,11 @@
                     <div class="flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold dark:border-zinc-700"><dt>{{ __('Invoice total') }}</dt><dd>{{ $preview['totals']['total'] }} {{ $currency }}</dd></div>
                 </dl>
 
-                @if ($cashDenomination === null)
+                @if ($cashRoundingConfigurationError)
                     <flux:callout class="mt-3" variant="warning" icon="exclamation-triangle">{{ $cashRoundingConfigurationError }}</flux:callout>
+                    @can('company_settings.view')
+                        <flux:button class="mt-2" href="{{ route('pos.financial-readiness') }}" size="sm">{{ __('POS Financial Controls') }}</flux:button>
+                    @endcan
                 @endif
 
                 <form method="POST" action="{{ route('pos.suspended.finalize', $sale) }}" enctype="multipart/form-data" class="mt-4 grid gap-4">
@@ -75,7 +78,7 @@
                     @if ($cashMethod)
                         <fieldset class="grid gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
                             <legend class="px-1 text-sm font-semibold">{{ __('Cash residual') }}</legend>
-                            <flux:checkbox name="payments[0][method_id]" value="{{ $cashMethod->id }}" :label="__('Use cash for the remaining residual')" :disabled="$cashDenomination === null" />
+                            <flux:checkbox name="payments[0][method_id]" value="{{ $cashMethod->id }}" :label="__('Use cash for the remaining residual')" :disabled="$cashRoundingConfigurationError !== null" />
                             <input type="hidden" name="payments[0][amount]" value="0">
                             <flux:input name="payments[0][tendered]" type="number" min="0" step="0.01" :label="__('Cash tendered')" />
                         </fieldset>

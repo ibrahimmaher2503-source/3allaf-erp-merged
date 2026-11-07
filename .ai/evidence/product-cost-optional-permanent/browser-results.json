@@ -1,0 +1,32 @@
+[
+  {
+    "scenario": "A",
+    "path": "/catalog/products/1/edit",
+    "result": "PASS"
+  },
+  {
+    "scenario": "B",
+    "path": "/catalog/products/7/edit",
+    "result": "PASS"
+  },
+  {
+    "scenario": "D",
+    "path": "/catalog/products/3/edit",
+    "result": "PASS"
+  },
+  {
+    "scenario": "C",
+    "path": "/catalog/products/8/edit",
+    "result": "PASS"
+  },
+  {
+    "scenario": "E",
+    "path": "/catalog/products/4/edit",
+    "result": "PASS"
+  },
+  {
+    "scenario": "E-create",
+    "path": "/catalog/products/9/edit",
+    "result": "PASS"
+  }
+]

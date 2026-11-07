@@ -14,9 +14,11 @@
             {{ $title ?? __('No records found') }}
         </flux:heading>
 
-        <flux:text class="text-sm leading-6 text-text-muted">
-            {{ $description ?? __('No records match the current filters.') }}
-        </flux:text>
+        @if ($description)
+            <x-context-help :title="$title ?? __('No records found')" :label="__('Open contextual help')">
+                <p>{{ $description }}</p>
+            </x-context-help>
+        @endif
     </div>
 
     @if (isset($action))

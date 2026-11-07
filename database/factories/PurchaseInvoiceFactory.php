@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /** @extends Factory<PurchaseInvoice> */
-final class PurchaseInvoiceFactory extends Factory
+class PurchaseInvoiceFactory extends Factory
 {
     protected $model = PurchaseInvoice::class;
 
@@ -23,6 +23,7 @@ final class PurchaseInvoiceFactory extends Factory
 
                 return StoreFactory::new()->warehouse()->create(['branch_id' => $branch->id, 'company_id' => $branch->company_id])->id;
             },
+            'supplier_reference' => 'QA-REF-'.$this->faker->unique()->numerify('######'),
             'invoice_date' => today(),
             'currency_code' => 'EGP',
             'status' => 'draft',
@@ -31,6 +32,7 @@ final class PurchaseInvoiceFactory extends Factory
             'discount_amount' => '0.0000',
             'total_amount' => '1000.0000',
             'idempotency_key' => (string) Str::uuid(),
+            'notes' => $this->faker->sentence(),
             'lock_version' => 1,
         ];
     }

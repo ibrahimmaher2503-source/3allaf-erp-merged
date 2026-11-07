@@ -1,0 +1,20 @@
+{
+    "result": "PASS",
+    "release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-cost-optional-1d27f7b",
+    "identity": {
+        "commit": "1d27f7b33b1536c10ddc7083a5eac452ce1b9c06",
+        "tree": "85131b3960686cdbb5357f1c68dd03631b6ef679",
+        "version": "0.1.22-cost-optional"
+    },
+    "version": "0.1.22-cost-optional",
+    "maintenance": "OFF",
+    "failed_jobs": 0,
+    "queued_jobs": 0,
+    "schedules_registered": true,
+    "persisted_product_costs_read": 5,
+    "product_save_and_approval_mutations": "Verified isolated hotfix A-F and browser readback; no production business mutation",
+    "financial_runtime_hashes": {
+        "pos": "34475628da58e9713c8ab13269d09f5149d3156f658da8a17aebc302f2a612f6",
+        "product": "a80b1335a1fa6df59a228efb2c7442578ef2d1e0c891bc7177e7ff490fbe5ee2"
+    }
+}

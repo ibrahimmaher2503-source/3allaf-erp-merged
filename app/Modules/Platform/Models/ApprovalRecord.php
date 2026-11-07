@@ -103,7 +103,26 @@ class ApprovalRecord extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->canBypassApproval()) {
+            $branchIds = Branch::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id');
+            $storeIds = Store::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id');
+
+            $activeCompanyId = Company::query()->where('status', 'active')->count() === 1
+                ? Company::query()->where('status', 'active')->value('id') : null;
+
+            return $query->where(function (Builder $visible) use ($user, $branchIds, $storeIds, $activeCompanyId): void {
+                $visible->where(function (Builder $scoped) use ($branchIds, $storeIds): void {
+                    $scoped->where(fn (Builder $branch): Builder => $branch->whereNull('branch_id')->orWhereIn('branch_id', $branchIds))
+                        ->where(fn (Builder $store): Builder => $store->whereNull('store_id')->orWhereIn('store_id', $storeIds))
+                        ->where(fn (Builder $location): Builder => $location->whereNotNull('branch_id')->orWhereNotNull('store_id'));
+                });
+                if ($activeCompanyId !== null && $user->canOperateInCompany((int) $activeCompanyId)) {
+                    $visible->orWhere(fn (Builder $global): Builder => $global->whereNull('branch_id')->whereNull('store_id'));
+                }
+            });
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 
@@ -113,7 +132,7 @@ class ApprovalRecord extends Model
         return $query->where(function (Builder $scope) use ($user, $branchIds, $storeIds): void {
             $scope->where('requester_id', $user->id)
                 ->orWhere(function (Builder $scoped) use ($branchIds, $storeIds): void {
-                $scoped->whereIn('branch_id', $branchIds)
+                    $scoped->whereIn('branch_id', $branchIds)
                         ->orWhereIn('store_id', $storeIds);
                 });
 

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Actions;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -16,7 +18,7 @@ final class UpdateStockTransferDraftAction
 {
     public function __construct(private readonly AssertInventoryStoreScope $scope) {}
 
-    /** @param array<int, array{product_id: int, quantity_requested: string}> $lines */
+    /** @param array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}> $lines */
     public function execute(
         int $id,
         int $sourceStoreId,
@@ -25,14 +27,29 @@ final class UpdateStockTransferDraftAction
         ?string $reasonCode = null,
         ?string $notes = null,
         ?int $expectedVersion = null,
+        ?string $invoiceReference = null,
     ): StockTransfer {
         Gate::authorize('transfers.edit');
 
-        return DB::transaction(function () use ($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion): StockTransfer {
+        return $this->save($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference, false);
+    }
+
+    /** @param array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}> $lines */
+    public function saveReviewed(int $id, int $sourceStoreId, int $destinationStoreId, array $lines, ?string $reasonCode, ?string $notes, int $expectedVersion, ?string $invoiceReference): StockTransfer
+    {
+        Gate::authorize('transfers.approve');
+
+        return $this->save($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference, true);
+    }
+
+    /** @param array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}> $lines */
+    private function save(int $id, int $sourceStoreId, int $destinationStoreId, array $lines, ?string $reasonCode, ?string $notes, ?int $expectedVersion, ?string $invoiceReference, bool $reviewed): StockTransfer
+    {
+        return DB::transaction(function () use ($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference, $reviewed): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer);
-            if ($transfer->status !== 'draft') {
-                throw new InvalidArgumentException(__('Only draft transfers can be edited.'));
+            if ($transfer->status !== ($reviewed ? 'submitted' : 'draft')) {
+                throw new InvalidArgumentException($reviewed ? __('Only submitted transfers can be approved.') : __('Only draft transfers can be edited.'));
             }
             if ($expectedVersion !== null && (int) $transfer->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This transfer changed in another session. Please reload before saving.'));
@@ -42,24 +59,46 @@ final class UpdateStockTransferDraftAction
             }
             $this->scope->execute($sourceStoreId);
             $this->scope->execute($destinationStoreId);
-            app(AssertNoOpenStockCountTransfer::class)->execute($sourceStoreId, $destinationStoreId);
-            $normalized = $this->normalizeLines($lines);
+            $source = Store::query()->findOrFail($sourceStoreId);
+            $destination = Store::query()->findOrFail($destinationStoreId);
+            $originalSourceBranchId = Store::query()->whereKey($transfer->source_store_id)->value('branch_id');
+            if ((string) ($source->branch_id ?? '') !== (string) ($originalSourceBranchId ?? '')) {
+                throw new InvalidArgumentException(__('A numbered transfer cannot move to another source branch. Create a new transfer instead.'));
+            }
+            if ($source->status !== 'active' || $destination->status !== 'active') {
+                throw new InvalidArgumentException(__('The selected store is inactive.'));
+            }
+            $sourceBranchCompanyId = $source->branch_id === null ? $source->company_id : $source->branch()->value('company_id');
+            if ($source->company_id === null
+                || $destination->company_id === null
+                || $sourceBranchCompanyId === null
+                || (int) $source->company_id !== (int) $sourceBranchCompanyId
+                || (int) $source->company_id !== (int) $destination->company_id) {
+                throw new InvalidArgumentException(__('Source and destination stores must belong to the same company.'));
+            }
+            $normalized = $this->normalizeLines($lines, $sourceStoreId);
             $before = $transfer->only(['source_store_id', 'destination_store_id', 'reason_code', 'notes', 'status', 'lock_version']);
             $transfer->mutateApprovedDocument([
                 'source_store_id' => $sourceStoreId,
                 'destination_store_id' => $destinationStoreId,
                 'reason_code' => $this->nullableTrimmed($reasonCode),
                 'notes' => $this->nullableTrimmed($notes),
-                'requested_by' => Auth::id(),
+                'invoice_reference' => $this->nullableTrimmed($invoiceReference),
+                'requested_by' => $reviewed ? $transfer->requested_by : Auth::id(),
                 'lock_version' => $transfer->lock_version + 1,
             ]);
             $transfer->lines()->delete();
             foreach ($normalized as $line) {
-                $transfer->lines()->create($line);
+                $allocations = $line['allocations'] ?? [];
+                unset($line['allocations']);
+                $savedLine = $transfer->lines()->create($line);
+                foreach ($allocations as $destinationId => $quantity) {
+                    $savedLine->allocations()->create(['destination_store_id' => (int) $destinationId, 'quantity' => $quantity]);
+                }
             }
             app(RecordAuditEvent::class)->execute(
                 category: 'inventory',
-                event: 'update_stock_transfer_draft',
+                event: $reviewed ? 'update_stock_transfer_review' : 'update_stock_transfer_draft',
                 source: $transfer,
                 before: $before,
                 after: $transfer->fresh('lines')->only(['transfer_number', 'source_store_id', 'destination_store_id', 'status', 'reason_code', 'notes', 'lock_version']),
@@ -73,11 +112,12 @@ final class UpdateStockTransferDraftAction
     }
 
     /** @param array<int, array{product_id: int, quantity_requested: string}> $lines @return array<int, array<string, mixed>> */
-    private function normalizeLines(array $lines): array
+    private function normalizeLines(array $lines, int $sourceStoreId): array
     {
         if ($lines === []) {
             throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
         }
+        $sourceCompanyId = Store::query()->whereKey($sourceStoreId)->value('company_id');
         $normalized = [];
         foreach ($lines as $line) {
             $product = Product::query()->sellable()->find((int) ($line['product_id'] ?? 0));
@@ -95,7 +135,34 @@ final class UpdateStockTransferDraftAction
             if (isset($normalized[$product->id])) {
                 throw new InvalidArgumentException(__('A transfer cannot contain the same product more than once.'));
             }
-            $normalized[$product->id] = ['product_id' => $product->id, 'quantity_requested' => $quantity, 'unit_cost' => bcadd((string) ($product->average_cost ?? '0'), '0', 4)];
+            $balance = StockBalance::query()->where('product_id', $product->id)->where('store_id', $sourceStoreId)->lockForUpdate()->first();
+            $allocations = [];
+            foreach ((array) ($line['allocations'] ?? []) as $destinationId => $allocated) {
+                $destinationId = (int) $destinationId;
+                if ($destinationId <= 0 || $destinationId === $sourceStoreId) {
+                    throw new InvalidArgumentException(__('Every destination must be different from the source store.'));
+                }
+                $amount = bcadd((string) $allocated, '0', 6);
+                if (bccomp($amount, '0', 6) < 0) {
+                    throw new InvalidArgumentException(__('Destination quantities cannot be negative.'));
+                }
+                if (bccomp($amount, '0', 6) > 0) {
+                    $this->scope->execute($destinationId);
+                    if (! Store::query()->whereKey($destinationId)->where('status', 'active')->where('company_id', $sourceCompanyId)->exists()) {
+                        throw new InvalidArgumentException(__('Select an active destination within your company and store scope.'));
+                    }
+                    $allocations[$destinationId] = $amount;
+                }
+            }
+            $allocatedTotal = array_reduce($allocations, fn (string $total, string $amount): string => bcadd($total, $amount, 6), '0');
+            if (bccomp($allocatedTotal, $quantity, 6) > 0) {
+                throw new InvalidArgumentException(__('The distributed quantity cannot exceed the available source quantity.'));
+            }
+            $available = bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6);
+            if (bccomp($allocatedTotal, $available, 6) > 0) {
+                throw new InvalidArgumentException(__('The distributed quantity cannot exceed the available source quantity.'));
+            }
+            $normalized[$product->id] = ['product_id' => $product->id, 'quantity_requested' => $quantity, 'unit_cost' => bcadd((string) ($balance?->average_cost ?? '0'), '0', 4), 'allocations' => $allocations];
         }
 
         return array_values($normalized);

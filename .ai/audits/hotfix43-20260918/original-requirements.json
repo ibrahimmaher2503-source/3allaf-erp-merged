@@ -1,0 +1,294 @@
+[
+  {
+    "id": 1,
+    "text": "Remove long instructional/explanatory paragraphs and header description blocks from operational screens."
+  },
+  {
+    "id": 2,
+    "text": "Move useful explanations into the existing accessible contextual-help “!” control."
+  },
+  {
+    "id": 3,
+    "text": "Make page/help titles clickable where appropriate and apply the same pattern consistently."
+  },
+  {
+    "id": 4,
+    "text": "Preserve essential validation messages, warnings, statuses, audit information, and legal/accounting notices. Do not hide information required to complete or approve a transaction."
+  },
+  {
+    "id": 5,
+    "text": "Fix the sidebar so its final items remain reachable by scrolling on desktop and mobile, including browser zoom and short viewport heights."
+  },
+  {
+    "id": 6,
+    "text": "Preserve keyboard-first operation, Tab order, Enter actions, focus visibility, RTL, Cairo font, accessibility, permissions, and ar/en/ar-EG."
+  },
+  {
+    "id": 7,
+    "text": "Remove the marked explanatory blocks from Payment Methods and Taxes pages."
+  },
+  {
+    "id": 8,
+    "text": "Provide compact, consistent Add/Edit Payment Method modals."
+  },
+  {
+    "id": 9,
+    "text": "Ensure the product form visibly contains a product-specific tax selector."
+  },
+  {
+    "id": 10,
+    "text": "Product-specific tax overrides the company default; if none is assigned, use the active company default."
+  },
+  {
+    "id": 11,
+    "text": "“Prices include tax” must only control inclusive versus exclusive calculation. Preserve historical invoice tax snapshots and accounting behavior."
+  },
+  {
+    "id": 12,
+    "text": "Keep tax validity dates operational in backend validation but hidden from normal UI."
+  },
+  {
+    "id": 13,
+    "text": "Keep timezone configuration only in General Settings."
+  },
+  {
+    "id": 14,
+    "text": "Preserve independent continuous numbering per company, branch, and document type without annual reset."
+  },
+  {
+    "id": 15,
+    "text": "Generate document references using:\n    branch code + document type code + zero-padded sequence\n    Example: CAI-PO-000001"
+  },
+  {
+    "id": 16,
+    "text": "Show the friendly branch name beside the generated reference in the UI."
+  },
+  {
+    "id": 17,
+    "text": "Do not replace stored immutable references or renumber existing documents."
+  },
+  {
+    "id": 18,
+    "text": "Preserve row-lock and concurrency protection."
+  },
+  {
+    "id": 19,
+    "text": "Keep one clear sidebar destination for the unified Printers and Print Templates screen; remove duplicate navigation entries that open the same page."
+  },
+  {
+    "id": 20,
+    "text": "Cover all 15 supported print document types."
+  },
+  {
+    "id": 21,
+    "text": "Replace the printer/template card layout with a compact accessible table consistent with the purchase-invoice tables."
+  },
+  {
+    "id": 22,
+    "text": "Show assigned printer names and scope instead of only an unexplained assignment count such as “2 printers”."
+  },
+  {
+    "id": 23,
+    "text": "Remove duplicated printer-management sections."
+  },
+  {
+    "id": 24,
+    "text": "Preserve existing printer configurations, template data, scope resolution, permissions, and backend behavior."
+  },
+  {
+    "id": 25,
+    "text": "Remove distributed PDF/XLSX export actions and the large filter block from the Products screen. Exports must remain available through the centralized Reports and Export Center."
+  },
+  {
+    "id": 26,
+    "text": "Keep only the relevant Add Product and Excel Import actions on the product screen."
+  },
+  {
+    "id": 27,
+    "text": "Remove the introductory definition block from the product form and put its useful content in contextual help."
+  },
+  {
+    "id": 28,
+    "text": "Preserve main/subcategory indication and supplier selection."
+  },
+  {
+    "id": 29,
+    "text": "Keep number-spinner controls removed from cost and selling-price fields."
+  },
+  {
+    "id": 30,
+    "text": "Repair recoverable product drafts completely:\n    - A product saved with incomplete data must persist as Draft.\n    - It must appear in the product list with a clear Draft badge.\n    - It must provide a visible Resume/Complete Data action.\n    - Existing incomplete products, including records identified as 555 and 666, must be discoverable and resumable if present.\n    - Draft products must be searchable by saved name, code, barcode, model number, and supplier identifier where data exists.\n    - Draft products must not become sellable, purchasable, posted, or active until required validation passes."
+  },
+  {
+    "id": 31,
+    "text": "Keep active-product search separate from draft-management search where transaction safety requires it."
+  },
+  {
+    "id": 32,
+    "text": "Add concise contextual help explaining product cards and branch pricing:\n    branch selling prices come from the price list assigned to that branch, with a clearly shown fallback if configured."
+  },
+  {
+    "id": 33,
+    "text": "Do not alter product codes after creation and do not guess a supplier-based code-generation rule."
+  },
+  {
+    "id": 34,
+    "text": "Repair all downloadable XLSX templates so they open correctly in current Microsoft Excel and contain valid workbook structure, columns, and sample guidance."
+  },
+  {
+    "id": 35,
+    "text": "Check the other system XLSX templates for the same corruption mechanism and repair the shared generator rather than patching one file only."
+  },
+  {
+    "id": 36,
+    "text": "Redesign the opening-inventory workflow as a compact full-page stock-addition document similar to a standard inventory addition voucher:\n    document header, branch/store, reference, date, product-entry grid, quantities, costs where applicable, totals, notes, status, save draft, resume, approve/post, and reversal history."
+  },
+  {
+    "id": 37,
+    "text": "Preserve manual entry, paste code/quantity, and XLSX import."
+  },
+  {
+    "id": 38,
+    "text": "Make pasted rows validate duplicates, unknown products, invalid quantities, and branch/store access before posting."
+  },
+  {
+    "id": 39,
+    "text": "Explain ecommerce product assignment and “Start without opening stock” through contextual help."
+  },
+  {
+    "id": 40,
+    "text": "“Start without opening stock” must safely complete initialization with zero balances and must not create fake stock movements."
+  },
+  {
+    "id": 41,
+    "text": "Preserve immutable posted documents, audited reversal behavior, numbering, permissions, tenant isolation, and transaction safety."
+  },
+  {
+    "id": 42,
+    "text": "Ensure Customers is visible in the sidebar for authorized users and has correct active-state behavior."
+  },
+  {
+    "id": 43,
+    "text": "Remove distributed PDF/XLSX export actions from Customers and Customer Groups; retain exports in the central Reports and Export Center."
+  },
+  {
+    "id": 44,
+    "text": "Change Customer Group add/edit from inline row editing to the same compact modal/full-form convention used elsewhere."
+  },
+  {
+    "id": 45,
+    "text": "Ensure every customer has a company-scoped customer code with safe uniqueness. Reuse existing data/model support if already present; do not duplicate columns or create a competing identifier."
+  },
+  {
+    "id": 46,
+    "text": "Add contextual help explaining loyalty points: earning, redemption, balance, expiry if configured, and audit/history behavior."
+  },
+  {
+    "id": 47,
+    "text": "Do not change existing loyalty calculations without evidence of a defect."
+  },
+  {
+    "id": 48,
+    "text": "Standardize Supplier Group create/edit UI with the rest of the system."
+  },
+  {
+    "id": 49,
+    "text": "Add and display three structured supplier contact sections:\n    - Owner: name, phone, email\n    - Accountant: name, phone, email\n    - Sales representative: name, phone, email"
+  },
+  {
+    "id": 50,
+    "text": "Use the existing Hotfix39 supplier-contact data model where possible. If a schema correction is genuinely required, stop before creating a migration and report the exact minimal schema change."
+  },
+  {
+    "id": 51,
+    "text": "Hide payment terms from all normal supplier-facing screens only. Preserve existing stored values, backend services, historical documents, and compatibility."
+  },
+  {
+    "id": 52,
+    "text": "Keep supplier PDF/XLSX exports only in the centralized Reports and Export Center."
+  },
+  {
+    "id": 53,
+    "text": "Remove camera controls completely from purchase-order product rows and other affected purchase screens."
+  },
+  {
+    "id": 54,
+    "text": "Preserve hardware barcode scanners, typed barcode input, model number, product code, supplier code, SKU/EAN/UPC/alternate identifier, and dynamic product-name search."
+  },
+  {
+    "id": 55,
+    "text": "Product lookup must work dynamically after the first useful characters and support Arrow Up/Down, Enter selection, Escape, Tab progression, mouse click, Livewire navigation, morphing, and dynamically added rows."
+  },
+  {
+    "id": 56,
+    "text": "Selecting a product must populate its identifying data, unit, applicable tax, quantity defaults, and purchase cost."
+  },
+  {
+    "id": 57,
+    "text": "Purchase cost priority:\n    - latest valid cost from the selected supplier;\n    - otherwise latest general cost;\n    - clearly show the source;\n    - preserve authorized manual override and audit behavior."
+  },
+  {
+    "id": 58,
+    "text": "Recalculate line total and document totals immediately when product, quantity, cost, discount, or tax changes. Never leave a valid line total at zero."
+  },
+  {
+    "id": 59,
+    "text": "Display the purchase-order reference generated by the branch/document numbering service."
+  },
+  {
+    "id": 60,
+    "text": "Keep Branch and Receiving Warehouse as separate fields:\n    - Branch identifies the branch creating the order.\n    - Receiving Warehouse identifies the primary receiving location.\n    - Later distribution to other branches/stores must occur through controlled inventory transfer/distribution documents."
+  },
+  {
+    "id": 61,
+    "text": "Reports must allow counting/filtering purchase orders by creating branch."
+  },
+  {
+    "id": 62,
+    "text": "Preserve the lifecycle:\n    Draft → Submitted for Review → Procurement Manager Approved → Ready to Convert."
+  },
+  {
+    "id": 63,
+    "text": "Clearly show the current status, allowed next action, responsible permission/role, approval history, and rejection/return reason."
+  },
+  {
+    "id": 64,
+    "text": "Add clear actions to resume a draft, submit, review, approve, view receiving history, and convert eligible remaining quantities to purchase invoice."
+  },
+  {
+    "id": 65,
+    "text": "Preserve partial receiving and multiple purchase invoices against one purchase order, with remaining-quantity enforcement and idempotent row-locked processing."
+  },
+  {
+    "id": 66,
+    "text": "On purchase-order save, create or refresh the private versioned PDF snapshot as appropriate and provide explicit View and Download actions. Do not force an automatic download."
+  },
+  {
+    "id": 67,
+    "text": "Preserve Arabic, English, and Egyptian Arabic PDF output, Cairo font, RTL, authorization, private storage, immutable snapshots, audit logs, and accounting/inventory integrity."
+  },
+  {
+    "id": 68,
+    "text": "Keep payment terms hidden from the purchase-order UI while preserving backend values and historical data."
+  },
+  {
+    "id": 69,
+    "text": "Keep purchase-order create/edit as a full page, not an oversized modal."
+  },
+  {
+    "id": 70,
+    "text": "Ensure products/barcodes, customers/groups, suppliers/groups, purchase orders by branch, purchase invoices/receiving, opening inventory, and inventory movements are available in the centralized Reports and Export Center."
+  },
+  {
+    "id": 71,
+    "text": "Remove remaining duplicate/distributed export buttons from those operational screens."
+  },
+  {
+    "id": 72,
+    "text": "Preserve company/branch scope, permissions, filter snapshots, formula-injection protection, job deduplication, export history, and CSV/XLSX/PDF support."
+  },
+  {
+    "id": 73,
+    "text": "Confirm /reports works in ar, en, and ar-EG without Stringable translation errors."
+  }
+]

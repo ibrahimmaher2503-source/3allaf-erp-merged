@@ -9,6 +9,7 @@ use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerChild;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,28 +40,69 @@ final class PartyBooking extends Model
     }
 
     /** @return BelongsTo<Customer, $this> */
-    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     /** @return BelongsTo<CustomerChild, $this> */
-    public function child(): BelongsTo { return $this->belongsTo(CustomerChild::class, 'child_id'); }
+    public function child(): BelongsTo
+    {
+        return $this->belongsTo(CustomerChild::class, 'child_id');
+    }
+
     /** @return BelongsTo<Branch, $this> */
-    public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     /** @return BelongsTo<Store, $this> */
-    public function store(): BelongsTo { return $this->belongsTo(Store::class); }
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
     /** @return BelongsTo<User, $this> */
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     /** @return BelongsTo<User, $this> */
-    public function updater(): BelongsTo { return $this->belongsTo(User::class, 'updated_by'); }
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
     /** @return HasMany<PartyInvoice, $this> */
-    public function invoices(): HasMany { return $this->hasMany(PartyInvoice::class); }
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(PartyInvoice::class);
+    }
+
     /** @return HasOne<PartyInvoice, $this> */
-    public function invoice(): HasOne { return $this->hasOne(PartyInvoice::class, 'party_booking_id'); }
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(PartyInvoice::class, 'party_booking_id');
+    }
+
     /** @return HasMany<PartyOperatingOrder, $this> */
-    public function operatingOrders(): HasMany { return $this->hasMany(PartyOperatingOrder::class); }
+    public function operatingOrders(): HasMany
+    {
+        return $this->hasMany(PartyOperatingOrder::class);
+    }
 
     /** @param Builder<PartyBooking> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) return $query;
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
+            return $query;
+        }
 
         return $query->where(function (Builder $scope) use ($user): void {
             $scope->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))
@@ -68,5 +110,8 @@ final class PartyBooking extends Model
         });
     }
 
-    public function isClosed(): bool { return $this->status === 'closed'; }
+    public function isClosed(): bool
+    {
+        return $this->status === 'closed';
+    }
 }

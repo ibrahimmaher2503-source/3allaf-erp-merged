@@ -1,0 +1,22 @@
+{
+  "application_commit": "1d27f7b33b1536c10ddc7083a5eac452ce1b9c06",
+  "tree": "85131b3960686cdbb5357f1c68dd03631b6ef679",
+  "version": "0.1.22-cost-optional",
+  "baseline_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5",
+  "runtime_source_files_verified": 1018,
+  "runtime_changes": [
+    "app/Modules/Catalog/Actions/SaveProductAction.php",
+    "app/Modules/Catalog/Actions/ImportProductCardsWorkbookAction.php",
+    "app/Modules/Catalog/Support/ProductPricingContract.php",
+    "resources/views/catalog/product-form.blade.php",
+    "lang/ar.json",
+    "app/Support/ApplicationVersion.php"
+  ],
+  "file_count": 14415,
+  "archive": "/tmp/rajeh-product-cost-1d27f7b.tar.gz",
+  "manifest": "/tmp/rajeh-product-cost-1d27f7b.manifest.json",
+  "archive_sha256": "153a9908916e6d46c1be9d8ad46116deadfbaec565b1df9314b8a26f828d9f12",
+  "manifest_sha256": "7b7234090ac5a45e441b0bab32234d55c4d08f94dc1789c3b419563e414065f3",
+  "frontend_build": "reused baseline; no source change",
+  "dependencies": "reused authenticated production vendor; no install"
+}

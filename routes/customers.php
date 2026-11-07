@@ -119,7 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('customers.import.approve'), 403);
         abort_unless($batch->status === 'ready_for_review' && $batch->valid_rows > 0, 422);
-        abort_if((int) $batch->created_by === (int) $user->id, 422, __('The requester cannot approve their own import batch.'));
+        abort_if((int) $batch->created_by === (int) $user->id && ! $user->canBypassApproval(), 422, __('The requester cannot approve their own import batch.'));
         $store = Store::query()->visibleTo($user)->where('company_id', $batch->company_id)->where('type', 'selling')->where('status', 'active')->orderBy('id')->firstOrFail();
         DB::transaction(function () use ($batch, $creator, $updater, $user, $store) {
             foreach ($batch->rows()->where('status', 'valid')->lockForUpdate()->get() as $row) {
@@ -153,8 +153,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->get();
         $groups = GroupHierarchy::flatten($allGroups, $term);
         $parentOptions = GroupHierarchy::flatten(CustomerGroup::query()->forCompany((int) $store->company_id)->active()->get());
+        $editingGroup = null;
+        if ($request->string('mode')->value() === 'edit') {
+            abort_unless($user->can('customers.edit'), 403);
+            $editingGroup = CustomerGroup::query()->forCompany((int) $store->company_id)->findOrFail((int) $request->integer('group'));
+            $parentOptions = $parentOptions->reject(fn (CustomerGroup $candidate): bool => $candidate->id === $editingGroup->id);
+        }
+        $showGroupForm = $user->can('customers.edit') && (in_array($request->string('mode')->value(), ['create', 'edit'], true) || $request->session()->getOldInput() !== [] || $request->session()->has('errors'));
 
-        return view('pages.customers.groups', compact('groups', 'parentOptions', 'term', 'store'));
+        return view('pages.customers.groups', compact('groups', 'parentOptions', 'term', 'store', 'editingGroup', 'showGroupForm'));
     })->middleware('can:customers.view')->name('customers.groups.index');
     Route::get('customers/groups/export/{format}', function (Request $request, string $format, MasterDataDocument $documents) use ($sellingStore) {
         abort_unless($request->user()->can('customers.export') && in_array($format, ['xlsx', 'pdf'], true), 403);
@@ -239,7 +246,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $query = Customer::query()->visibleTo($user)->with(['scopes.store', 'scopes.branch', 'group.parent', 'governorate', 'city'])->withCount('consents');
         $term = trim((string) $request->string('q'));
         if ($term !== '') {
-            $digits = preg_replace('/[^0-9]+/', '', $term);
+            $digits = preg_replace('/[^0-9]+/', '', PhoneNormalizer::digits($term));
             $customerCodeId = preg_match('/^CUS-0*(\d+)$/i', $term, $match) ? (int) $match[1] : null;
             $query->where(function ($scope) use ($term, $digits, $customerCodeId): void {
                 $scope->where('name_ar', 'like', '%'.$term.'%')
@@ -283,7 +290,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $term = trim((string) $request->string('q'));
         $query = Customer::query()->visibleTo($user)->with(['group.parent', 'governorate', 'city'])->limit(5000);
         if ($term !== '') {
-            $digits = preg_replace('/[^0-9]+/', '', $term);
+            $digits = preg_replace('/[^0-9]+/', '', PhoneNormalizer::digits($term));
             $query->where(function ($scope) use ($term, $digits): void {
                 $scope->where('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%');
                 if (is_string($digits) && $digits !== '') {
@@ -348,13 +355,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $store = $sellingStore($user);
         try {
-            $customer = $action->execute($user, $store, $validated + [
-                'consents' => [[
-                    'purpose' => 'service_delivery',
-                    'status' => 'granted',
-                    'source' => 'profile_create',
-                ]],
-            ]);
+            $purposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
+            $consents = collect($purposes)->map(fn (string $purpose): array => [
+                'purpose' => $purpose,
+                'status' => 'denied',
+                'source' => 'profile_create',
+            ])->all();
+            $customer = $action->execute($user, $store, $validated + ['consents' => $consents]);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
             $normalizedPhone = PhoneNormalizer::normalize((string) ($validated['phone'] ?? ''));
             $candidate = Customer::query()

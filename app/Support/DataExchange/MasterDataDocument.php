@@ -230,14 +230,18 @@ final class MasterDataDocument
     public function pdf(string $filename, string $title, array $headers, iterable $rows): Response
     {
         $rows = collect($rows)->map(static fn (array $row): array => array_map(static fn (mixed $value): string => (string) $value, $row));
+        $values = array_merge([$title], $headers, $rows->flatten()->all());
+        $arabicValues = array_filter($values, static fn (string $value): bool => preg_match('/\p{Arabic}/u', $value) === 1);
+        $visual = app(ArabicPdfText::class)->visualOrder(array_values($arabicValues));
+        foreach (array_keys($arabicValues) as $index => $position) {
+            $values[$position] = $visual[$index];
+        }
+        $title = array_shift($values);
+        $headers = array_splice($values, 0, count($headers));
+        $rows = collect(array_chunk($values, count($headers)));
         if (str_starts_with(app()->getLocale(), 'ar')) {
-            $values = array_merge([$title], $headers, $rows->flatten()->all());
-            $visual = app(ArabicPdfText::class)->visualOrder($values);
-            $title = array_shift($visual);
-            $headers = array_splice($visual, 0, count($headers));
-            $columnCount = count($headers);
             $headers = array_reverse($headers);
-            $rows = collect(array_chunk($visual, $columnCount))->map(static fn (array $row): array => array_reverse($row));
+            $rows = $rows->map(static fn (array $row): array => array_reverse($row));
         }
 
         $fontCache = storage_path('framework/cache/dompdf');

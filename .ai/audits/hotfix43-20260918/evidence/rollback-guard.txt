@@ -1,0 +1,3 @@
+PASS: php artisan migrate:rollback --step=1 --force exited 1 before schema loss.
+Guard: "Rollback refused: removing company_id would destroy tax-rule tenant ownership."
+After refusal, migrations 000117 and 000118 remained Ran and both required non-null columns plus the restricted tax-settings company foreign key remained present.

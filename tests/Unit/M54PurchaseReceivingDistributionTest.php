@@ -8,11 +8,14 @@ use PHPUnit\Framework\TestCase;
 
 final class M54PurchaseReceivingDistributionTest extends TestCase
 {
-    private function source(string $path): string { return file_get_contents(dirname(__DIR__, 2).'/'.$path); }
+    private function source(string $path): string
+    {
+        return file_get_contents(dirname(__DIR__, 2).'/'.$path);
+    }
 
     public function test_posting_is_locked_transactional_and_idempotent(): void
     {
-        $source=$this->source('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php');
+        $source = $this->source('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php');
         self::assertStringContainsString('DB::transaction', $source);
         self::assertStringContainsString('lockForUpdate()', $source);
         self::assertStringContainsString("where('purchase_invoice_id', \$invoice->id)", $source);
@@ -21,20 +24,20 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         self::assertStringContainsString('PURCHASE-TRANSFER-DISPATCH:', $source);
     }
 
-    public function test_full_distribution_is_mandatory_and_rejects_invalid_allocations(): void
+    public function test_optional_distribution_rejects_excess_allocations(): void
     {
-        $approval=$this->source('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php');
-        $save=$this->source('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php');
-        self::assertStringContainsString('Every purchased unit must be distributed before approval', $approval);
-        self::assertStringContainsString('temporary receiving warehouse must finish with zero', $approval);
+        $approval = $this->source('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php');
+        $save = $this->source('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php');
+        self::assertStringContainsString('Distribution cannot exceed the accepted quantity.', $approval);
+        self::assertStringNotContainsString('temporary receiving warehouse must finish with zero', $approval);
         self::assertStringContainsString('ProductQuantity::normalize', $save);
         self::assertStringContainsString('visibleTo($actor)', $save);
     }
 
     public function test_destination_price_snapshot_uses_list_zero_fallback_and_overrides(): void
     {
-        $save=$this->source('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php');
-        $resolver=$this->source('app/Modules/Pricing/Services/PriceListResolver.php');
+        $save = $this->source('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php');
+        $resolver = $this->source('app/Modules/Pricing/Services/PriceListResolver.php');
         self::assertStringContainsString('resolveWithBasePrice', $save);
         self::assertStringContainsString('ProductPriceOverride::query()', $resolver);
         self::assertStringContainsString("where('list_number', 0)", $resolver);
@@ -43,17 +46,19 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
 
     public function test_least_privilege_permissions_are_registered_and_enforced(): void
     {
-        $seeder=$this->source('database/seeders/ProductionSeeder.php');
-        foreach(['draft','distribute','approve','reverse','view_cost','change_cost','change_list0_price','print_labels'] as $permission) self::assertStringContainsString("'".$permission."'", $seeder);
+        $seeder = $this->source('database/seeders/ProductionSeeder.php');
+        foreach (['draft', 'distribute', 'approve', 'reverse', 'view_cost', 'change_cost', 'change_list0_price', 'print_labels'] as $permission) {
+            self::assertStringContainsString("'".$permission."'", $seeder);
+        }
         self::assertStringContainsString("Gate::authorize('purchase_invoices.distribute')", $this->source('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php'));
         self::assertStringContainsString("Gate::authorize('purchase_invoices.approve')", $this->source('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php'));
     }
 
     public function test_full_page_two_stage_ui_scanning_and_destination_labels_are_present(): void
     {
-        $view=$this->source('resources/views/purchasing/invoices.blade.php');
+        $view = $this->source('resources/views/purchasing/invoices.blade.php');
         self::assertStringContainsString('Stage 1 — Purchase invoice', $view);
-        self::assertStringContainsString('Stage 2 — Mandatory distribution', $view);
+        self::assertStringContainsString('Optional distribution', $view);
         self::assertStringContainsString('addItemEntry', $view);
         self::assertStringContainsString('createQuickProduct', $view);
         self::assertStringContainsString('Base Consumer Price List 0', $view);
@@ -82,13 +87,16 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         $view = $this->source('resources/views/purchasing/invoices.blade.php');
         $routes = $this->source('routes/purchasing.php');
         $layout = $this->source('resources/views/layouts/app/sidebar.blade.php');
+        $labels = $this->source('resources/views/pricing/label-print.blade.php');
 
-        foreach (['Purchase invoices', 'Stage 1 — Purchase invoice', 'Unknown barcode — create Product Card', 'Stage 2 — Mandatory distribution', 'Invoice transition completed.'] as $contract) {
+        foreach (['Purchase invoices', 'Stage 1 — Purchase invoice', 'Unknown barcode — create Product Card', 'Optional distribution', 'Invoice transition completed.'] as $contract) {
             self::assertStringContainsString($contract, $view);
         }
         self::assertStringContainsString("name('purchasing.invoices.destination-labels')", $routes);
-        self::assertStringContainsString("redirect()->route('pricing.labels'", $routes);
-        self::assertStringContainsString('ApplicationNavigation::class', $layout);
+        self::assertStringContainsString("redirect()->route('pricing.labels', ['invoice' => \$invoice->id, 'store' => \$destination->id])", $routes);
+        self::assertStringContainsString('data-canonical-label-renderer', $labels);
+        self::assertStringContainsString("@include('components.platform.dashboard-tools'", $layout);
+        self::assertStringContainsString('PageGuideContext::fromRequest($actor)', $layout);
     }
 
     public function test_release_cache_and_runtime_user_guard_is_documented(): void

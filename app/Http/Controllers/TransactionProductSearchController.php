@@ -8,7 +8,10 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
@@ -21,11 +24,12 @@ final class TransactionProductSearchController extends Controller
         'purchase_orders.create', 'purchase_orders.edit',
         'purchase_invoices.draft', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit',
         'purchase_returns.create', 'purchase_returns.edit',
-        'transfers.create', 'transfers.edit', 'inventory_stock_card.create', 'inventory_stock_card.edit', 'stock_counts.participate',
+        'transfers.create', 'transfers.edit', 'transfers.approve', 'inventory_stock_card.create', 'inventory_stock_card.edit', 'stock_counts.participate',
         'pos_sales.create', 'returns.create',
         'quotations.create', 'quotations.edit',
         'party_bookings_invoices.create', 'party_bookings_invoices.edit',
         'party_operating_orders_consumables.create', 'party_operating_orders_consumables.edit',
+        'products_categories_brands.create', 'products_categories_brands.edit',
     ];
 
     public function __invoke(Request $request, SupplierProductPrice $prices): JsonResponse
@@ -39,13 +43,26 @@ final class TransactionProductSearchController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $purchasing = $request->query('context') === 'purchasing';
+        $supplierReturnLookup = $request->query('context') === 'purchase_return';
+        $catalogLookup = $request->query('context') === 'catalog';
+        if ($catalogLookup) {
+            abort_unless($actor->can('products_categories_brands.create') || $actor->can('products_categories_brands.edit'), 403);
+        }
+        if ($supplierReturnLookup) {
+            abort_unless($actor->can('purchase_returns.create') || $actor->can('purchase_returns.edit'), 403);
+        }
+        $purchasing = $request->query('context') === 'purchasing' || $supplierReturnLookup;
+        $transferLookup = $request->query('context') === 'transfer';
         $supplierId = $request->integer('supplier_id');
         $supplierOnly = $purchasing && $request->boolean('supplier_only', true);
         $currencyCode = trim((string) $request->query('currency_code', '')) ?: null;
         $sourceInvoiceId = $request->integer('purchase_invoice_id');
+        $sourceStore = null;
+        if ($transferLookup) {
+            $sourceStore = Store::query()->visibleTo($actor)->where('status', 'active')->findOrFail($request->integer('source_store_id'));
+        }
 
-        if ($purchasing && $supplierId < 1) {
+        if ($purchasing && ! $supplierReturnLookup && $supplierId < 1) {
             return response()->json(['data' => [], 'meta' => ['supplier_required' => true]]);
         }
         if ($supplierId > 0) {
@@ -62,10 +79,16 @@ final class TransactionProductSearchController extends Controller
                 ->findOrFail($sourceInvoiceId);
         }
 
+        $company = app(AuthorizedCompanyContext::class)->resolve(
+            $actor,
+            $request->integer('company_id') ?: $sourceInvoice?->store?->company_id ?: $sourceStore?->company_id,
+        );
+
         $escaped = addcslashes($term, '\\%_');
         $prefix = $escaped.'%';
         $contained = '%'.$escaped.'%';
-        $productsQuery = Product::query()->sellable()
+        $productsQuery = Product::query()->when(! $catalogLookup, fn ($query) => $query->sellable())
+            ->availableToCompany((int) $company->id)
             ->with([
                 'barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary'),
                 'productSuppliers' => fn ($query) => $query->where('supplier_id', $supplierId),
@@ -104,13 +127,15 @@ final class TransactionProductSearchController extends Controller
 
         $supplierProductsEmpty = $supplierOnly && ! ProductSupplier::query()->where('supplier_id', $supplierId)->exists();
 
-        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId): array {
+        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId, $company, $sourceStore): array {
             $barcodes = $product->barcodes->pluck('barcode')->filter()->values();
             $supplierProduct = $product->productSuppliers->first();
             $identifiers = collect([$product->item_code, $product->model_number, $supplierProduct?->supplier_item_code])->merge($barcodes)->filter()->map(fn ($value) => mb_strtolower(trim((string) $value)))->unique()->values();
             $price = $supplierId > 0 && $mayViewCost
-                ? $prices->resolve($product, $supplierId, $currencyCode)
+                ? $prices->resolve($product, $supplierId, (int) $company->id, $currencyCode)
                 : ['unit_cost' => $mayViewCost ? $product->average_cost : null, 'price_source' => $mayViewCost ? 'fallback_cost' : 'none', 'price_date' => null, 'price_currency' => $currencyCode];
+            $balance = $sourceStore ? StockBalance::query()->where('store_id', $sourceStore->id)->where('product_id', $product->id)->first() : null;
+            $sellingPrice = $sourceStore ? app(EffectivePriceResolver::class)->resolve($product->id, $sourceStore->id)?->amount : null;
 
             return [
                 'id' => $product->id,
@@ -126,6 +151,9 @@ final class TransactionProductSearchController extends Controller
                 'price_date' => $price['price_date'],
                 'price_currency' => $price['price_currency'],
                 'unit_price' => $product->sale_price,
+                'available_quantity' => $sourceStore ? bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6) : null,
+                'source_unit_cost' => $sourceStore ? (string) ($balance?->average_cost ?? '0') : null,
+                'source_selling_price' => $sellingPrice,
                 'exact' => $identifiers->contains(mb_strtolower($term)),
                 'exact_unique' => $uniqueExactProductId === $product->id,
             ];

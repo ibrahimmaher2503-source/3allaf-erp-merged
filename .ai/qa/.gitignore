@@ -1,0 +1,6 @@
+runs/
+latest-*.json
+latest-*.md
+*.log
+semgrep.json
+infection*.json

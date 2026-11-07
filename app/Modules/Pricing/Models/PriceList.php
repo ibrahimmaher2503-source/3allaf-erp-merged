@@ -5,6 +5,9 @@ namespace App\Modules\Pricing\Models;
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Platform\Models\Company;
+use Database\Factories\PriceListFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +15,13 @@ use Illuminate\Support\Carbon;
 
 class PriceList extends Model
 {
+    protected static function newFactory(): Factory
+    {
+        return PriceListFactory::new();
+    }
+
+    use HasFactory;
+
     protected $fillable = ['company_id', 'list_number', 'code', 'name_ar', 'name_en', 'percentage_increase', 'status', 'effective_from', 'effective_to', 'notes', 'created_by', 'updated_by'];
 
     protected $casts = ['list_number' => 'integer', 'percentage_increase' => 'decimal:4', 'effective_from' => 'date', 'effective_to' => 'date'];

@@ -23,7 +23,7 @@ final class UserManagementScope
     {
         $query = User::query();
 
-        if ($actor->is_super_admin) {
+        if ($this->canManageGlobalRoles($actor)) {
             return $query;
         }
 
@@ -52,7 +52,7 @@ final class UserManagementScope
     public function roles(User $actor): Builder
     {
         return Role::query()
-            ->when(! $actor->is_super_admin, fn (Builder $roles): Builder => $roles->whereNotIn('code', self::ROOT_MANAGED_ROLE_CODES));
+            ->when(! $this->canManageGlobalRoles($actor), fn (Builder $roles): Builder => $roles->whereNotIn('code', self::ROOT_MANAGED_ROLE_CODES));
     }
 
     /** @return Collection<int, Role> */
@@ -75,17 +75,17 @@ final class UserManagementScope
 
     public function branches(User $actor): Builder
     {
-        return $actor->is_super_admin ? Branch::query() : Branch::query()->visibleTo($actor);
+        return $this->canManageGlobalRoles($actor) ? Branch::query() : Branch::query()->visibleTo($actor);
     }
 
     public function stores(User $actor): Builder
     {
-        return $actor->is_super_admin ? Store::query() : Store::query()->visibleTo($actor);
+        return $this->canManageGlobalRoles($actor) ? Store::query() : Store::query()->visibleTo($actor);
     }
 
     public function assertTargetIsManageable(User $actor, User $target): void
     {
-        if ($actor->is_super_admin) {
+        if ($this->canManageGlobalRoles($actor)) {
             return;
         }
 
@@ -99,7 +99,7 @@ final class UserManagementScope
     /** @param array<int, int> $roleIds @param array<int, int> $branchIds @param array<int, int> $storeIds */
     public function assertAssignmentsAreManageable(User $actor, array $roleIds, array $branchIds, array $storeIds): void
     {
-        if ($actor->is_super_admin) {
+        if ($this->canManageGlobalRoles($actor)) {
             return;
         }
 
@@ -148,7 +148,7 @@ final class UserManagementScope
 
     private function roleIsAssignable(User $actor, Role $role): bool
     {
-        if ($actor->is_super_admin || $this->hasActiveSystemAdministratorRole($actor)) {
+        if ($this->canManageGlobalRoles($actor)) {
             return true;
         }
 

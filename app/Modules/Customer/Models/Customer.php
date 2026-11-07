@@ -12,7 +12,10 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\CustomerProductPrice;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Retail\Models\Sale;
+use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,10 +24,17 @@ use LogicException;
 
 final class Customer extends Model
 {
+    protected static function newFactory(): Factory
+    {
+        return CustomerFactory::new();
+    }
+
+    use HasFactory;
+
     private bool $namedMutation = false;
 
     protected $fillable = [
-        'public_id', 'phone_normalized', 'phone_display', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'name_ar', 'name_en', 'email',
+        'public_id', 'phone_normalized', 'phone_display', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'name_ar', 'name_en', 'email', 'invoice_delivery_method',
         'secondary_phone', 'secondary_phone_normalized', 'address_ar', 'address_en', 'status', 'merged_into_id',
         'created_by', 'updated_by', 'created_branch_id', 'created_store_id', 'customer_group_id', 'price_list_id', 'customer_type', 'credit_limit', 'notes', 'governorate_id', 'city_id', 'idempotency_key', 'lock_version',
     ];
@@ -187,7 +197,7 @@ final class Customer extends Model
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess() && ! $user->canBypassApproval()) {
             return $query;
         }
 
@@ -202,7 +212,7 @@ final class Customer extends Model
      */
     public function scopeVisibleFrom(Builder $query, User $user, int $branchId, ?int $storeId = null): Builder
     {
-        abort_unless($user->is_super_admin || $user->canAccessBranch($branchId) || ($storeId !== null && $user->canAccessStore($storeId)), 403);
+        abort_unless($user->canAccessBranch($branchId) || ($storeId !== null && $user->canAccessStore($storeId)), 403);
         $companyId = $storeId !== null
             ? Store::query()->whereKey($storeId)->value('company_id')
             : Branch::query()->whereKey($branchId)->value('company_id');

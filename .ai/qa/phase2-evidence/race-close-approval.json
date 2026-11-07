@@ -1,0 +1,44 @@
+{
+    "signature": "ff094f2d5aa5d81ddaf91bcc8c2624aadf85d1bf9939a7f0d11d9e532857f8c7",
+    "workers": 2,
+    "independent_connections": [
+        13,
+        14
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 13,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `pos_shifts` where `pos_shifts`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 14,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `pos_shifts` where `pos_shifts`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": null
+        },
+        {
+            "status": "rejected",
+            "class": "Illuminate\\Validation\\ValidationException",
+            "message": "This shift changed since it was loaded. Reload and review the current figures."
+        }
+    ]
+}

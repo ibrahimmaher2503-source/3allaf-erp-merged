@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Catalog\Actions\SaveProductSupplierAction;
+use App\Modules\Catalog\Actions\RemoveSupplierAction;
 use App\Modules\Catalog\Actions\SaveSupplierCommunicationDestinationAction;
 use App\Modules\Catalog\Actions\SaveSupplierContactAction;
 use App\Modules\Catalog\Actions\SaveSupplierGroupAction;
@@ -15,14 +16,18 @@ use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Catalog\Support\SupplierTaxIdentity;
+use App\Support\Hierarchy\GroupHierarchy;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Support\SupplierBalance;
 use App\Support\Bulk\WithBulkSelection;
-use App\Support\Hierarchy\GroupHierarchy;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -72,8 +77,12 @@ new #[Title('Supplier Masters')] class extends Component
         'email' => '',
         'phone' => '',
         'tax_number' => '',
+        'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
         'commercial_registration' => '',
         'payment_terms' => '',
+        'credit_limit' => '',
+        'lead_time_days' => '',
+        'preferred_payment_method_id' => '',
         'payment_policy' => '',
         'credit_days' => '',
         'credit_limit' => '',
@@ -179,8 +188,12 @@ new #[Title('Supplier Masters')] class extends Component
             'email' => '',
             'phone' => '',
             'tax_number' => '',
+            'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
             'commercial_registration' => '',
             'payment_terms' => '',
+            'credit_limit' => '',
+            'lead_time_days' => '',
+            'preferred_payment_method_id' => '',
             'payment_policy' => '',
             'credit_days' => '',
             'credit_limit' => '',
@@ -210,8 +223,12 @@ new #[Title('Supplier Masters')] class extends Component
             'email' => $supplier->email ?? '',
             'phone' => $supplier->phone ?? '',
             'tax_number' => $supplier->tax_number ?? '',
+            'country_code' => $supplier->country_code ?? SupplierTaxIdentity::DEFAULT_COUNTRY,
             'commercial_registration' => $supplier->commercial_registration ?? '',
             'payment_terms' => $supplier->payment_terms ?? '',
+            'credit_limit' => $supplier->credit_limit ?? '',
+            'lead_time_days' => $supplier->lead_time_days ?? '',
+            'preferred_payment_method_id' => $supplier->preferred_payment_method_id ?? '',
             'payment_policy' => $supplier->payment_policy ?? '',
             'credit_days' => $supplier->credit_days ?? '',
             'credit_limit' => $supplier->credit_limit ?? '',
@@ -249,6 +266,14 @@ new #[Title('Supplier Masters')] class extends Component
     {
         Gate::authorize($this->editingSupplierId ? 'suppliers.edit' : 'suppliers.create');
         $this->supplierForm['barcode_prefix'] = strtoupper(trim((string) ($this->supplierForm['barcode_prefix'] ?? '')));
+        try {
+            $this->supplierForm['country_code'] = SupplierTaxIdentity::normalizeCountry($this->supplierForm['country_code'] ?? null);
+            $this->supplierForm['tax_number'] = SupplierTaxIdentity::normalizeTaxNumber($this->supplierForm['tax_number'] ?? null, $this->supplierForm['country_code']);
+        } catch (\InvalidArgumentException $exception) {
+            $this->addError('supplierForm.tax_number', $exception->getMessage());
+
+            return;
+        }
         $validated = $this->validate([
             'supplierForm.code' => [
                 'required',
@@ -264,8 +289,12 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.email' => ['nullable', 'email', 'max:255'],
             'supplierForm.phone' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
             'supplierForm.tax_number' => ['nullable', 'string', 'max:50'],
+            'supplierForm.country_code' => ['required', 'string', 'size:2', 'regex:/^[A-Z]{2}$/'],
             'supplierForm.commercial_registration' => ['nullable', 'string', 'max:100'],
             'supplierForm.payment_terms' => ['nullable', 'string', 'max:1000'],
+            'supplierForm.credit_limit' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+            'supplierForm.lead_time_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
+            'supplierForm.preferred_payment_method_id' => ['nullable', 'integer', Rule::exists('payment_methods', 'id')->where('status', 'active')],
             'supplierForm.payment_policy' => ['nullable', 'in:cash,credit,both'],
             'supplierForm.credit_days' => ['nullable', 'integer', 'between:0,3650'],
             'supplierForm.credit_limit' => ['nullable', 'decimal:0,4', 'min:0'],
@@ -280,7 +309,15 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.name_ar' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالعربية' : __('Arabic name'),
             'supplierForm.name_en' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالإنجليزية' : __('English name'),
             'supplierForm.status' => str_starts_with(app()->getLocale(), 'ar') ? 'حالة التشغيل' : __('Operational status'),
+            'supplierForm.country_code' => str_starts_with(app()->getLocale(), 'ar') ? 'دولة المورد' : __('Supplier country'),
+            'supplierForm.settlement_method' => str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method'),
+            'supplierForm.preferred_payment_method_id' => str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method'),
         ])['supplierForm'];
+
+        $duplicateWarnings = $this->duplicateSupplierWarnings($validated);
+        foreach ($duplicateWarnings as $warning) {
+            Flux::toast(variant: 'warning', text: $warning);
+        }
 
         try {
             $action->execute(
@@ -300,6 +337,25 @@ new #[Title('Supplier Masters')] class extends Component
         }
     }
 
+    /** @param array<string, mixed> $data @return list<string> */
+    private function duplicateSupplierWarnings(array $data): array
+    {
+        $query = Supplier::query()->when($this->editingSupplierId !== null, fn ($builder) => $builder->whereKeyNot($this->editingSupplierId));
+        $warnings = [];
+        $name = trim((string) ($data['name_en'] ?? ''));
+        $arabicName = trim((string) ($data['name_ar'] ?? ''));
+        if (($name !== '' && $query->clone()->whereRaw('LOWER(name_en) = ?', [mb_strtolower($name)])->exists())
+            || ($arabicName !== '' && $query->clone()->where('name_ar', $arabicName)->exists())) {
+            $warnings[] = __('Another supplier already uses this name. Review the existing record before saving.');
+        }
+        $email = trim((string) ($data['email'] ?? ''));
+        if ($email !== '' && $query->clone()->whereRaw('LOWER(email) = ?', [mb_strtolower($email)])->exists()) {
+            $warnings[] = __('Another supplier already uses this email. Review the existing record before saving.');
+        }
+
+        return $warnings;
+    }
+
     public function toggleSupplierStatus(int $id, ToggleSupplierStatusAction $action): void
     {
         Gate::authorize('suppliers.edit');
@@ -309,6 +365,28 @@ new #[Title('Supplier Masters')] class extends Component
             Flux::toast(variant: 'success', text: __('Supplier status updated successfully.'));
         } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+        }
+    }
+
+    public function removeSupplier(int $id, RemoveSupplierAction $action): void
+    {
+        Gate::authorize('suppliers.logical_delete');
+
+        try {
+            $action->execute($id);
+            if ($this->viewingSupplierId === $id) {
+                $this->viewingSupplierId = null;
+                $this->showDetailModal = false;
+            }
+            Flux::toast(variant: 'success', text: __('Supplier deleted successfully.'));
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first() ?: __('The supplier cannot be deleted. Deactivate it instead.');
+            $this->addError('supplierDeletion', $message);
+            Flux::toast(variant: 'danger', text: $message);
+        } catch (Throwable $exception) {
+            $message = \App\Support\UserSafeError::message($exception);
+            $this->addError('supplierDeletion', $message);
+            Flux::toast(variant: 'danger', text: $message);
         }
     }
 
@@ -435,11 +513,12 @@ new #[Title('Supplier Masters')] class extends Component
         }
     }
 
-    public function openCreateSupplierContactModal(): void
+    public function openCreateSupplierContactModal(string $role = 'representative'): void
     {
+        abort_unless(in_array($role, ['owner', 'accounting', 'representative', 'order', 'general'], true), 422);
         Gate::authorize('suppliers.edit');
         $this->editingSupplierContactId = null;
-        $this->supplierContactForm = ['role' => 'representative', 'name' => '', 'email' => '', 'phone' => '', 'mobile' => '', 'whatsapp' => '', 'notes' => '', 'is_primary' => false, 'status' => 'active'];
+        $this->supplierContactForm = ['role' => $role, 'name' => '', 'email' => '', 'phone' => '', 'mobile' => '', 'whatsapp' => '', 'notes' => '', 'is_primary' => true, 'status' => 'active'];
         $this->resetValidation();
         $this->showSupplierContactModal = true;
     }
@@ -530,12 +609,14 @@ new #[Title('Supplier Masters')] class extends Component
         $suppliers = null;
         $viewingSupplier = null;
         $availableProducts = collect();
+        $paymentMethods = collect();
         $supplierInvoices = collect();
         $supplierPayable = '0.0000';
         $supplierCurrency = 'EGP';
 
         if ($isSupplierMasters) {
             $query = Supplier::query()->with(['supplierGroup', 'preferredPaymentMethod'])->withCount('productSuppliers');
+            $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->limit(200)->get();
             $term = trim($this->search);
 
             if ($term !== '') {
@@ -561,6 +642,19 @@ new #[Title('Supplier Masters')] class extends Component
             $viewingSupplier = $this->viewingSupplierId
                 ? Supplier::query()->with(['productSuppliers.product', 'supplierGroup', 'preferredPaymentMethod', 'contacts'])->find($this->viewingSupplierId)
                 : null;
+            $supplierHistory = collect();
+            if ($viewingSupplier !== null && Gate::allows('audit_logs.view')) {
+                $supplierHistory = AuditLog::query()
+                    ->where('source_type', ProductSupplier::class)
+                    ->whereIn('source_id', $viewingSupplier->productSuppliers->pluck('id'))
+                    ->whereIn('event', ['change_product_supplier_preference', 'update_product_supplier', 'create_product_supplier'])
+                    ->latest('id')
+                    ->limit(20)
+                    ->get();
+            }
+            $productNames = $viewingSupplier?->productSuppliers->mapWithKeys(fn (ProductSupplier $relation): array => [
+                (int) $relation->product_id => \App\Support\HumanName::name($relation->product, fallback: $relation->product?->item_code ?: '#'.$relation->product_id),
+            ]) ?? collect();
             if ($viewingSupplier && $this->activeCompanyId && auth()->user()) {
                 $company = Company::query()->find($this->activeCompanyId);
                 if ($company) {
@@ -578,14 +672,18 @@ new #[Title('Supplier Masters')] class extends Component
             'suppliers' => $suppliers,
             'viewingSupplier' => $viewingSupplier,
             'availableProducts' => $availableProducts,
+            'supplierHistory' => $supplierHistory ?? collect(),
+            'productNames' => $productNames ?? collect(),
             'supplierInvoices' => $supplierInvoices,
             'supplierPayable' => $supplierPayable,
             'supplierCurrency' => $supplierCurrency,
             'settlementMethods' => SupplierSettlementMethod::options(),
+            'paymentMethods' => $paymentMethods,
             'supplierGroups' => $supplierGroups,
             'supplierGroupParents' => $supplierGroupParents,
             'canCreate' => Gate::allows('suppliers.create'),
             'canEdit' => Gate::allows('suppliers.edit'),
+            'canDelete' => Gate::allows('suppliers.logical_delete'),
         ]);
     }
 }; ?>
@@ -624,21 +722,15 @@ new #[Title('Supplier Masters')] class extends Component
     <div class="space-y-5" data-supplier-workspace="{{ $section }}">
         @if ($section === 'supplier-groups')
             <section class="space-y-5" data-guide="supplier-groups-workspace">
-                <flux:callout variant="info" icon="information-circle" :title="str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')">
-                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'قسّم الموردين إلى مجموعات لتسهيل البحث وتنظيم بيانات الشراء.' : __('Create and maintain the supplier hierarchy here. Supplier master records are assigned to a group from the Supplier masters workspace.') }}
-                </flux:callout>
-
                 <flux:card class="space-y-4 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                        <div class="flex flex-wrap items-center gap-2">
                             <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مجموعات الموردين' : __('Supplier groups') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</flux:text>
+                            <x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')" :label="__('Open contextual help')">
+                                <p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'قسّم الموردين إلى مجموعات لتسهيل البحث وتنظيم بيانات الشراء.' : __('Create and maintain the supplier hierarchy here. Supplier master records are assigned to a group from the Supplier masters workspace.') }}</p>
+                                <p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</p>
+                            </x-context-help>
                         </div>
-                        @if ($canCreate)
-                            <flux:button icon="folder-plus" variant="primary" wire:click="openCreateSupplierGroupModal">
-                                {{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة مجموعة موردين' : __('Add supplier group') }}
-                            </flux:button>
-                        @endif
                     </div>
 
                     <div class="grid gap-3 sm:grid-cols-3">
@@ -665,6 +757,11 @@ new #[Title('Supplier Masters')] class extends Component
             </section>
         @else
             <section class="space-y-5" data-guide="supplier-masters-workspace">
+        @if ($errors->has('supplierDeletion'))
+            <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Supplier could not be deleted') }}">
+                {{ $errors->first('supplierDeletion') }}
+            </flux:callout>
+        @endif
         <flux:card id="suppliers-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
             <div>
                 <flux:heading size="sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'البحث والتصفية' : 'Search and filters' }}</flux:heading>
@@ -771,7 +868,7 @@ new #[Title('Supplier Masters')] class extends Component
                                     <flux:badge size="sm" color="zinc">{{ $supplier->product_suppliers_count }}</flux:badge>
                                 </td>
                                 <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
-                                    <x-actions.button semantic="view" :label="__('View supplier details & history')" size="xs" wire:click="openSupplierDetailModal({{ $supplier->id }})" />
+                                        <x-actions.button semantic="view" :label="__('View supplier details & history')" size="xs" wire:click="openSupplierDetailModal({{ $supplier->id }})" />
                                     @if ($canEdit)
                                         <x-actions.button semantic="edit" :label="__('Edit supplier master')" size="xs" wire:click="openEditSupplierModal({{ $supplier->id }})" />
                                         <flux:button
@@ -781,6 +878,16 @@ new #[Title('Supplier Masters')] class extends Component
                                             wire:click="toggleSupplierStatus({{ $supplier->id }})"
                                             wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->status === 'active' ? 'تعطيل المورد؟ سيظل سجله محفوظاً.' : 'تفعيل المورد؟') : __('Change supplier :name to :status? Its historical records are preserved.', ['name' => $supplier->name_en ?: $supplier->name_ar, 'status' => $supplier->status === 'active' ? __('Inactive') : __('Active')]) }}"
                                             title="{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->status === 'active' ? 'تعطيل المورد' : 'تفعيل المورد') : ($supplier->status === 'active' ? __('Deactivate supplier') : __('Activate supplier')) }}"
+                                        />
+                                    @endif
+                                    @if ($canDelete)
+                                        <flux:button
+                                            size="xs"
+                                            variant="danger"
+                                            icon="trash"
+                                            wire:click="removeSupplier({{ $supplier->id }})"
+                                            wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد؟ لا يمكن التراجع عن حذف مورد غير مرتبط، وسيتم الاحتفاظ بالسجلات المرتبطة دون حذف متسلسل.' : __('Delete supplier :name? Only an unused supplier can be deleted; linked records are never cascade-deleted.', ['name' => $supplier->name_en ?: $supplier->name_ar]) }}"
+                                            title="{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد' : __('Delete supplier') }}"
                                         />
                                     @endif
                                 </td>
@@ -874,6 +981,7 @@ new #[Title('Supplier Masters')] class extends Component
                         :label="str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax registration number')"
                         placeholder="123-456-789"
                     />
+                    <flux:input wire:model="supplierForm.country_code" :label="__('Supplier country code')" maxlength="2" placeholder="EG" required />
                     <flux:input wire:model="supplierForm.commercial_registration" :label="__('Commercial registration')" />
                     <flux:select wire:model.live="supplierForm.payment_policy" :label="__('Payment policy')">
                         <option value="">{{ __('Not specified') }}</option>
@@ -892,6 +1000,15 @@ new #[Title('Supplier Masters')] class extends Component
                     @if (($supplierForm['settlement_method'] ?? '') === 'other')
                         <flux:input wire:model="supplierForm.settlement_other_description" :label="__('Other settlement description')" required />
                     @endif
+                    <flux:input wire:model="supplierForm.credit_limit" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحد الائتماني (اختياري)' : __('Credit limit (optional)')" type="number" min="0" step="0.0001" />
+                    <flux:input wire:model="supplierForm.lead_time_days" :label="str_starts_with(app()->getLocale(), 'ar') ? 'مدة التوريد بالأيام (اختياري)' : __('Lead time in days (optional)')" type="number" min="0" max="3650" step="1" />
+                    <p class="text-xs text-zinc-500">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مدة التوريد للمساعدة في التخطيط ولا تمنع إنشاء أمر شراء.' : __('Lead time is planning information and does not block purchasing.') }}</p>
+                    <flux:select wire:model="supplierForm.preferred_payment_method_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method')">
+                        <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون طريقة دفع مفضلة' : __('No preferred payment method') }}</option>
+                        @foreach ($paymentMethods as $paymentMethod)
+                            <option value="{{ $paymentMethod->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $paymentMethod->name_ar : $paymentMethod->name_en }}</option>
+                        @endforeach
+                    </flux:select>
                 </div>
 
                 <flux:textarea
@@ -968,6 +1085,20 @@ new #[Title('Supplier Masters')] class extends Component
                         >
                             {{ __('Contacts') }} ({{ $viewingSupplier->contacts->count() }})
                         </flux:button>
+                        @can('purchase_invoices_supplier_returns.view')
+                            <flux:button size="sm" variant="subtle" href="{{ route('purchasing.history.suppliers', ['supplier_id' => $viewingSupplier->id]) }}">{{ str_starts_with(app()->getLocale(), 'ar') ? 'سجل المشتريات' : __('Purchase history') }}</flux:button>
+                        @endcan
+                        @if ($canDelete)
+                            <flux:button
+                                size="sm"
+                                variant="danger"
+                                icon="trash"
+                                wire:click="removeSupplier({{ $viewingSupplier->id }})"
+                                wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد؟ لا يمكن التراجع عن حذف مورد غير مرتبط، وسيتم الاحتفاظ بالسجلات المرتبطة دون حذف متسلسل.' : __('Delete supplier :name? Only an unused supplier can be deleted; linked records are never cascade-deleted.', ['name' => $viewingSupplier->name_en ?: $viewingSupplier->name_ar]) }}"
+                            >
+                                {{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد' : __('Delete supplier') }}
+                            </flux:button>
+                        @endif
                         <flux:button
                             size="sm"
                             variant="{{ $detailTab === 'payables' ? 'primary' : 'subtle' }}"
@@ -1003,7 +1134,11 @@ new #[Title('Supplier Masters')] class extends Component
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->supplierGroup?->name_ar ?: __('No supplier group') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">
-                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة' : __('Preferred payment method') }}</dt>
+                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب التسوية المالية' : __('Supplier Settlement Method') }}</dt>
+                            <dd class="mt-1 text-sm font-medium">{{ $settlementMethods[$viewingSupplier->settlement_method] ?? __('Not configured') }}{{ $viewingSupplier->settlement_method === 'other' && $viewingSupplier->settlement_other_description ? ' — '.$viewingSupplier->settlement_other_description : '' }}</dd>
+                        </div>
+                        <div class="catalog-detail-field sm:col-span-2">
+                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method') }}</dt>
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->preferredPaymentMethod ? (str_starts_with(app()->getLocale(), 'ar') ? $viewingSupplier->preferredPaymentMethod->name_ar : $viewingSupplier->preferredPaymentMethod->name_en) : __('Not configured') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">
@@ -1039,28 +1174,22 @@ new #[Title('Supplier Masters')] class extends Component
                     </div>
                 @elseif ($detailTab === 'contacts')
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <flux:heading size="sm">{{ __('Structured supplier contacts') }}</flux:heading>
-                            @if ($canEdit)
-                                <flux:button size="xs" variant="primary" icon="plus" wire:click="openCreateSupplierContactModal">{{ __('Add contact') }}</flux:button>
-                            @endif
+                        <flux:heading size="sm">{{ __('Structured supplier contacts') }}</flux:heading>
+                        <div class="grid gap-3 lg:grid-cols-3">
+                            @foreach(['owner' => __('Owner contact'), 'accounting' => __('Accountant contact'), 'representative' => __('Sales representative contact')] as $contactRole => $contactHeading)
+                                @php($roleContacts = $viewingSupplier->contacts->where('role', $contactRole)->sortByDesc('is_primary'))
+                                <section class="rounded-lg border border-border p-3 space-y-3">
+                                    <div class="flex items-center justify-between gap-2"><flux:heading size="sm">{{ $contactHeading }}</flux:heading>@if($canEdit)<flux:button size="xs" variant="subtle" icon="plus" wire:click="openCreateSupplierContactModal('{{ $contactRole }}')">{{ __('Add') }}</flux:button>@endif</div>
+                                    @forelse($roleContacts as $contact)
+                                        <div class="rounded-lg bg-surface-muted p-3 space-y-1"><div class="flex items-center justify-between gap-2"><span class="font-medium">{{ $contact->name }}</span>@if($contact->is_primary)<flux:badge size="sm" color="emerald">{{ __('Primary') }}</flux:badge>@endif</div><div class="text-xs text-text-muted" dir="ltr">{{ $contact->email ?: __('No email') }}<br>{{ $contact->phone ?: $contact->mobile ?: __('No phone') }}</div>@if($contact->notes)<p class="text-xs text-text-muted">{{ $contact->notes }}</p>@endif @if($canEdit)<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif</div>
+                                    @empty
+                                        <p class="text-sm text-text-muted">{{ __('No contact recorded for this section.') }}</p>
+                                    @endforelse
+                                </section>
+                            @endforeach
                         </div>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            @forelse ($viewingSupplier->contacts as $contact)
-                                <div class="rounded-lg border border-border p-3 space-y-1">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="font-medium">{{ $contact->name }}</span>
-                                        <flux:badge size="sm" color="zinc">{{ __(ucwords(str_replace('_', ' ', $contact->role))) }}</flux:badge>
-                                    </div>
-                                    <div class="text-xs text-text-muted">{{ $contact->email ?: __('No email') }} · {{ $contact->phone ?: __('No phone') }} @if($contact->mobile)· {{ $contact->mobile }}@endif</div>
-                                    @if($contact->notes)<p class="text-xs text-text-muted">{{ $contact->notes }}</p>@endif
-                                    @if ($contact->is_primary)<flux:badge size="sm" color="emerald">{{ __('Primary') }}</flux:badge>@endif
-                                    @if ($canEdit)<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif
-                                </div>
-                            @empty
-                                <div class="sm:col-span-2"><x-state.empty :title="__('No structured contacts yet')" :message="__('Add owner, representative, order, or accounting contacts without changing the legacy supplier fields.')" icon="users" /></div>
-                            @endforelse
-                        </div>
+                        @php($otherContacts = $viewingSupplier->contacts->whereIn('role', ['order', 'general']))
+                        @if($otherContacts->isNotEmpty())<div class="border-t border-border pt-3"><flux:heading size="sm">{{ __('Other contacts') }}</flux:heading><div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($otherContacts as $contact)<div class="rounded-lg border border-border p-3"><strong>{{ $contact->name }}</strong><div class="text-xs text-text-muted">{{ __(ucwords($contact->role)) }} · {{ $contact->email ?: $contact->phone }}</div>@if($canEdit)<flux:button size="xs" variant="subtle" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif</div>@endforeach</div></div>@endif
                     </div>
                 @elseif ($detailTab === 'products')
                     <div class="space-y-4">
@@ -1088,7 +1217,7 @@ new #[Title('Supplier Masters')] class extends Component
                                     @forelse ($viewingSupplier->productSuppliers as $ps)
                                         <tr>
                                             <td class="px-3 py-2 text-xs font-mono"><span class="catalog-code-chip">{{ $ps->product?->item_code }}</span></td>
-                                            <td class="px-3 py-2 text-xs font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? $ps->product?->name_ar : $ps->product?->name_en }}</td>
+                                            <td class="px-3 py-2 text-xs font-medium">{{ \App\Support\HumanName::name($ps->product, fallback: $ps->product?->item_code ?: '—') }}</td>
                                             <td class="px-3 py-2 text-xs text-text-muted font-mono">{{ $ps->supplier_item_code ?: '—' }}</td>
                                             <td class="px-3 py-2 text-xs text-center">
                                                 @if ($ps->is_preferred)
@@ -1111,6 +1240,24 @@ new #[Title('Supplier Masters')] class extends Component
                                 </tbody>
                             </table>
                         </div>
+                        @can('audit_logs.view')
+                            <div class="mt-4 border-t border-border pt-4" data-supplier-preference-history>
+                                <flux:heading size="sm">{{ __('Supplier preference history') }}</flux:heading>
+                                <div class="mt-3 space-y-2">
+                                    @forelse ($supplierHistory as $history)
+                                        <div class="rounded-lg border border-border px-3 py-2 text-xs">
+                                            <div class="flex flex-wrap justify-between gap-2">
+                                                <span class="font-medium">{{ __($history->event === 'change_product_supplier_preference' ? 'Preferred supplier changed' : 'Supplier link updated') }}</span>
+                                                <span class="text-text-muted">{{ $history->created_at?->format('Y-m-d H:i') }} · {{ $history->actor_name ?: __('System') }}</span>
+                                            </div>
+                                            <div class="mt-1 text-text-muted">{{ $productNames[(int) ($history->before_values['product_id'] ?? 0)] ?? __('Product') }} · {{ __('Before') }}: {{ ($history->before_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }} · {{ __('After') }}: {{ ($history->after_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }}</div>
+                                        </div>
+                                    @empty
+                                        <p class="text-xs text-text-muted">{{ __('No supplier preference changes recorded yet.') }}</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        @endcan
                     </div>
                 @endif
 
@@ -1181,14 +1328,14 @@ new #[Title('Supplier Masters')] class extends Component
                 <flux:input wire:model="supplierGroupForm.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المجموعة بالإنجليزية (اختياري)' : __('English group name (optional)')" dir="ltr" />
                 <flux:input wire:model="supplierGroupForm.code" :label="__('Stable code')" required dir="ltr" />
                 <flux:input wire:model="supplierGroupForm.sort_order" :label="__('Order')" type="number" min="0" />
-                <flux:select wire:model="supplierGroupForm.parent_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')" :description="str_starts_with(app()->getLocale(), 'ar') ? 'اتركه فارغاً لإنشاء مجموعة رئيسية.' : __('Leave empty for a root group; child groups stay beneath their selected parent.')">
+                <div><flux:select wire:model="supplierGroupForm.parent_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')">
                     <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون مجموعة رئيسية' : __('No parent group') }}</option>
                     @foreach ($supplierGroupParents as $parent)
                         @if ($parent->id !== $editingSupplierGroupId)
                             <option value="{{ $parent->id }}">{{ $parent->name_ar }}{{ $parent->name_en ? ' — '.$parent->name_en : '' }}</option>
                         @endif
                     @endforeach
-                </flux:select>
+                </flux:select><x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')" :label="__('Open contextual help')"><p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'اتركه فارغاً لإنشاء مجموعة رئيسية.' : __('Leave empty for a root group; child groups stay beneath their selected parent.') }}</p></x-context-help></div>
                 <flux:select wire:model="supplierGroupForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status')"><option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشطة' : __('Active') }}</option><option value="inactive">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير نشطة' : __('Inactive') }}</option></flux:select>
                 @error('supplierGroupForm')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror
                 <div class="flex justify-end gap-3 border-t border-border pt-3"><flux:button variant="subtle" wire:click="$set('showSupplierGroupModal', false)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إلغاء' : __('Cancel') }}</flux:button><flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveSupplierGroup"><span wire:loading.remove wire:target="saveSupplierGroup">{{ __('Save') }}</span><span wire:loading wire:target="saveSupplierGroup">{{ str_starts_with(app()->getLocale(), 'ar') ? 'جارٍ الحفظ...' : __('Saving...') }}</span></flux:button></div>

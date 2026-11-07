@@ -8,9 +8,12 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
+use App\Support\UserSafeError;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -25,6 +28,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     public string $branchFilter = 'all';
 
     public string $statusFilter = 'all';
+
     #[Url(as: 'setup', except: false)]
     public bool $setupMode = false;
 
@@ -33,10 +37,14 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
     public ?int $editingDrawerId = null;
 
+    #[Locked]
+    public ?int $editingDrawerVersion = null;
+
     public array $drawerForm = [
         'branch_id' => '',
         'store_id' => '',
         'assigned_user_id' => '',
+        'eligible_cashier_ids' => [],
         'treasury_cash_account_id' => '',
         'code' => '',
         'name_ar' => '',
@@ -48,6 +56,13 @@ new #[Title('Cash Drawer Masters')] class extends Component
     public function mount(): void
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.view');
+    }
+
+    protected function validationAttributes(): array
+    {
+        return [
+            'drawerForm.store_id' => __('Store'),
+        ];
     }
 
     public function updatingSearch(): void
@@ -76,12 +91,14 @@ new #[Title('Cash Drawer Masters')] class extends Component
         Gate::authorize('drawers_payments_tax_numbering_printers.create');
 
         $this->editingDrawerId = null;
+        $this->editingDrawerVersion = null;
         $defaultBranchId = Branch::visibleTo(auth()->user())->where('status', 'active')->first()?->id ?? '';
 
         $this->drawerForm = [
             'branch_id' => (string) $defaultBranchId,
             'store_id' => '',
             'assigned_user_id' => '',
+        'eligible_cashier_ids' => [],
             'treasury_cash_account_id' => '',
             'code' => '',
             'name_ar' => '',
@@ -99,10 +116,12 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
         $drawer = CashDrawer::visibleTo(auth()->user())->findOrFail($id);
         $this->editingDrawerId = $drawer->id;
+        $this->editingDrawerVersion = (int) $drawer->lock_version;
         $this->drawerForm = [
             'branch_id' => (string) $drawer->branch_id,
             'store_id' => (string) ($drawer->store_id ?? ''),
             'assigned_user_id' => (string) ($drawer->assigned_user_id ?? ''),
+            'eligible_cashier_ids' => $drawer->eligibleCashiers()->pluck('users.id')->map(fn ($id) => (string) $id)->all(),
             'treasury_cash_account_id' => (string) ($drawer->treasury_cash_account_id ?? ''),
             'code' => $drawer->code,
             'name_ar' => $drawer->name_ar,
@@ -121,7 +140,24 @@ new #[Title('Cash Drawer Masters')] class extends Component
         $validated = $this->validate([
             'drawerForm.branch_id' => ['required', 'exists:branches,id'],
             'drawerForm.store_id' => [Rule::requiredIf(($this->drawerForm['status'] ?? 'active') === 'active'), 'nullable', 'exists:stores,id'],
-            'drawerForm.assigned_user_id' => ['nullable', 'exists:users,id'],
+            'drawerForm.assigned_user_id' => [
+                'bail',
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $branchId = (int) ($this->drawerForm['branch_id'] ?? 0);
+                    $storeId = (int) ($this->drawerForm['store_id'] ?? 0);
+
+                    if (! User::query()
+                        ->assignableToCashDrawer($branchId, $storeId > 0 ? $storeId : null)
+                        ->whereKey($value)
+                        ->exists()) {
+                        $fail(__('The selected cashier must be active and assigned to this branch or sales outlet.'));
+                    }
+                },
+            ],
+            'drawerForm.eligible_cashier_ids' => ['array'],
+            'drawerForm.eligible_cashier_ids.*' => ['integer', 'distinct'],
             'drawerForm.treasury_cash_account_id' => [Rule::requiredIf(($this->drawerForm['status'] ?? 'active') === 'active'), 'nullable', 'exists:cash_accounts,id'],
             'drawerForm.code' => [
                 'required',
@@ -137,38 +173,79 @@ new #[Title('Cash Drawer Masters')] class extends Component
             'drawerForm.policy_notes' => ['nullable', 'string'],
         ])['drawerForm'];
 
+        if ($this->editingDrawerId !== null) {
+            $validated['lock_version'] = $this->editingDrawerVersion;
+        }
+
         try {
             $action->execute($validated, $this->editingDrawerId);
             Flux::toast(variant: 'success', text: $this->editingDrawerId ? __('Cash drawer updated successfully.') : __('Cash drawer created successfully.'));
             $this->showDrawerModal = false;
+        } catch (ValidationException $e) {
+            if (! $this->handleDrawerVersionConflict($e, true)) {
+                Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
+            }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
         }
     }
 
-    public function toggleDrawerStatus(int $id, string $status, SaveCashDrawerAction $action): void
+    public function toggleDrawerStatus(int $id, string $status, mixed $lockVersion, SaveCashDrawerAction $action): void
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.edit');
 
         try {
-            $action->toggleStatus($id, $status);
+            $action->toggleStatus($id, $status, $lockVersion);
             Flux::toast(variant: 'success', text: __('Cash drawer status updated successfully.'));
+        } catch (ValidationException $e) {
+            if (! $this->handleDrawerVersionConflict($e)) {
+                Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
+            }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
         }
     }
 
-    public function deleteDrawer(int $id, PlatformSettingsApprovalAction $approvalAction): void
+    public function deleteDrawer(int $id, mixed $lockVersion, PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.logical_delete');
 
         try {
             $drawer = CashDrawer::visibleTo(auth()->user())->findOrFail($id);
-            $approvalAction->request('cash_drawer_delete', $drawer->id, ['deleted' => true], $drawer->getAttributes(), $drawer->branch_id, $drawer->store_id);
+            $approvalAction->request(
+                'cash_drawer_delete',
+                $drawer->id,
+                ['deleted' => true],
+                $drawer->getAttributes(),
+                $drawer->branch_id,
+                $drawer->store_id,
+                expectedLockVersion: $lockVersion,
+            );
             Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Cash drawer deletion submitted for independent approval.'));
+        } catch (ValidationException $e) {
+            if (! $this->handleDrawerVersionConflict($e)) {
+                Flux::toast(variant: 'danger', text: UserSafeError::message($e));
+            }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($e));
         }
+    }
+
+    private function handleDrawerVersionConflict(ValidationException $exception, bool $showFormError = false): bool
+    {
+        if (! array_key_exists('lock_version', $exception->errors())) {
+            return false;
+        }
+
+        $message = __('This cash drawer changed in another session. Reload it before saving.');
+
+        if ($showFormError) {
+            $this->addError('drawerForm.lock_version', $message);
+        }
+
+        Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: $message);
+
+        return true;
     }
 
     public function rendering(): void
@@ -184,7 +261,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     class="space-y-6"
     data-guide="drawers-header"
 >
-    <flux:callout variant="info" icon="information-circle"><strong>{{ __('Cashier Till') }}:</strong> {{ __('Cashier Till help') }} <span class="ms-2 text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }} → {{ __('Shift') }}</span></flux:callout>
+    <x-context-help :title="__('Cashier Till')" :label="__('Open contextual help')"><p>{{ __('Cashier Till help') }}</p><p>{{ __('Branch → Sales Outlet → Cashier Till') }} → {{ __('Shift') }}</p></x-context-help>
     <x-slot:actions>
         <x-tables.resource-toolbar>
             @can('drawers_payments_tax_numbering_printers.create')
@@ -221,7 +298,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     </flux:card>
 
     @php
-        $query = CashDrawer::visibleTo(auth()->user())->with(['branch', 'store', 'assignedUser', 'treasuryCashAccount']);
+        $query = CashDrawer::visibleTo(auth()->user())->with(['branch', 'store', 'assignedUser', 'eligibleCashiers', 'treasuryCashAccount']);
 
         if (! empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -256,7 +333,11 @@ new #[Title('Cash Drawer Masters')] class extends Component
         $sellingStores = $selectedSellingStoreId
             ? Store::visibleTo(auth()->user())->whereKey($selectedSellingStoreId)->where('branch_id', $selectedBranch->id)->where('type', 'selling')->where('status', 'active')->orderBy('name_en')->get()
             : collect();
-        $users = User::orderBy('name')->get();
+        $selectedStoreId = (int) ($drawerForm['store_id'] ?? 0);
+        $users = User::query()
+            ->assignableToCashDrawer($selectedBranchId, $selectedStoreId > 0 ? $selectedStoreId : null)
+            ->orderBy('name')
+            ->get();
         $treasuryAccounts = $selectedBranch === null
             ? collect()
             : CashAccount::query()->where('company_id', $selectedBranch->company_id)->where('type', 'cash')->where('status', 'active')->orderBy('name_en')->get();
@@ -269,26 +350,26 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 @foreach($drawers as $drawer)
                     <flux:card class="space-y-3 p-4">
                         <div class="flex items-start justify-between gap-3"><div><div class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_ar : $drawer->name_en }}</div><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_en : $drawer->name_ar }}</div><span class="font-mono text-xs text-primary" dir="ltr">{{ $drawer->code }}</span></div><x-status.badge :status="$drawer->status === 'active' ? 'active' : ($drawer->status === 'maintenance' ? 'warning' : 'inactive')" :label="__($drawer->status === 'active' ? 'Active' : ($drawer->status === 'maintenance' ? 'Maintenance' : 'Inactive'))" /></div>
-                        <dl class="grid gap-2 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }}</dt><dd>{{ $drawer->branch?->code ?? '—' }} → {{ $drawer->store?->code ?? '—' }} → <span dir="ltr">{{ $drawer->code }}</span></dd></div><div><dt class="text-xs text-text-muted">{{ __('Assigned Cashier / User') }}</dt><dd>{{ $drawer->assignedUser?->name ?? __('Unassigned') }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Treasury cash account') }}</dt><dd>{{ $drawer->treasuryCashAccount?->name_en ?? __('Not configured') }}</dd></div></dl>
+                        <dl class="grid gap-2 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }}</dt><dd>{{ $drawer->branch?->code ?? '—' }} → {{ $drawer->store?->code ?? '—' }} → <span dir="ltr">{{ $drawer->code }}</span></dd></div><div><dt class="text-xs text-text-muted">{{ __('Assigned Cashier / User') }}</dt><dd>{{ $drawer->eligibleCashiers->pluck('name')->join('، ') ?: ($drawer->assignedUser?->name ?? __('Unassigned')) }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Treasury cash account') }}</dt><dd>{{ $drawer->treasuryCashAccount?->name_en ?? __('Not configured') }}</dd></div></dl>
                         <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                             @can('drawers_payments_tax_numbering_printers.edit')
                                 <x-actions.button semantic="edit" :label="__('Edit')" size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</x-actions.button>
                                 @if($drawer->status === 'active')
-                                    <x-actions.button semantic="unavailable" :label="__('Mark unavailable')" size="sm" variant="subtle" color="amber" icon="wrench-screwdriver" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')" title="{{ __('Mark unavailable for shifts') }}">{{ __('Mark unavailable') }}</x-actions.button>
-                                    <x-actions.button semantic="disable" :label="__('Deactivate')" size="sm" variant="subtle" color="amber" icon="pause" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Deactivate') }}</x-actions.button>
+                                    <x-actions.button semantic="unavailable" :label="__('Mark unavailable')" size="sm" variant="subtle" color="amber" icon="wrench-screwdriver" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance', {{ $drawer->lock_version }})" title="{{ __('Mark unavailable for shifts') }}">{{ __('Mark unavailable') }}</x-actions.button>
+                                    <x-actions.button semantic="disable" :label="__('Deactivate')" size="sm" variant="subtle" color="amber" icon="pause" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive', {{ $drawer->lock_version }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Deactivate') }}</x-actions.button>
                                 @else
-                                    <x-actions.button semantic="restore" :label="__('Activate')" size="sm" variant="subtle" color="green" icon="play" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active')">{{ __('Activate') }}</x-actions.button>
+                                    <x-actions.button semantic="restore" :label="__('Activate')" size="sm" variant="subtle" color="green" icon="play" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active', {{ $drawer->lock_version }})">{{ __('Activate') }}</x-actions.button>
                                 @endif
                             @endcan
                             @can('drawers_payments_tax_numbering_printers.logical_delete')
-                                <x-actions.button semantic="delete" :label="__('Delete')" size="sm" variant="subtle" color="red" icon="trash" wire:click="deleteDrawer({{ $drawer->id }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Delete') }}</x-actions.button>
+                                <x-actions.button semantic="delete" :label="__('Delete')" size="sm" variant="subtle" color="red" icon="trash" wire:click="deleteDrawer({{ $drawer->id }}, {{ $drawer->lock_version }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Delete') }}</x-actions.button>
                             @endcan
                         </div>
                     </flux:card>
                 @endforeach
             </div>
             <div class="hidden overflow-x-auto md:block">
-                <table class="data-table w-full text-start text-sm">
+                <table class="data-table w-full min-w-[84rem] text-start text-sm">
                     <thead class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                         <tr>
                             <th class="px-4 py-3 text-start">{{ __('Code') }}</th>
@@ -305,7 +386,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                 <td class="px-4 py-3 font-mono text-xs font-bold text-primary">
                                     {{ $drawer->code }}
                                 </td>
-                                <td class="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                                <td class="px-4 py-3 font-medium whitespace-nowrap text-zinc-900 dark:text-zinc-100">
                                     {{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_ar : $drawer->name_en }}
                                     <div class="text-xs font-normal text-zinc-600 dark:text-zinc-300">
                                         {{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_en : $drawer->name_ar }}
@@ -313,7 +394,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                 </td>
                                 <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                                     @if($drawer->branch)
-                                        <div class="flex min-w-[15rem] items-start gap-1.5">
+                                        <div class="flex min-w-[15rem] items-start gap-1.5 whitespace-nowrap">
                                             <flux:icon name="building-office-2" class="mt-0.5 size-3.5 shrink-0 text-zinc-400" />
                                             <div class="min-w-0">
                                                 <div class="font-medium">{{ $drawer->branch->code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->branch->name_ar : $drawer->branch->name_en }}</div>
@@ -334,7 +415,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                         <span class="text-xs font-italic text-zinc-600 dark:text-zinc-300">{{ __('Unassigned') }}</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     @if($drawer->status === 'active')
                                         <x-status.badge status="active" :label="__('Active')" />
                                     @elseif($drawer->status === 'maintenance')
@@ -348,14 +429,14 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                         @can('drawers_payments_tax_numbering_printers.edit')
                                             <x-actions.button semantic="edit" :label="__('Edit')" size="xs" variant="subtle" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</x-actions.button>
                                             @if($drawer->status === 'active')
-                                                <x-actions.button semantic="unavailable" :label="__('Mark unavailable')" size="xs" variant="subtle" class="text-amber-600 dark:text-amber-400" icon="wrench-screwdriver" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')" title="{{ __('Mark unavailable for shifts') }}">{{ __('Mark unavailable') }}</x-actions.button>
-                                                <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Deactivate') }}</flux:button>
+                                                <x-actions.button semantic="unavailable" :label="__('Mark unavailable')" size="xs" variant="subtle" class="text-amber-600 dark:text-amber-400" icon="wrench-screwdriver" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance', {{ $drawer->lock_version }})" title="{{ __('Mark unavailable for shifts') }}">{{ __('Mark unavailable') }}</x-actions.button>
+                                                <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive', {{ $drawer->lock_version }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Deactivate') }}</flux:button>
                                             @else
-                                                <flux:button size="xs" variant="subtle" class="text-emerald-600 dark:text-emerald-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active')">{{ __('Activate') }}</flux:button>
+                                                <flux:button size="xs" variant="subtle" class="text-emerald-600 dark:text-emerald-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active', {{ $drawer->lock_version }})">{{ __('Activate') }}</flux:button>
                                             @endif
                                         @endcan
                                         @can('drawers_payments_tax_numbering_printers.logical_delete')
-                                            <flux:button size="xs" variant="subtle" class="text-red-700 dark:text-red-300" wire:click="deleteDrawer({{ $drawer->id }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Delete') }}</flux:button>
+                                            <flux:button size="xs" variant="subtle" class="text-red-700 dark:text-red-300" wire:click="deleteDrawer({{ $drawer->id }}, {{ $drawer->lock_version }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Delete') }}</flux:button>
                                         @endcan
                                     </div>
                                 </td>
@@ -385,13 +466,11 @@ new #[Title('Cash Drawer Masters')] class extends Component
     <!-- Modal: Create / Edit Cash Drawer -->
     @if ($showDrawerModal)
     <flux:modal wire:model.self="showDrawerModal" class="max-w-xl space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading size="lg">
                 {{ $editingDrawerId ? __('Edit Cash Drawer') : __('Add Cash Drawer') }}
             </flux:heading>
-            <flux:subheading>
-                {{ __('Configure the drawer identifier and its required POS selling location / stock source for shifts.') }}
-            </flux:subheading>
+            <x-context-help :title="$editingDrawerId ? __('Edit Cash Drawer') : __('Add Cash Drawer')" :label="__('Open contextual help')"><p>{{ __('Configure the drawer identifier and its required POS selling location / stock source for shifts.') }}</p></x-context-help>
         </div>
 
         <form wire:submit="saveDrawer" novalidate class="space-y-4">
@@ -461,9 +540,18 @@ new #[Title('Cash Drawer Masters')] class extends Component
                         {{ __('No active POS selling location / stock source is assigned to this branch. Configure the branch POS selling-location assignment first, then return here.') }}
                     </flux:callout>
                 @else
-                    <flux:text class="md:col-span-2 -mt-2 text-xs text-zinc-500">{{ __('Only the selected branch’s active POS selling location is available; it is also the stock source for this drawer’s shifts.') }}</flux:text>
+                    <div class="md:col-span-2 -mt-2"><x-context-help :title="__('POS selling location / stock source')" :label="__('Open contextual help')"><p>{{ __('Only the selected branch’s active POS selling location is available; it is also the stock source for this drawer’s shifts.') }}</p></x-context-help></div>
                 @endif
 
+                <div class="md:col-span-2" x-data="{ cashierSearch: '' }">
+                    <label class="mb-1 block text-sm font-medium">{{ __('Eligible cashiers') }}</label>
+                    <input type="search" class="mb-2 w-full rounded-lg border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-900" placeholder="{{ __('Search cashiers') }}" x-model="cashierSearch">
+                    <div class="max-h-36 overflow-y-auto rounded-lg border border-zinc-300 p-2 dark:border-zinc-600">
+                        @foreach($users as $u)
+                            <label data-cashier-option x-show="!cashierSearch || $el.textContent.toLowerCase().includes(cashierSearch.toLowerCase())" class="flex items-center gap-2 p-1 text-sm"><input type="checkbox" wire:model="drawerForm.eligible_cashier_ids" value="{{ $u->id }}">{{ $u->name }} ({{ $u->username ?? $u->email }})</label>
+                        @endforeach
+                    </div>
+                </div>
                 <flux:select
                     wire:model="drawerForm.assigned_user_id"
                     :label="__('Default Assigned Cashier (Optional)')"

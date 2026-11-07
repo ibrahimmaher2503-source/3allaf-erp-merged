@@ -7,12 +7,10 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Pricing\Services\PriceListResolver;
-use Illuminate\Support\Collection;
-use Illuminate\Validation\ValidationException;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 final class BarcodeLabelService
@@ -23,7 +21,9 @@ final class BarcodeLabelService
         $printer = $printerId ? PrinterConfiguration::visibleTo($actor)->where('status', 'active')->with('printTemplate')->findOrFail($printerId) : null;
         $template = $templateId ? PrintTemplate::visibleTo($actor)->where('status', 'active')->where('document_type', 'barcode_label')->findOrFail($templateId) : null;
 
-        if (! $template && $printer?->printTemplate?->document_type === 'barcode_label' && $printer->printTemplate->status === 'active') $template = $printer->printTemplate;
+        if (! $template && $printer?->printTemplate?->document_type === 'barcode_label' && $printer->printTemplate->status === 'active') {
+            $template = $printer->printTemplate;
+        }
         if (! $printer && ! $template) {
             $printer = PrinterConfiguration::visibleTo($actor)->where('status', 'active')->where('is_default', true)->with('printTemplate')->get()->first(fn ($item) => $item->printTemplate?->document_type === 'barcode_label' && $item->printTemplate?->status === 'active');
             $template = $printer?->printTemplate;
@@ -38,35 +38,67 @@ final class BarcodeLabelService
             'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2,
             'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto',
             'show_name' => true, 'show_price' => true, 'show_item_code' => true,
-            'show_list_code' => false, 'show_outlet' => false,
+            'show_list_code' => false, 'show_outlet' => true,
         ], $template?->layout_settings ?? []);
-        if ($paper === 'label_50x30mm') [$settings['width_mm'], $settings['height_mm']] = [50, 30];
-        if ($paper === 'label_40x25mm') [$settings['width_mm'], $settings['height_mm']] = [40, 25];
-        if ($paper === '58mm') $settings['width_mm'] = 58;
-        if ($paper === '80mm') $settings['width_mm'] = 80;
+        if ($paper === 'label_50x30mm') {
+            [$settings['width_mm'], $settings['height_mm']] = [50, 30];
+        }
+        if ($paper === 'label_40x25mm') {
+            [$settings['width_mm'], $settings['height_mm']] = [40, 25];
+        }
+        if ($paper === '58mm') {
+            $settings['width_mm'] = 58;
+        }
+        if ($paper === '80mm') {
+            $settings['width_mm'] = 80;
+        }
 
         return ['paper_size' => $paper, 'settings' => $settings, 'template' => $template, 'printer' => $printer, 'built_in' => $template === null];
     }
 
     /** @param array<int,array<string,mixed>> $rows @return array<string,mixed> */
-    public function compose(User $actor, array $rows, array $profile, ?int $storeId = null): array
+    public function compose(User $actor, array $rows, array $profile, ?int $storeId = null, array $serverPrices = [], bool $documentSource = false): array
     {
-        $store = $storeId ? Store::visibleTo($actor)->where('status', 'active')->where('type', 'selling')->findOrFail($storeId) : null;
+        if (! $storeId) {
+            throw ValidationException::withMessages(['store_id' => __('Select a selling outlet')]);
+        }
+        $storeQuery = Store::query()->where('status', 'active')->where('type', 'selling');
+        if (! $documentSource) {
+            $storeQuery->visibleTo($actor);
+        }
+        $store = $storeQuery->findOrFail($storeId);
         $list = $store ? app(PriceListResolver::class)->listForOutlet($store) : null;
+        $prices = $store ? app(BarcodeSellingPriceResolver::class)->resolveForStore(array_column($rows, 'product_id'), $store) : collect();
         $labels = [];
 
         foreach ($rows as $row) {
-            $product = Product::query()->sellable()->with(['barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')->orderBy('id')])->findOrFail((int) ($row['product_id'] ?? 0));
-            $barcode = $product->barcodes->firstWhere('id', (int) ($row['barcode_id'] ?? 0));
-            if (! $barcode) throw ValidationException::withMessages(['products' => __('Only a real active product barcode can be printed.')]);
+            $productId = (int) ($row['product_id'] ?? 0);
+            $product = Product::query()->sellable()->with(['barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')->orderBy('id')])->find($productId);
+            if ($product === null && Product::query()->whereKey($productId)->where('status', 'active')->where(fn ($query) => $query->whereNull('sale_price')->orWhere('sale_price', '<=', 0))->exists()) {
+                throw ValidationException::withMessages(['products' => __('No selling price')]);
+            }
+            $product ??= Product::query()->sellable()->findOrFail($productId);
+            $barcode = $product->barcodes->first(fn ($candidate) => in_array($candidate->source, ['international', 'supplier'], true) && filled($candidate->barcode))
+                ?? $product->barcodes->first(fn ($candidate) => $candidate->source === 'local' && filled($candidate->barcode))
+                ?? $product->barcodes->first(fn ($candidate) => filled($candidate->barcode));
+            if (! $barcode) {
+                throw ValidationException::withMessages(['products' => __('Only a real active product barcode can be printed.')]);
+            }
             $copies = filter_var($row['copies'] ?? null, FILTER_VALIDATE_INT);
-            if ($copies === false || $copies < 1 || $copies > 500) throw ValidationException::withMessages(['products' => __('Copies must be a whole number from 1 to 500.')]);
-            $price = $list ? app(PriceListResolver::class)->resolve($product, $list)->finalPrice : $product->sale_price;
+            if ($copies === false || $copies < 1 || $copies > 500) {
+                throw ValidationException::withMessages(['products' => __('Copies must be a whole number from 1 to 500.')]);
+            }
+            $price = $prices->get($product->id);
+            if ($price === null || bccomp((string) $price, '0', 3) <= 0) {
+                throw ValidationException::withMessages(['products' => __('No selling price')]);
+            }
             for ($copy = 1; $copy <= $copies; $copy++) {
                 $labels[] = compact('product', 'barcode', 'price', 'list', 'store', 'copy');
             }
         }
-        if ($labels === []) throw ValidationException::withMessages(['products' => __('Select at least one product with an active barcode.')]);
+        if ($labels === []) {
+            throw ValidationException::withMessages(['products' => __('Select at least one product with an active barcode.')]);
+        }
 
         return ['labels' => $labels, ...$profile];
     }
@@ -79,7 +111,9 @@ final class BarcodeLabelService
         $options->set('isRemoteEnabled', false);
         $options->set('isHtml5ParserEnabled', true);
         $options->setChroot(base_path());
-        $options->setFontDir($fontCache); $options->setFontCache($fontCache); $options->setTempDir($fontCache);
+        $options->setFontDir($fontCache);
+        $options->setFontCache($fontCache);
+        $options->setTempDir($fontCache);
         $options->setDefaultFont(str_starts_with(app()->getLocale(), 'ar') ? 'Cairo PDF Arabic' : 'Cairo PDF Latin');
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml(view('pricing.label-print', $document + ['toolbar' => false, 'pdf' => true])->render(), 'UTF-8');
@@ -88,6 +122,7 @@ final class BarcodeLabelService
         $dompdf->setPaper($paper, (string) $settings['orientation']);
         $dompdf->render();
         $filename = str_starts_with(app()->getLocale(), 'ar') ? 'ملصقات-الباركود.pdf' : 'barcode-labels.pdf';
+
         return response($dompdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => "attachment; filename*=UTF-8''".rawurlencode($filename)]);
     }
 }

@@ -67,24 +67,23 @@ export const restoreSidebarState = (root = document, storage = window.localStora
     const state = readState(storage);
     const active = navigation.querySelector('.app-navigation__item[aria-current="page"]');
     const details = [...navigation.querySelectorAll('details[data-navigation-state]')];
+    const activeGroup = active?.closest('details[data-navigation-group]')
+        || navigation.querySelector('details[data-navigation-group][data-active-group]');
     const activeAncestors = new Set(
         active ? details
             .filter((candidate) => candidate.contains(active))
             .map((candidate) => candidate.dataset.navigationState) : [],
     );
 
+    details.forEach((candidate) => {
+        if (candidate.matches('[data-navigation-group]')) {
+            candidate.open = candidate === activeGroup;
+        } else {
+            candidate.open = activeAncestors.has(candidate.dataset.navigationState);
+        }
+    });
     if (state) {
-        const storedOpen = new Set(state.open);
-        details.forEach((candidate) => {
-            candidate.open = storedOpen.has(candidate.dataset.navigationState)
-                || activeAncestors.has(candidate.dataset.navigationState)
-                || shouldAutoOpen(candidate);
-        });
         navigation.scrollTop = Math.min(maximumScrollTop(navigation), Math.max(0, Math.round(state.scrollTop)));
-    } else {
-        details.forEach((candidate) => {
-            if (activeAncestors.has(candidate.dataset.navigationState) || shouldAutoOpen(candidate)) candidate.open = true;
-        });
     }
 
     revealActiveInsideSidebar(navigation, active);
@@ -114,6 +113,12 @@ const bindSidebarState = () => {
     navigation.addEventListener('toggle', (event) => {
         if (event.target.matches('[data-navigation-group="administration"]') && event.target.open) {
             event.target.querySelector('[data-navigation-auto-open]')?.setAttribute('open', '');
+        }
+        const openedGroup = event.target.closest?.('details[data-navigation-group]');
+        if (openedGroup?.open && event.target === openedGroup) {
+            navigation.querySelectorAll('details[data-navigation-group]').forEach((group) => {
+                if (group !== openedGroup) group.open = false;
+            });
         }
         const scrollTop = navigation.scrollTop;
         requestAnimationFrame(() => {

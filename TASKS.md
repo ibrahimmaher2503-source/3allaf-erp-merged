@@ -29,6 +29,14 @@ Every task is executable/reviewable, delivers a visible result, and begins `Not 
 
 Reuse Laravel, Flux UI, and a single approved mature package where appropriate. Do not build authentication, permissions, audit, Excel, PDF, barcode, backup, media/upload, data table, pagination, filter/sort, picker, searchable select, modal/drawer, toast/alert, chart, sidebar, breadcrumbs, form controls, loading, or empty state from scratch when an approved capability exists. Package names/versions are not approved until the actual Laravel project is inspected. Automated tests are currently deferred; no task creates or runs automated tests.
 
+## Rajeh QA Hardening Phase 2 — owner-directed operational task, 2026-10-04
+
+Dedicated `feature/qa-hardening-phase2` from main `ed0e98e`. Named automation scope overrides historical deferred-testing policy only for this task. Scope: classify all 191 survivors; exact financial/matrix/property tests; real isolated MariaDB concurrency; new useful invariants; no new touched-code static errors; actual GitHub Fast validation; transparent minimum 85%/preferred 90% mutation effectiveness with individual equivalent exclusions; no broad repeat audit or deployment. Status/evidence: `.ai/qa/PHASE2_CHECKPOINT.md`; authoritative technical closure: `docs/qa/RAJEH-QA-GATE.md` Phase 2. This does not advance business milestones or human UAT.
+
+## Permanent Rajeh QA Gate — owner-directed operational task, 2026-10-04
+
+**Status:** Tooling/authorized local verification complete with explicit mutation/static/hardware limits; source publication authorized. **Class:** I4. **Traceability:** Operational QA control supporting existing acceptance evidence, not a new business requirement or a milestone gate approval. **Evidence:** `.ai/qa/RESUME_CHECKPOINT.md`, dated QA snapshots and `docs/qa/RAJEH-QA-GATE.md`. **Authorization:** Focused permanent Fast/Release PHPUnit/browser/security/mutation/database checks override the ordinary deferral for this named workflow only; reuse the preserved isolated MariaDB resources. No production transactions or deployment workflow change.
+
 ## Client Feedback Remediation — 2026-08-20 status sync
 
 The owner-expanded scope is tracked in `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md` and `docs/client-feedback-remediation-checklist.md`, not as a new Phase task. The client-fix queue is **12 DONE / 3 PARTIAL / 0 ACTIVE (CF-01–CF-15)**: CF-08, CF-13, and CF-14 are PARTIAL. The expanded ledger has **8 Local/Dev slices with requirement-level PARTIAL evidence / 7 open**. The earlier **15 DONE / 0 ACTIVE** wording is retained as historical status and explicitly superseded.
@@ -305,6 +313,8 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 - **Manual Browser Verification:** Local Demo Auth verified empty-state/settings/detail/print pages with 0 JS errors; end-to-end lifecycle and balance/idempotency verified by transactional Tinker smoke. Production/UAT hardware, real reasons, financial limits, scopes, and printer approval remain pending.
 - **Definition of Done:** DoD; balance and cost history reconcile.
 
+**2026-10-17 owner amendment (DEC-105):** The historical Phase 1 invoice-line requirement above remains the prior baseline. The current approved rule allows a supplier return without a Rajeh purchase invoice. Invoice-linked lines still use the historical invoice unit cost; invoice-free lines snapshot current Product Card cost. One supplier and active source store are required per document. Approval posts a single stock reduction and supplier payable debit; negative supplier payable is permitted. The dedicated full-page create workflow replaces popup creation. Production migration and UAT remain pending.
+
 ### TSK-017 — Implement Price Proposals, Version Approval, and Open-Price Policy
 
 - **Task ID / Phase / Milestone / Status:** TSK-017; Phase 2; DM 2.3; **Local/Dev slice complete — Production/UAT pending; no Production claim**.
@@ -350,11 +360,11 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 ### TSK-020 — Implement Stateful Stock Transfers and Difference Review
 
 - **Task ID / Phase / Milestone / Status:** TSK-020; Phase 2; DM 2.4; **Completed for Local/Demo; Production/UAT pending**.
-- **Title / Purpose / Description:** Deliver transfer request/approval/dispatch/in-transit/partial/full receipt and shortage/damage/refusal review with exact movements.
+- **Title / Purpose / Description:** Deliver editable final transfer review with atomic approval/dispatch, in-transit/partial/full receipt, and shortage/damage/refusal review with exact movements.
 - **Traceability:** INV-03, NFR-01–NFR-02, NFR-06; US-014; FLW-INV-02; UI UI-INV-004–007; AC-INV-03; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-019; BLK-012 mitigated by `docs/25-inventory-exception-policy.md`; final state/role separation, difference disposition, reason catalog, and limits remain configurable or pending.
 - **Database Entities:** `stock_transfers`, `transfer_lines`, `stock_movements`, `stock_balances`, `approval_records`, `document_sequences`, attachments if evidence.
-- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; every transfer line is received/reconciled atomically; local list/dispatch/receipt/difference-review surface with submitted → approved → in-transit → received/difference-review flow.
+- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; every transfer line is received/reconciled atomically; local list/final-review/receipt/difference-review surface with submitted → atomic approval and in-transit → received/difference-review flow.
 - **UI / Flux / Alpine / Vite:** Flux Table/Form/Line Editor/Scan Input/Filters/Timeline/Badges/Dialog/Upload; Alpine scanner only if needed; print styles.
 - **Suggested Packages:** Reuse approved barcode/upload/PDF capabilities only.
 - **Permissions / Validation / Audit / States / Print:** source/destination Create/Approve/Dispatch/Receive/Difference/Cancel; stock/location/qty/state/replay; every transition/quantity/reason; transfer/dispatch/receipt/difference prints.

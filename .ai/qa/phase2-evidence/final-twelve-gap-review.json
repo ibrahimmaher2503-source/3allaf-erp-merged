@@ -1,0 +1,114 @@
+{
+  "reviewed": 12,
+  "new_reviewed_exclusions": 0,
+  "mutants": [
+    {
+      "fingerprint": "3dbfe627cb5943c5f7ffd77be68210d5daa8dbaf28cf242b67b093c9deeb0888",
+      "file": "app/Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+      "line": 57,
+      "mutator": "IncrementInteger",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "New four-place purchasing tax/cost snapshot boundaries with percentage discounts passed. Changing eight-place intermediate multiplication to nine remained unobservable in these cases; no general precision equivalence proof assumed and survivor remains counted."
+    },
+    {
+      "fingerprint": "7007166e8aba861ee60677e785d3a5f6c9f83e8ce4cf33a7a6d7ae046a57203d",
+      "file": "app/Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+      "line": 57,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Configured rates are bounded decimals; native addition to 100 round-trips their supported significant digits. New rational boundary cases found no monetary/snapshot divergence. General floating-point equivalence is not assumed; survivor remains counted."
+    },
+    {
+      "fingerprint": "6480e2c042e31cf79a75aa9b068b9702d702d4f0e42e9f5543d2849510cd7a84",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "line": 148,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Configured production TaxSetting rates use decimal:2; negative hundredths are rejected by both guards. Sub-hundredth negative direct-calculator inputs are outside that configured contract and could differ; no new runtime policy or artificial pass assertion was introduced. Remains counted."
+    },
+    {
+      "fingerprint": "a367748eebe98ac1658a561b7d565bd1751b0b6ec14e85b6adc5256d340e94d8",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "line": 156,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Configured rates are bounded decimals; native addition to 100 round-trips their supported significant digits. New rational boundary cases found no monetary/snapshot divergence. General floating-point equivalence is not assumed; survivor remains counted."
+    },
+    {
+      "fingerprint": "e44b9915c9d329548adc47116b57f04da34b668641727edb150fbcdaf9e2b259",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "line": 159,
+      "mutator": "DecrementInteger",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "New independent rational nearest-half-cent residue cases tested both small and near-schema-limit bases at four-place rates. Additional guard precision changes remained unobservable at the money boundary in these supported cases; no general proof assumed, survivor retained."
+    },
+    {
+      "fingerprint": "08a3137069c511b095b334c3e1786b79c933c61919612633842b1f85e2fb7328",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "line": 159,
+      "mutator": "IncrementInteger",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "New independent rational nearest-half-cent residue cases tested both small and near-schema-limit bases at four-place rates. Additional guard precision changes remained unobservable at the money boundary in these supported cases; no general proof assumed, survivor retained."
+    },
+    {
+      "fingerprint": "6d17310852c3ed264b765391ed1ee9eb20faeaee3afe6e04354114af3ac92436",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "line": 217,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Allocation shortfall is a bounded number of pennies, not the full document amount. New 17-line low-value/stable-tie case verifies discount conservation; native subtraction survived. Arbitrary-size document equivalence is not assumed; survivor retained."
+    },
+    {
+      "fingerprint": "a6bcb6ee97d2f99e12aa82f48912d607071c7c627fdde22b9712c537ead563d7",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "line": 267,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Both cash distances are canonical two-place decimals bounded by the configured denomination. Native comparison matched preserved exact midpoint/large-total cases. No new affected behavior found; previous validation was not repeated and survivor remains counted."
+    },
+    {
+      "fingerprint": "eb84d16cdad870644e0cb2ef3ab920aed1a46ecab9660e6813b56c21d3042336",
+      "file": "app/Modules/Retail/Support/DecimalMoney.php",
+      "line": 44,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "The sign guard compares a canonical nonnegative decimal already normalized at the requested scale against zero. Both guards distinguish canonical zero/nonzero at supported scales. Existing signed/zero cases preserved; kept counted without a blanket equivalence exclusion."
+    },
+    {
+      "fingerprint": "c15b307f5d07d18e3cbc20b1cb40fde535426b24bf8dc797bfb6377d023199fb",
+      "file": "app/Support/ProductQuantity.php",
+      "line": 35,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Validated inputs are integer numeric strings after removal of zero fractional suffixes. PHP 8.4 compares fitting integers exactly and uses overflow-aware numeric-string ordering for adjacent out-of-range integers; prior padded/adjacent overflow assertions pass. No supported-input counterexample found; kept counted without claiming a general version-independent proof."
+    },
+    {
+      "fingerprint": "41b00844dfc3122ff814d8b087f03f16761f8f31b2b119117ea520fdfa6c7c9e",
+      "file": "app/Support/ProductQuantity.php",
+      "line": 49,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Validated inputs are integer numeric strings after removal of zero fractional suffixes. PHP 8.4 compares fitting integers exactly and uses overflow-aware numeric-string ordering for adjacent out-of-range integers; prior padded/adjacent overflow assertions pass. No supported-input counterexample found; kept counted without claiming a general version-independent proof."
+    },
+    {
+      "fingerprint": "929657fc24ac9383d38138a644f4575807acf7d5096505ac712245e1e083ebf3",
+      "file": "app/Support/ProductQuantity.php",
+      "line": 49,
+      "mutator": "BCMath",
+      "classification": "retained precision/native-comparison gap",
+      "ignored": false,
+      "review": "Validated inputs are integer numeric strings after removal of zero fractional suffixes. PHP 8.4 compares fitting integers exactly and uses overflow-aware numeric-string ordering for adjacent out-of-range integers; prior padded/adjacent overflow assertions pass. No supported-input counterexample found; kept counted without claiming a general version-independent proof."
+    }
+  ]
+}

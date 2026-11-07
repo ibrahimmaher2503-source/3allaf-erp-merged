@@ -6,9 +6,9 @@ namespace App\Modules\Retail\Actions;
 
 use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
-use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
@@ -40,15 +40,28 @@ final class OpenShiftAction
                 return $this->assertReplaySafe($existing, $cashier, $drawer, $openingFloat);
             }
 
-            if (PosShift::query()->active()->where('cashier_id', $cashier->id)->exists()) {
+            if (PosShift::query()->where('cashier_id', $cashier->id)->where('status', ShiftState::Open->value)->exists()) {
                 throw new InvalidArgumentException(__('This cashier already has an active shift.'), previous: $e);
             }
-            if (PosShift::query()->active()->where('cash_drawer_id', $drawer->getKey())->exists()) {
-                throw new InvalidArgumentException(__('This drawer already has an active shift.'), previous: $e);
+            if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->where('status', ShiftState::Open->value)->exists()) {
+                throw new InvalidArgumentException($this->occupiedDrawerMessage($drawer), previous: $e);
             }
 
             throw $e;
         }
+    }
+
+    private function occupiedDrawerMessage(CashDrawer $drawer): string
+    {
+        $shift = PosShift::query()->open()->where('cash_drawer_id', $drawer->id)->with('cashier:id,name')->first();
+        if ($shift === null) {
+            return __('This drawer already has an active shift.');
+        }
+
+        return __('Drawer :drawer is in use by :cashier on shift #:shift since :time.', [
+            'drawer' => $drawer->code, 'cashier' => $shift->cashier?->name ?? __('Another cashier'),
+            'shift' => $shift->id, 'time' => $shift->opened_at?->format('H:i') ?? '—',
+        ]);
     }
 
     private function attempt(User $cashier, CashDrawer $drawer, string $openingFloat, string $idempotencyKey): PosShift
@@ -59,14 +72,40 @@ final class OpenShiftAction
                 return $this->assertReplaySafe($existing, $cashier, $drawer, $openingFloat);
             }
 
-            // Lock the drawer row first: it is the shared resource both the
-            // drawer-collision and cashier-collision checks depend on.
-            $drawer = CashDrawer::query()->lockForUpdate()->find((int) $drawer->getKey());
-            if ($drawer === null) {
+            $requestedDrawerId = (int) $drawer->getKey();
+            $requestedDrawer = CashDrawer::query()->find($requestedDrawerId);
+            if ($requestedDrawer === null) {
+                throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
+            }
+            abort_unless($requestedDrawer->visibleTo($cashier)->whereKey($requestedDrawerId)->exists(), 403);
+
+            // Authorization edits lock the user before replacing branch/store scopes.
+            // Hold a compatible current user lock before taking the master-data locks below.
+            $lockedCashier = User::query()->sharedLock()->find($cashier->id);
+            abort_unless($lockedCashier !== null && $lockedCashier->status === 'active', 403);
+            $cashier = $lockedCashier;
+
+            $requestedBranchId = (int) $requestedDrawer->getAttribute('branch_id');
+            $requestedStoreId = (int) $requestedDrawer->getAttribute('store_id');
+            $branch = $requestedBranchId > 0
+                ? Branch::query()->sharedLock()->find($requestedBranchId)
+                : null;
+            $store = $requestedStoreId > 0
+                ? Store::query()->lockForUpdate()->find($requestedStoreId)
+                : null;
+
+            // Match master-data ordering before the drawer so a store change
+            // cannot deadlock with the shift insert's branch foreign key.
+            // Revalidate after all locks so concurrent reassignment cannot
+            // open against a different, unlocked outlet.
+            $drawer = CashDrawer::query()->lockForUpdate()->find($requestedDrawerId);
+            if ($drawer === null || $branch === null || $store === null
+                || (int) $drawer->getAttribute('branch_id') !== $requestedBranchId
+                || (int) $drawer->getAttribute('store_id') !== $requestedStoreId) {
                 throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
             }
 
-            abort_unless($drawer->visibleTo($cashier)->whereKey($drawer->getKey())->exists(), 403);
+            $this->assertVisibleToCurrentScope($cashier, $requestedBranchId, $requestedStoreId);
 
             if ($drawer->getAttribute('status') !== 'active') {
                 throw new InvalidArgumentException(__('This cash drawer is not active.'));
@@ -81,14 +120,14 @@ final class OpenShiftAction
             $branchId = (int) $drawer->getAttribute('branch_id');
             $storeId = (int) $drawer->getAttribute('store_id');
             $company = $companyId > 0 ? Company::query()->find($companyId) : null;
-            $branch = $branchId > 0 ? Branch::query()->find($branchId) : null;
-            $store = $storeId > 0 ? Store::query()->find($storeId) : null;
             if ($company === null
-                || $branch === null
-                || $store === null
+                || (int) $branch->getAttribute('id') !== $branchId
+                || (int) $store->getAttribute('id') !== $storeId
                 || (int) $branch->company_id !== $companyId
                 || (int) $store->company_id !== $companyId
-                || (int) $store->branch_id !== $branchId) {
+                || (int) $store->branch_id !== $branchId
+                || $store->getAttribute('status') !== 'active'
+                || $store->getAttribute('type') !== 'selling') {
                 throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
             }
             $currency = strtoupper(trim((string) $company->getAttribute('currency_code')));
@@ -96,14 +135,25 @@ final class OpenShiftAction
                 throw new InvalidArgumentException(__('The drawer company must have an approved three-letter currency before a shift can open.'));
             }
 
-            $activeStates = $this->activeStates();
-
-            if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->whereIn('status', $activeStates)->exists()) {
-                throw new InvalidArgumentException(__('This drawer already has an active shift.'));
+            if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->whereIn('status', [ShiftState::Open->value])->exists()) {
+                throw new InvalidArgumentException($this->occupiedDrawerMessage($drawer));
             }
 
-            if (PosShift::query()->where('cashier_id', $cashier->id)->whereIn('status', $activeStates)->exists()) {
+            if (PosShift::query()->where('cashier_id', $cashier->id)->where('status', ShiftState::Open->value)->exists()) {
                 throw new InvalidArgumentException(__('This cashier already has an active shift.'));
+            }
+
+            abort_unless($drawer->eligibleCashiers()->whereKey($cashier->id)->exists()
+                || ((int) $drawer->assigned_user_id === (int) $cashier->id)
+                || (! $drawer->eligibleCashiers()->exists() && $drawer->assigned_user_id === null), 403);
+
+            $pendingCount = PosShift::query()
+                ->where('cashier_id', $cashier->id)
+                ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+                ->lockForUpdate()
+                ->count();
+            if ($pendingCount >= 2) {
+                throw new InvalidArgumentException(__('You have two previous shifts awaiting approval. Resolve at least one pending close before opening another shift.'));
             }
 
             $shift = PosShift::query()->create([
@@ -154,13 +204,39 @@ final class OpenShiftAction
         });
     }
 
-    /** @return list<string> */
-    private function activeStates(): array
+    /**
+     * Recheck branch/store access with current locking reads after master-data locks.
+     * The shared user-row lock is acquired before the branch/store/drawer locks to
+     * serialize with SaveUserAuthorizationAction without reversing drawer/user FK order.
+     */
+    private function assertVisibleToCurrentScope(User $cashier, int $branchId, int $storeId): void
     {
-        return array_values(array_map(
-            static fn (ShiftState $state): string => $state->value,
-            array_filter(ShiftState::cases(), static fn (ShiftState $state): bool => $state->isActive()),
-        ));
+        if ($cashier->canBypassApproval()) {
+            abort_unless($cashier->canAccessBranch($branchId) && $cashier->canAccessStore($storeId), 403);
+
+            return;
+        }
+
+        if ($cashier->hasGlobalApplicationAccess()) {
+            return;
+        }
+
+        $branchScope = $cashier->branchScopes()
+            ->where('branch_id', $branchId)
+            ->where('status', 'active')
+            ->sharedLock()
+            ->first();
+        if ($branchScope !== null) {
+            return;
+        }
+
+        $storeScope = $cashier->storeScopes()
+            ->where('store_id', $storeId)
+            ->where('status', 'active')
+            ->sharedLock()
+            ->first();
+
+        abort_unless($storeScope !== null, 403);
     }
 
     private function replay(string $idempotencyKey, User $cashier, CashDrawer $drawer, string $openingFloat): PosShift

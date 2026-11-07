@@ -4,17 +4,30 @@ namespace App\Modules\Platform\Models;
 
 use App\Models\User;
 use App\Modules\CashControl\Models\CashAccount;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Database\Factories\CashDrawerFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 
 class CashDrawer extends Model
 {
     use HasFactory;
+
+    protected $attributes = [
+        'lock_version' => 1,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'lock_version' => 'integer',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -99,9 +112,18 @@ class CashDrawer extends Model
         return $this->belongsTo(CashAccount::class, 'treasury_cash_account_id');
     }
 
+    public function eligibleCashiers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'cash_drawer_eligible_cashiers')->withTimestamps();
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user);
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

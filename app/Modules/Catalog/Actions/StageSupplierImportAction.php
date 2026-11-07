@@ -2,15 +2,16 @@
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Catalog\Models\SupplierImportBatch;
 use App\Modules\Catalog\Models\SupplierImportRow;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
+use App\Modules\Catalog\Support\SupplierTaxIdentity;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\NotifyImportReviewers;
 use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ use OpenSpout\Reader\Common\Creator\ReaderFactory;
 
 class StageSupplierImportAction
 {
-    public const HEADERS = ['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_code'];
+    public const HEADERS = ['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'credit_limit', 'lead_time_days', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_code'];
 
     public static function templateHeaders(): array
     {
@@ -42,7 +43,8 @@ class StageSupplierImportAction
         if (SupplierImportBatch::where('created_by', $userId)->where('sha256', $hash)->where('status', '!=', 'cancelled')->exists()) {
             throw new InvalidArgumentException(__('This import file was already staged by this user.'));
         }
-        $actor = auth()->user(); abort_unless($actor instanceof \App\Models\User && $actor->id === $userId, 403);
+        $actor = auth()->user();
+        abort_unless($actor instanceof User && $actor->id === $userId, 403);
         $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
         $reader = ReaderFactory::createFromFile($path);
         $reader->open($path);
@@ -53,31 +55,31 @@ class StageSupplierImportAction
             ImportWorkbook::assertMetadata($reader, 'toyjoy.suppliers.v2', $company->code);
             $sheet = ImportWorkbook::dataSheet($reader);
             foreach ($sheet->getRowIterator() as $row) {
-                    $n++;
-                    $cells = $row->getCells();
-                    $v = array_map(function ($c) {
-                        $value = $c->getValue();
-                        if ($c instanceof FormulaCell || (is_string($value) && str_starts_with(trim($value), '='))) {
-                            throw new InvalidArgumentException(__('Formula cells are not allowed in import files.'));
-                        }
+                $n++;
+                $cells = $row->getCells();
+                $v = array_map(function ($c) {
+                    $value = $c->getValue();
+                    if ($c instanceof FormulaCell || (is_string($value) && str_starts_with(trim($value), '='))) {
+                        throw new InvalidArgumentException(__('Formula cells are not allowed in import files.'));
+                    }
 
-                        return $value;
-                    }, $cells);
-                    if ($n === 1) {
-                        $headers = array_map(fn ($x) => strtolower(trim((string) $x)), $v);
-                        ImportWorkbook::assertHeaders($headers, self::HEADERS, __('The import headers must exactly match the downloaded template.'));
+                    return $value;
+                }, $cells);
+                if ($n === 1) {
+                    $headers = array_map(fn ($x) => strtolower(trim((string) $x)), $v);
+                    ImportWorkbook::assertHeaders($headers, self::HEADERS, __('The import headers must exactly match the downloaded template.'));
 
-                        continue;
-                    }if ($n > 5001) {
-                        throw new InvalidArgumentException(__('The import is limited to 5,000 data rows.'));
-                    }if (collect($v)->every(fn ($x) => trim((string) $x) === '')) {
-                        continue;
-                    }$raw = [];
-                    foreach ($headers as $i => $h) {
-                        if ($h !== '') {
-                            $raw[$h] = $v[$i] ?? null;
-                        }
-                    }$rows[] = new SupplierImportRow(['row_number' => $n, 'raw_data' => $raw, 'status' => 'staged', 'errors' => []]);
+                    continue;
+                }if ($n > 5001) {
+                    throw new InvalidArgumentException(__('The import is limited to 5,000 data rows.'));
+                }if (collect($v)->every(fn ($x) => trim((string) $x) === '')) {
+                    continue;
+                }$raw = [];
+                foreach ($headers as $i => $h) {
+                    if ($h !== '') {
+                        $raw[$h] = $v[$i] ?? null;
+                    }
+                }$rows[] = new SupplierImportRow(['row_number' => $n, 'raw_data' => $raw, 'status' => 'staged', 'errors' => []]);
             }
             $companyId = $company->id;
             $batch = SupplierImportBatch::create(['company_id' => $companyId, 'created_by' => $userId, 'original_filename' => $name, 'storage_path' => $file, 'sha256' => $hash, 'mode' => $mode, 'status' => 'mapping_required', 'headers' => $headers, 'total_rows' => count($rows)]);
@@ -99,7 +101,6 @@ class StageSupplierImportAction
             $batch->load('rows');
             $seen = [];
             $seenPhones = [];
-            $seenEmails = [];
             $valid = 0;
             $invalid = 0;
             foreach ($batch->rows as $row) {
@@ -120,6 +121,16 @@ class StageSupplierImportAction
                 }
                 if ($method === 'other' && blank($d['settlement_other_description'] ?? null)) {
                     $errors[] = __('Describe the supplier settlement method when Other is selected.');
+                }
+                if (filled($d['credit_limit'] ?? null) && (! is_numeric($d['credit_limit']) || (float) $d['credit_limit'] < 0)) {
+                    $errors[] = __('Credit limit must be a non-negative number.');
+                } elseif (filled($d['credit_limit'] ?? null)) {
+                    $d['credit_limit'] = (string) $d['credit_limit'];
+                }
+                if (filled($d['lead_time_days'] ?? null) && (filter_var($d['lead_time_days'], FILTER_VALIDATE_INT) === false || (int) $d['lead_time_days'] < 0 || (int) $d['lead_time_days'] > 3650)) {
+                    $errors[] = __('Lead time must be an integer from 0 to 3650 days.');
+                } elseif (filled($d['lead_time_days'] ?? null)) {
+                    $d['lead_time_days'] = (int) $d['lead_time_days'];
                 }
                 if (! in_array($d['status'] ?? '', ['active', 'inactive'], true)) {
                     $errors[] = __('The selected supplier status is not supported.');
@@ -142,12 +153,13 @@ class StageSupplierImportAction
                     $d['email'] = mb_strtolower(trim((string) $d['email']));
                     if (! filter_var($d['email'], FILTER_VALIDATE_EMAIL)) {
                         $errors[] = __('Enter a valid email address.');
-                    } elseif (isset($seenEmails[$d['email']])) {
-                        $errors[] = __('The supplier email is duplicated in this batch.');
-                    } elseif (Supplier::query()->when($existing, fn ($query) => $query->whereKeyNot($existing->id))->whereRaw('LOWER(email) = ?', [$d['email']])->exists()) {
-                        $errors[] = __('The supplier email is already used by another supplier.');
                     }
-                    $seenEmails[$d['email']] = true;
+                }
+                try {
+                    $d['country_code'] = SupplierTaxIdentity::normalizeCountry($d['country_code'] ?? null);
+                    $d['tax_number'] = SupplierTaxIdentity::normalizeTaxNumber($d['tax_number'] ?? null, $d['country_code']);
+                } catch (InvalidArgumentException $exception) {
+                    $errors[] = $exception->getMessage();
                 }
                 if ($batch->mode === 'create_only' && $existing) {
                     $errors[] = __('The supplier code already exists; Create Only does not update existing suppliers.');

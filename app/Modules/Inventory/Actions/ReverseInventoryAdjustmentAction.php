@@ -54,7 +54,7 @@ final class ReverseInventoryAdjustmentAction
                 $reversalLine = InventoryAdjustmentLine::query()->create([
                     'inventory_adjustment_id' => $reversal->id,
                     'product_id' => $line->product_id,
-                    'quantity_delta' => '-'.ltrim((string) $line->quantity_delta, '-'),
+                    'quantity_delta' => bcsub('0', (string) $line->quantity_delta, 6),
                     'unit_cost' => $line->unit_cost,
                 ]);
                 app(PostInventoryMovement::class)->execute($line->product_id, $original->store_id, (string) $reversalLine->quantity_delta, 'inventory_reversal', (string) $line->unit_cost, 'inventory-adjustment-reversal-movement:'.$original->id.':'.$line->id, InventoryAdjustment::class, $reversal->id, $reversalLine->id, false, $movement->id);

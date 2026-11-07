@@ -4,7 +4,9 @@ namespace App\Modules\Catalog\Models;
 
 use App\Models\User;
 use App\Modules\Platform\Models\PaymentMethod;
+use Database\Factories\SupplierFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +19,22 @@ use App\Modules\Purchasing\Models\SupplierPayment;
 
 class Supplier extends Model
 {
+    protected static function newFactory(): Factory
+    {
+        return SupplierFactory::new();
+    }
+
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $supplier): void {
+            $supplier->name_en = trim((string) $supplier->name_en);
+            if ($supplier->name_en === '') {
+                throw new \InvalidArgumentException(__('Supplier English name is required.'));
+            }
+        });
+    }
 
     protected $fillable = [
         'code',
@@ -28,11 +45,13 @@ class Supplier extends Model
         'email',
         'phone',
         'tax_number',
+        'country_code',
         'payment_terms',
         'payment_policy',
         'credit_days',
         'credit_limit',
         'commercial_registration',
+        'lead_time_days',
         'preferred_payment_method_id',
         'settlement_method',
         'settlement_other_description',
@@ -49,6 +68,7 @@ class Supplier extends Model
         'lock_version' => 'integer',
         'credit_days' => 'integer',
         'credit_limit' => 'decimal:4',
+        'lead_time_days' => 'integer',
     ];
 
     public function productSuppliers(): HasMany

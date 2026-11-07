@@ -146,3 +146,39 @@ These pages and guides are suitable for local browser walkthroughs and determini
 - A replacement for production reconciliation, migration, policy sign-off, or real warehouse controls.
 
 Arabic uses RTL and English uses LTR. The Appearance Customizer remains independent of inventory business state and must remain persistent and functional.
+
+## Owner UAT checklist — live stocktake (Ahmed, 2026-10-20)
+
+Use a disposable QA company, products, warehouse, POS shift, and supplier documents for every posting step. Production checks in this table are read-only visual checks of existing screens or records; they do not require creating a Production sale, receipt, transfer, count, or settlement. Record the actual device and scanner model when performing hardware acceptance.
+
+| Check | Expected observation | Where to check |
+|---|---|---|
+| Create stocktake | Number and warehouse are saved; session resumes by ID | QA transaction; Production form can be viewed without submission |
+| Add all products | Eligible SKUs/variants load once; prior counts stay intact | QA only |
+| Manual add | Correct product/SKU resolves and appears once | QA only |
+| Hardware barcode scan | Each keyboard-wedge scan increments one line by one | QA with physical scanner |
+| Mobile scan mode | Camera opens, reads repeated codes, shows last item and quantity, stops/restarts, and handles unknown code | QA with physical phone; Production layout may be viewed without scanning |
+| Autosave | Quantity and note show saved feedback; refresh retains values | QA only |
+| Resume session | Saved counts reappear after leaving and returning | QA; existing Production count may be opened read-only |
+| Sale during stocktake | Valid POS sale posts one canonical outbound movement while count remains active | QA only |
+| Customer return during stocktake | Approved sellable return posts one canonical inbound movement | QA only |
+| Purchase receiving during stocktake | Approved receiving posts one canonical inbound movement | QA only |
+| Transfer during stocktake | Dispatch and receipt remain available; expected canonical movements post once | QA only |
+| Review differences | Expected-at-count, actual, movement history, counter, and variance are understandable | QA; existing Production review may be viewed read-only |
+| Complete counting | Entry closes and no stock adjustment posts | QA only |
+| Settlement | Authorized approver posts only nonzero variances; matched lines post none | QA only |
+| Second settlement | Retry is rejected or returns settled state without another movement | QA only |
+| Branchless warehouse | Active warehouse with `branch_id = NULL` is selectable when authorized | QA transaction; Production selector/read-only details may be viewed |
+| Mobile 390 px | Count cards, scan controls, progress, and review fit without horizontal overflow | QA; Production read-only layout check is safe |
+
+Automated browser validation with a simulated mobile camera **PASS**. Physical-device camera scanning is **PENDING OWNER UAT** and should be recorded by Ahmed; it does not alone block code merge readiness.
+
+## 2026-11-05 launch inventory and transfer amendment
+
+A draft transfer may be edited by the source. Send now dispatches once in the same transaction; each destination opens Receive, records actual quantity and reasoned variance, then confirms. Historical submitted approval records remain accessible for older transfers, while new Send creates audit submit/dispatch records and does not require another source review. Receiving shows product, item code, consumer price, transfer quantity, allocated destination quantity, actual, difference, and status. Entry and Exit Permit routes open dedicated forms without generic inventory widgets or movement-type reselection. Direct Open Price stock addition accepts absent cost through the canonical movement poster; sales price remains independent. Stocktake creation shows scoped locations and eligible team members, with validation errors shown on the form.
+
+### 2026-11-05 pre-deployment acceptance corrections — I and N
+
+Transfer receiving displays the destination outlet's effective selling price via the existing branch-to-selling-outlet mapping and barcode/pricing resolvers. Approved outlet price wins; the resolver applies the established price-list/base-price fallback. If a destination has no usable outlet or price list, receiving remains available, the price cell shows a dash, and a configuration message appears. The earlier RTL receiving columns and difference logic remain intact.
+
+Stocktake Create now presents eight ordered sections in Arabic RTL and English LTR: basic reference/date/time, location, count type/scope, counting method, session manager, eligible counting team, notes, and Create. Location selection distinguishes independent warehouses from branch warehouses/selling outlets and filters choices by selected branch. Counting methods shown are Manual, Scan/Barcode, Excel, and Mobile, all backed by existing entry/import paths; Manual is the default and is accepted by the create route. Existing draft, live-count, team, and snapshot actions are unchanged. The isolated 390px authenticated Arabic RTL browser check passed 10 checks for hierarchy, location selection, controls and no horizontal overflow; physical scanner/printer acceptance remains manual.

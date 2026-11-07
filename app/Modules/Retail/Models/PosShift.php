@@ -5,20 +5,31 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Models;
 
 use App\Models\User;
-use App\Modules\Platform\Models\Branch;
-use App\Modules\Platform\Models\ApprovalRecord;
-use App\Modules\Platform\Models\CashDrawer;
-use App\Modules\Platform\Models\Store;
-use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Platform\Contracts\ImmutableSourceContract;
+use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
+use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
+use App\Modules\Retail\Enums\ShiftState;
+use Database\Factories\PosShiftFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class PosShift extends Model implements ImmutableSourceContract
 {
+    use HasFactory;
+
+    protected static function newFactory(): Factory
+    {
+        return PosShiftFactory::new();
+    }
+
     use GuardsApprovedDocument;
 
     protected $table = 'pos_shifts';
@@ -69,6 +80,12 @@ final class PosShift extends Model implements ImmutableSourceContract
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function varianceApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'variance_approved_by');
     }
 
     /** The current/settling canonical approval request; history stays in Platform. */
@@ -124,7 +141,11 @@ final class PosShift extends Model implements ImmutableSourceContract
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

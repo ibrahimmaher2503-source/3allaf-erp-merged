@@ -206,3 +206,7 @@ Verify:
 10. RTL/LTR, desktop/mobile, console, and network.
 
 No automated tests are created or executed.
+
+## 2026-11-05 launch label and product-identity amendment
+
+Shared Product Card and Purchase Invoice search results show Product Name / Barcode / Item No. when available, with each identifier once. Barcode label entry offers Purchase Invoice, Transfer, or individual Product mode. Invoice receiving store and transfer allocation destination come from the approved source document; a transfer with several destinations requires choosing one of its document-bound receipts. The branch's active selling outlet mapping supplies selling price. The form no longer accepts an independent Receiving Destination that could conflict with the document.

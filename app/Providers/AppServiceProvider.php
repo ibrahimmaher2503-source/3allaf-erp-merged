@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Http\Responses\PosAwareLoginResponse;
 use App\Models\User;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
@@ -16,14 +17,16 @@ use App\Modules\Platform\Support\TranslationOverrideLoader;
 use App\Modules\Platform\Support\UserManagementScope;
 use App\Modules\Platform\Support\WorkContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -69,6 +72,16 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addNamespace('purchasing', viewPath: resource_path('views/purchasing'));
         Livewire::addNamespace('pricing', viewPath: resource_path('views/pricing'));
         Livewire::addNamespace('inventory', viewPath: resource_path('views/inventory'));
+        Event::listen(Login::class, static function (Login $event): void {
+            if ($event->user instanceof User && request()->isMethod('POST')) {
+                app(RecordAuditEvent::class)->execute('security', 'user_login', $event->user);
+            }
+        });
+        Event::listen(Logout::class, static function (Logout $event): void {
+            if ($event->user instanceof User && request()->isMethod('POST')) {
+                app(RecordAuditEvent::class)->execute('security', 'user_logout', $event->user);
+            }
+        });
         foreach (['saved', 'deleted', 'restored'] as $event) {
             Event::listen("eloquent.{$event}: *", static function (): void {
                 if (! Cache::add('setup-readiness-version', 1)) {
@@ -84,15 +97,15 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             }
 
-            if (in_array($ability, ['access-administration-center', 'access-activity-log'], true)) {
-                return $user->is_super_admin;
-            }
-
-            if ($user->is_super_admin) {
+            // The active System Administrator role owns every application
+            // permission, including future dotted permission codes. Model
+            // policy abilities (view/decide/etc.) must still run so workflow
+            // state, maker/checker, and immutable-document rules are retained.
+            if (str_contains($ability, '.') && $user->hasPermission($ability)) {
                 return true;
             }
 
-            return $user?->hasPermission($ability) ? true : null;
+            return null;
         });
 
         foreach ([
@@ -125,8 +138,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-authorization', fn (?User $user): bool => $user?->hasPermission('users_roles_permissions.edit') ?? false);
         Gate::define('view-platform-status', fn (?User $user): bool => $user?->hasPermission('audit_logs.view') ?? false);
         Gate::define('view-ui-showcase', fn (?User $user): bool => $user?->hasPermission('dashboard_reports.view') ?? false);
-        Gate::define('access-administration-center', fn (?User $user): bool => $user?->is_super_admin ?? false);
-        Gate::define('access-activity-log', fn (?User $user): bool => $user?->is_super_admin ?? false);
+        Gate::define('access-administration-center', fn (?User $user): bool => $user?->hasGlobalApplicationAccess() ?? false);
+        Gate::define('access-activity-log', fn (?User $user): bool => $user?->hasGlobalApplicationAccess() ?? false);
         Gate::define('view-approval-inbox', fn (?User $user): bool => $user instanceof User && app(ApprovalInboxAccess::class)->allows($user));
         Gate::define('access-feed-store-operations', fn (?User $user): bool => $user instanceof User && collect([
             'customers.edit',

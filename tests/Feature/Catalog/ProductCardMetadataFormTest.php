@@ -1,0 +1,229 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Catalog;
+
+use App\Models\User;
+use App\Modules\Catalog\Actions\DeleteProductOptionAction;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Character;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductOptionGroup;
+use App\Modules\Catalog\Models\ProductOptionValue;
+use App\Modules\Platform\Models\Company;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+final class ProductCardMetadataFormTest extends TestCase
+{
+    use DatabaseTransactions;
+
+    public function test_referenced_filter_value_archives_or_replaces_without_losing_product_assignment(): void
+    {
+        $group = ProductOptionGroup::factory()->create();
+        $old = ProductOptionValue::factory()->create(['product_option_group_id' => $group->id]);
+        $replacement = ProductOptionValue::factory()->create(['product_option_group_id' => $group->id]);
+        $product = Product::factory()->create();
+        DB::table('product_filter_values')->insert(['product_id' => $product->id, 'product_option_value_id' => $old->id, 'created_at' => now(), 'updated_at' => now()]);
+        $this->actingAs($this->administrator);
+
+        app(DeleteProductOptionAction::class)->value($old->id, 'archive');
+        self::assertSame('inactive', $old->fresh()->status);
+        self::assertTrue(DB::table('product_filter_values')->where('product_id', $product->id)->where('product_option_value_id', $old->id)->exists());
+
+        app(DeleteProductOptionAction::class)->value($old->id, 'replace', $replacement->id);
+        self::assertNull($old->fresh());
+        self::assertTrue(DB::table('product_filter_values')->where('product_id', $product->id)->where('product_option_value_id', $replacement->id)->exists());
+    }
+
+    private User $administrator;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+        Gate::before(static fn (User $user, string $ability): bool => true);
+        Company::factory()->create();
+        $this->administrator = User::factory()->create([
+            'status' => 'active',
+            'is_super_admin' => true,
+        ]);
+    }
+
+    public function test_stale_product_edit_shows_a_clear_reason_and_preserves_the_winning_record(): void
+    {
+        $product = Product::factory()->create();
+        $version = (int) $product->lock_version;
+        $form = Livewire::actingAs($this->administrator)
+            ->test('catalog::product-form', ['product' => $product])
+            ->set('productId', $product->id)
+            ->set('productVersion', $version)
+            ->set('isEditing', true)
+            ->set('productForm.item_code', $product->item_code)
+            ->set('productForm.category_id', (string) $product->category_id)
+            ->set('productForm.name_ar', $product->name_ar)
+            ->set('productForm.name_en', 'Stale edit');
+
+        $product->forceFill(['name_en' => 'Concurrent winner', 'lock_version' => $version + 1])->save();
+
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            app()->setLocale($locale);
+            $form->call('saveDraft')
+                ->assertHasErrors('productForm')
+                ->assertSet('productVersion', $version)
+                ->assertSet('productForm.name_en', 'Stale edit')
+                ->assertDispatched('toast-show', fn (string $event, array $parameters): bool => ($parameters['slots']['text'] ?? null) === __('This product changed in another session. Reload it before saving.'));
+
+            self::assertSame('Concurrent winner', $product->fresh()->name_en);
+            self::assertSame($version + 1, (int) $product->fresh()->lock_version);
+        }
+    }
+
+    public function test_product_search_treats_percent_underscore_and_backslash_as_literal_characters(): void
+    {
+        $plain = Product::factory()->create(['item_code' => 'QA-WILD-PLAIN', 'model_number' => 'PLAIN', 'name_en' => 'Plain item', 'name_ar' => 'منتج عادي']);
+
+        foreach (['%' => 'PERCENT', '_' => 'UNDERSCORE', '\\' => 'BACKSLASH'] as $character => $code) {
+            $matching = Product::factory()->create([
+                'item_code' => 'QA-WILD-'.$code,
+                'model_number' => $code,
+                'name_en' => 'Literal '.$character.' item',
+                'name_ar' => 'منتج خاص',
+            ]);
+
+            Livewire::actingAs($this->administrator)
+                ->test('catalog::products')
+                ->set('search', $character)
+                ->assertViewHas('products', fn ($products): bool => $products->contains('id', $matching->id) && ! $products->contains('id', $plain->id));
+        }
+    }
+
+    public function test_product_card_creates_and_edits_descriptive_fields_and_lookup_assignments_without_cost_access(): void
+    {
+        $parentCategory = Category::factory()->create([
+            'code' => 'QA-META-PARENT',
+            'name_en' => 'QA metadata parent',
+        ]);
+        $subcategory = Category::factory()->create([
+            'code' => 'QA-META-CHILD',
+            'name_en' => 'QA metadata child',
+            'parent_id' => $parentCategory->id,
+        ]);
+        $ageLabel = AgeLabel::query()->create([
+            'code' => 'QA-META-AGE',
+            'name_ar' => 'عمر اختبار',
+            'name_en' => 'QA age group',
+            'status' => 'active',
+        ]);
+        $inactiveAgeLabel = AgeLabel::query()->create([
+            'code' => 'QA-META-AGE-INACTIVE',
+            'name_ar' => 'فئة عمرية غير نشطة',
+            'name_en' => 'Inactive QA age group',
+            'status' => 'inactive',
+        ]);
+        $character = Character::query()->create([
+            'code' => 'QA-META-CHARACTER',
+            'name_ar' => 'شخصية اختبار',
+            'name_en' => 'QA character',
+            'status' => 'active',
+        ]);
+
+        self::assertFalse($this->administrator->hasPermission('products_categories_brands.cost_view'));
+
+        $this->app->setLocale('ar');
+        Livewire::actingAs($this->administrator)
+            ->test('catalog::product-form')
+            ->assertSee('اللون')
+            ->assertSee('الفئات العمرية')
+            ->assertSee('الشخصيات')
+            ->assertSee('كلمات البحث بالعربية')
+            ->assertSeeHtml('wire:model="productForm.key_points_ar"')
+            ->assertSeeHtml('dir="rtl"')
+            ->assertSeeHtml('dir="ltr"');
+        $this->app->setLocale('en');
+
+        $createForm = Livewire::actingAs($this->administrator)
+            ->test('catalog::product-form')
+            ->assertSee('QA metadata parent / QA metadata child')
+            ->assertSeeHtml('wire:model="productForm.colour"')
+            ->assertSeeHtml('wire:model="productForm.key_points_ar"')
+            ->assertSeeHtml('wire:model="productForm.key_points_en"')
+            ->assertSeeHtml('wire:model="productForm.keywords_ar"')
+            ->assertSeeHtml('wire:model="productForm.keywords_en"')
+            ->assertSeeHtml('wire:model="productForm.age_label_ids"')
+            ->assertSeeHtml('wire:model="productForm.character_ids"')
+            ->assertSee('QA age group')
+            ->assertSee('QA character')
+            ->assertDontSeeHtml('wire:model="productForm.average_cost"')
+            ->set('productForm.category_id', (string) $subcategory->id)
+            ->set('productForm.name_ar', 'بطاقة اختبار وصفية')
+            ->set('productForm.name_en', 'QA metadata product')
+            ->set('productForm.model_number', 'QA-META-001')
+            ->set('productForm.colour', 'Coral')
+            ->set('productForm.key_points_ar', 'نقطة رئيسية')
+            ->set('productForm.key_points_en', 'Key point')
+            ->set('productForm.keywords_ar', 'كلمة مفتاحية')
+            ->set('productForm.keywords_en', 'keyword')
+            ->set('productForm.age_label_ids', [(string) $ageLabel->id])
+            ->set('productForm.character_ids', [(string) $character->id])
+            ->set('productForm.average_cost', '999.99');
+        $this->app->setLocale('ar');
+        $createForm->set('productForm.age_label_ids', [(string) $inactiveAgeLabel->id])->call('saveDraft');
+        $createForm->assertHasErrors(['productForm.age_label_ids.0']);
+        $this->app->setLocale('en');
+        $createForm
+            ->set('productForm.age_label_ids', [(string) $ageLabel->id])
+            ->call('saveDraft');
+
+        $product = Product::query()->where('name_en', 'QA metadata product')->firstOrFail();
+
+        self::assertSame($subcategory->id, $product->category_id);
+        self::assertSame('Coral', $product->colour);
+        self::assertSame('نقطة رئيسية', $product->key_points_ar);
+        self::assertSame('Key point', $product->key_points_en);
+        self::assertSame('كلمة مفتاحية', $product->keywords_ar);
+        self::assertSame('keyword', $product->keywords_en);
+        self::assertSame([(int) $ageLabel->id], $product->ages()->pluck('age_labels.id')->all());
+        self::assertSame([(int) $character->id], $product->characters()->pluck('characters.id')->all());
+        self::assertNull($product->average_cost);
+
+        $product->forceFill(['average_cost' => '17.50', 'status' => 'inactive'])->save();
+
+        $editForm = Livewire::actingAs($this->administrator)
+            ->test('catalog::product-form', ['product' => $product->fresh()])
+            ->assertSet('productForm.category_id', (string) $subcategory->id)
+            ->assertSet('productForm.colour', 'Coral')
+            ->assertSet('productForm.key_points_ar', 'نقطة رئيسية')
+            ->assertSet('productForm.key_points_en', 'Key point')
+            ->assertSet('productForm.average_cost', '')
+            ->assertSet('productForm.age_label_ids', [(string) $ageLabel->id])
+            ->assertSet('productForm.character_ids', [(string) $character->id])
+            ->assertDontSeeHtml('wire:model="productForm.average_cost"')
+            ->set('productForm.average_cost', '')
+            ->set('productForm.colour', 'Emerald')
+            ->set('productForm.key_points_ar', 'نقطة رئيسية معدلة')
+            ->set('productForm.key_points_en', 'Edited key point')
+            ->set('productForm.keywords_ar', 'كلمات معدلة')
+            ->set('productForm.keywords_en', 'edited keyword')
+            ->call('saveDraft');
+
+        self::assertSame('17.50', $product->fresh()->average_cost);
+        self::assertSame('Emerald', $product->fresh()->colour);
+        self::assertSame('نقطة رئيسية معدلة', $product->fresh()->key_points_ar);
+        self::assertSame('Edited key point', $product->fresh()->key_points_en);
+        self::assertSame('كلمات معدلة', $product->fresh()->keywords_ar);
+        self::assertSame('edited keyword', $product->fresh()->keywords_en);
+
+        $editForm->set('productForm.average_cost', '888.88')->call('saveDraft');
+
+        self::assertSame('17.50', $product->fresh()->average_cost);
+        self::assertSame([(int) $ageLabel->id], $product->fresh()->ages()->pluck('age_labels.id')->all());
+        self::assertSame([(int) $character->id], $product->fresh()->characters()->pluck('characters.id')->all());
+    }
+}

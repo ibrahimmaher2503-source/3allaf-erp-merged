@@ -16,6 +16,7 @@ use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
+use App\Support\ProductQuantity;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -55,7 +56,7 @@ final class PosCartAction
         $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->first();
         $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
         if (bccomp($available, $requestedBase, 6) < 0) {
-            throw new InvalidArgumentException(__('The selected SKU does not have enough available stock.'));
+            throw new InvalidArgumentException(__('Only :quantity units of this product are available.', ['quantity' => ProductQuantity::format($available)]));
         }
 
         if ($key === false) {
@@ -66,6 +67,7 @@ final class PosCartAction
             $cart[$key] = $line;
         }
         $request->session()->put('pos.cart', $cart->values()->all());
+        $request->session()->forget('pos.gift_card_sale');
         $this->persist($request, $user, $context);
     }
 
@@ -89,7 +91,7 @@ final class PosCartAction
         $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $productId)->first();
         $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
         if (bccomp($available, $baseQuantity, 6) < 0) {
-            throw new InvalidArgumentException(__('The requested quantity exceeds available stock.'));
+            throw new InvalidArgumentException(__('Only :quantity units of this product are available.', ['quantity' => ProductQuantity::format($available)]));
         }
 
         $before = (string) ($line['quantity'] ?? '0');

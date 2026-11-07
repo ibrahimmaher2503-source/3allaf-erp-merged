@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('Payment Evidence')">
     <div class="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
-        <div><flux:heading size="xl">{{ __('Payment Evidence') }}</flux:heading><flux:text class="mt-1">{{ __('Private evidence files linked to immutable electronic payment records. Every access is reauthorized and audited.') }}</flux:text></div>
+        <div class="flex items-center gap-2"><flux:heading size="xl">{{ __('Payment Evidence') }}</flux:heading><x-context-help :title="__('Payment Evidence')" :label="__('Open contextual help')"><p>{{ __('Private evidence files linked to immutable electronic payment records. Every access is reauthorized and audited.') }}</p></x-context-help></div>
         <form method="GET" class="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-[1fr_1fr_auto] dark:border-zinc-800 dark:bg-zinc-900">
             <flux:input name="q" value="{{ request('q') }}" :label="__('Invoice')" />
             <flux:select name="method_id" :label="__('Method')"><flux:select.option value="">{{ __('All') }}</flux:select.option>@foreach ($methods as $method)<flux:select.option value="{{ $method->id }}" :selected="(string) request('method_id') === (string) $method->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en }}</flux:select.option>@endforeach</flux:select>

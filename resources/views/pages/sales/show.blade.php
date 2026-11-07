@@ -1,7 +1,12 @@
 <x-layouts::app :title="__('Sale :number', ['number' => $sale->document_number ?: $sale->id])">
     <div class="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
-            <div><flux:heading size="xl">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</flux:heading><flux:text class="mt-1">{{ __('Retail sale source, financial snapshots, payments, and stock-linked lines.') }}</flux:text></div>
+            <div class="flex items-center gap-2">
+                <flux:heading size="xl">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</flux:heading>
+                <x-context-help :title="$sale->document_number ?: __('Sale #:id', ['id' => $sale->id])" :label="__('Open contextual help')">
+                    <p>{{ __('Retail sale source, financial snapshots, payments, and stock-linked lines.') }}</p>
+                </x-context-help>
+            </div>
             <div class="flex flex-wrap gap-2">
                 @if ($sale->status === 'approved')
                     @can('pos_sales.print')
@@ -12,6 +17,7 @@
                         <flux:button href="{{ route('gift.receipts.index', ['sale_id' => $sale->id]) }}" variant="subtle" icon="gift">{{ __('Issue Gift Receipt') }}</flux:button>
                     @endcan
                 @endif
+                @if($giftCardSale)@can('pos_sales.print')<flux:button href="{{ route('pos.receipt.preview', $sale) }}" target="_blank" variant="subtle" icon="printer">{{ __('Print receipt') }}</flux:button>@endcan@endif
                 <flux:button href="{{ route('sales.index') }}" variant="subtle">{{ __('Back') }}</flux:button>
             </div>
         </div>
@@ -29,6 +35,7 @@
             <table class="data-table min-w-[980px] text-sm" aria-label="{{ __('Sale lines') }}">
                 <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="text-end">{{ __('Quantity') }}</th><th scope="col" class="text-end">{{ __('Original price') }}</th><th scope="col" class="text-end">{{ __('Selling price') }}</th><th scope="col" class="text-end">{{ __('Gross') }}</th><th scope="col" class="text-end">{{ __('Discount') }}</th><th scope="col" class="text-end">{{ __('Line total') }}</th><th scope="col">{{ __('Pricing context') }}</th></tr></thead>
                 <tbody>
+                    @if($giftCardSale)<tr><td><strong>{{ __('Gift Card') }}</strong><div class="font-mono text-xs" dir="ltr">{{ $giftCardSale->giftCard?->identifier }}</div></td><td class="text-end">1</td><td class="text-end"><x-money :amount="$giftCardSale->giftCard?->issued_value" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="$giftCardSale->giftCard?->issued_value" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="$sale->subtotal" :currency="$sale->currency_code" /></td><td class="text-end">—</td><td class="text-end"><x-money :amount="$sale->total" :currency="$sale->currency_code" /></td><td>{{ __('Face value') }}</td></tr>@endif
                     @foreach ($sale->lines as $line)
                         <tr>
                             <td><div class="font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>
@@ -66,7 +73,7 @@
                     @forelse ($sale->payments as $payment)
                         <div class="rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700">
                             <div class="flex justify-between gap-3"><span class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $payment->paymentMethod->name_ar : $payment->paymentMethod->name_en }}</span><span class="font-semibold"><x-money :amount="$payment->amount" :currency="$sale->currency_code" /></span></div>
-                            @if ($payment->tendered_amount !== null)<div class="mt-1 text-xs text-zinc-500">{{ __('Tendered') }} {{ $payment->tendered_amount }} · {{ __('Change') }} {{ $payment->change_amount }}</div>@endif
+                            @if ($payment->tendered_amount !== null)<div class="mt-1 text-xs text-zinc-500">{{ __('Tendered') }} <x-money :amount="$payment->tendered_amount" /> · {{ __('Change') }} <x-money :amount="$payment->change_amount" /></div>@endif
                             @if ($payment->evidenceAttachment && auth()->user()->can('pos_sales.payment_evidence_view'))<a class="mt-2 inline-block text-xs text-blue-600 hover:underline" href="{{ route('payments.evidence.show', $payment->evidenceAttachment) }}" target="_blank">{{ __('View protected payment evidence') }}</a>@endif
                         </div>
                     @empty

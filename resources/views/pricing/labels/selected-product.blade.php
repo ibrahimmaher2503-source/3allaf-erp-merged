@@ -11,20 +11,15 @@
             {{ __('Remove') }}
         </button>
     </div>
+    <p x-show="product.document_quantity" class="mt-2 text-sm text-zinc-600">{{ str_starts_with(app()->getLocale(), 'ar') ? 'كمية المستند' : 'Document quantity' }}: <span dir="ltr" x-text="product.document_quantity"></span></p>
+    <p x-show="product.resolved_price" class="mt-2 text-sm font-semibold text-emerald-800">{{ str_starts_with(app()->getLocale(), 'ar') ? 'سعر البيع في الوجهة' : 'Destination selling price' }}: <span dir="ltr" x-text="Number(product.resolved_price).toFixed(2)"></span></p>
 
     <template x-if="primary(product)">
         <div class="mt-3 grid grid-cols-2 gap-3">
             <label>
                 {{ __('Barcode') }}
-                <select
-                    :name="`products[${product.id}][barcode_id]`"
-                    x-model="product.barcode_id"
-                    class="mt-1 min-h-11 w-full rounded-lg border border-border bg-surface"
-                >
-                    <template x-for="barcode in product.barcodes" :key="barcode.id">
-                        <option :value="barcode.id" x-text="barcode.barcode"></option>
-                    </template>
-                </select>
+                <input type="hidden" :name="`products[${product.id}][barcode_id]`" :value="primary(product)?.id">
+                <span class="mt-1 block rounded-lg border border-border bg-surface px-3 py-2 font-mono" dir="ltr" x-text="primary(product)?.barcode"></span>
             </label>
             <label>
                 {{ __('Label copies') }}

@@ -1,0 +1,6 @@
+{"route":"/admin","actor_id":1,"status":200,"expected":200,"bytes":197439,"read_only_transaction":true,"result":"PASS"}
+{"route":"/catalog/products/create","actor_id":1,"status":200,"expected":200,"bytes":231086,"read_only_transaction":true,"result":"PASS"}
+{"route":"/approvals","actor_id":1,"status":200,"expected":200,"bytes":206488,"read_only_transaction":true,"result":"PASS"}
+{"route":"/inventory/balances","actor_id":1,"status":200,"expected":200,"bytes":172222,"read_only_transaction":true,"result":"PASS"}
+{"route":"/pos/shift","actor_id":1,"status":200,"expected":200,"bytes":69557,"read_only_transaction":true,"result":"PASS"}
+{"route":"/admin/translations","actor_id":3,"status":403,"expected":403,"bytes":2436,"read_only_transaction":true,"result":"PASS"}

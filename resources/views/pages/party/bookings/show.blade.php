@@ -20,7 +20,7 @@
                 <div class="mt-4 space-y-3">
                     @if($booking->status === 'draft')
                         @can('party_bookings_invoices.approve')<form method="POST" action="{{ route('parties.bookings.confirm', $booking->id) }}">@csrf<flux:button type="submit" variant="primary" class="w-full">{{ __('Confirm booking') }}</flux:button></form>@endcan
-                        <flux:text class="text-sm">{{ __('Confirmation rechecks overlapping Party schedules and resource keys.') }}</flux:text>
+                        <x-context-help :title="__('Confirm booking')" :label="__('Open contextual help')"><p>{{ __('Confirmation rechecks overlapping Party schedules and resource keys.') }}</p></x-context-help>
                     @elseif(in_array($booking->status, ['confirmed','rescheduled'], true))
                         @can('party_operating_orders_consumables.create')<form method="POST" action="{{ route('parties.orders.store', $booking->id) }}">@csrf<input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}"><flux:button type="submit" variant="primary" class="w-full">{{ __('Create operating order') }}</flux:button></form>@endcan
                     @elseif($booking->status === 'completed_pending_settlement')
@@ -36,8 +36,7 @@
             <div class="grid gap-4 lg:grid-cols-2">
                 @can('party_bookings_invoices.edit')
                     <flux:card>
-                        <flux:heading size="lg">{{ __('Reschedule booking') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('Changing the schedule releases current reservations and requires confirmation again.') }}</flux:text>
+                        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Reschedule booking') }}</flux:heading><x-context-help :title="__('Reschedule booking')" :label="__('Open contextual help')"><p>{{ __('Changing the schedule releases current reservations and requires confirmation again.') }}</p></x-context-help></div>
                         <form method="POST" action="{{ route('parties.bookings.reschedule', $booking->id) }}" class="mt-4 grid gap-3 sm:grid-cols-2">
                             @csrf
                             <flux:input name="party_date" type="date" :label="__('Party date')" :value="old('party_date', $booking->party_date?->format('Y-m-d'))" required />
@@ -66,7 +65,7 @@
 
         <flux:card>
             <div class="flex flex-wrap items-start justify-between gap-3"><div><flux:heading size="lg">{{ __('Working invoice') }}</flux:heading><flux:text class="mt-1">{{ $booking->invoice->invoice_number }} · {{ ucfirst(str_replace('_',' ',$booking->invoice->state)) }}</flux:text></div><div class="flex flex-wrap gap-2"><flux:button href="{{ route('parties.invoices.show', $booking->invoice->id) }}" variant="subtle">{{ __('Open invoice') }}</flux:button><flux:button href="{{ route('parties.invoices.payments', $booking->invoice->id) }}" variant="subtle">{{ __('Payments') }}</flux:button></div></div>
-            <div class="mt-4 overflow-x-auto"><table class="data-table min-w-[650px] w-full text-sm"><thead><tr><th>{{ __('Type') }}</th><th>{{ __('Description') }}</th><th class="text-end">{{ __('Qty') }}</th><th class="text-end">{{ __('Line total') }}</th></tr></thead><tbody>@foreach($booking->invoice->lines as $line)<tr><td><flux:badge color="cyan">{{ ucfirst($line->line_type) }}</flux:badge></td><td>{{ str_starts_with(app()->getLocale(), 'ar') ? $line->description_ar : $line->description_en }}</td><td class="text-end tabular-nums">{{ $line->quantity }}</td><td class="text-end tabular-nums">{{ number_format((float)$line->line_total, 2) }} {{ $booking->invoice->currency_code }}</td></tr>@endforeach</tbody></table></div>
+            <div class="mt-4 overflow-x-auto"><table class="data-table min-w-[650px] w-full text-sm"><thead><tr><th>{{ __('Type') }}</th><th>{{ __('Description') }}</th><th class="text-end">{{ __('Qty') }}</th><th class="text-end">{{ __('Line total') }}</th></tr></thead><tbody>@foreach($booking->invoice->lines as $line)<tr><td><flux:badge color="cyan">{{ ucfirst($line->line_type) }}</flux:badge></td><td>{{ str_starts_with(app()->getLocale(), 'ar') ? $line->description_ar : $line->description_en }}</td><td class="text-end tabular-nums"><x-product-quantity :value="$line->quantity" /></td><td class="text-end tabular-nums">{{ number_format((float)$line->line_total, 2) }} {{ $booking->invoice->currency_code }}</td></tr>@endforeach</tbody></table></div>
             <div class="mt-4 flex justify-end border-t border-border pt-4 text-lg font-bold">{{ __('Total') }}: {{ number_format((float)$booking->invoice->total_amount, 2) }} {{ $booking->invoice->currency_code }}</div>
         </flux:card>
     </div>

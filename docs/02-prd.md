@@ -198,7 +198,7 @@ A branch POS shall sell only from its assigned selling store. Availability at ot
 
 ### INV-03
 
-Store transfers shall use a stateful document: `Draft`, `Submitted`, `Approved`, `Dispatched/In Transit`, `Partially Received`, `Received`, `Difference Review`, and `Cancelled`. The destination confirms actual received quantities and may log shortage, damage, or refusal separately.
+Store transfers shall use a stateful document: `Draft`, `Submitted/For Review`, `Dispatched/In Transit`, `Partially Received`, `Received`, `Difference Review`, and `Cancelled`. The reviewer may edit final transfer details on the review screen; approval saves those details and dispatches atomically. `Approved` is only an internal transaction state and must not remain as a normal post-approval state. The destination confirms actual received quantities and may log shortage, damage, or refusal separately.
 
 ### INV-04
 

@@ -1,0 +1,11 @@
+PASS invoice inclusive-tax snapshot and money
+PASS invoice exclusive-tax snapshot and money
+PASS tax rule company ownership
+PASS tax code unique within company
+PASS same tax code allowed across companies
+PASS tax company ownership immutable in model
+PASS tax company foreign key restricts deletion
+PASS product tax cannot cross company boundary
+PASS branch PO numbering format and continuity
+PASS supplier English name mandatory at model boundary
+PASS focused isolated scenario transaction complete

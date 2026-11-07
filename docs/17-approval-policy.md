@@ -99,7 +99,7 @@ Same-user approval is allowed only when all are true:
 - A reason is recorded.
 - The event is audited as self-approved.
 
-No role receives self-approval implicitly.
+Exception approved by the owner on 2026-10-21: active Super Admin and General Manager (`company-owner`) may approve or finalize their own existing operational documents within their company. They bypass ordinary maker/checker separation, operational permission denials, and approval-chain restrictions. The creator, requester, approver, actor, and decision time remain recorded; tenant isolation, valid state transitions, arithmetic/data consistency, canonical posting, and duplicate-posting guards remain mandatory. Other users retain the same-user requirements above.
 
 ---
 

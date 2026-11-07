@@ -10,6 +10,7 @@ use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Retail\Models\PosShift;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -20,15 +21,31 @@ use Illuminate\Validation\ValidationException;
 final class PlatformSettingsApprovalAction
 {
     /** @param array<string, mixed> $proposed @param array<string, mixed>|null $before */
-    public function request(string $resource, ?int $id, array $proposed, ?array $before = null, ?int $branchId = null, ?int $storeId = null, ?string $reason = null): ApprovalRecord
+    public function request(string $resource, ?int $id, array $proposed, ?array $before = null, ?int $branchId = null, ?int $storeId = null, ?string $reason = null, mixed $expectedLockVersion = null): ApprovalRecord
     {
+        if ($resource === 'cash_drawer_delete' && DB::transactionLevel() === 0) {
+            return DB::transaction(fn (): ApprovalRecord => $this->request(
+                $resource,
+                $id,
+                $proposed,
+                $before,
+                $branchId,
+                $storeId,
+                $reason,
+                $expectedLockVersion,
+            ));
+        }
+
         $requestPermission = $this->requestPermission($resource);
         Gate::authorize($requestPermission);
         /** @var User $requester */
         $requester = auth()->user() ?? throw new \LogicException('An authenticated requester is required.');
 
         if ($resource === 'tax_setting') {
-            $before = $id === null ? null : $this->snapshot(TaxSetting::query()->findOrFail($id));
+            $proposed['rate'] = app(SaveLocalSettingsAction::class)->validatedTaxRate($proposed);
+            $company = app(AuthorizedCompanyContext::class)->resolve($requester, $proposed['company_id'] ?? null);
+            $proposed['company_id'] = (int) $company->id;
+            $before = $id === null ? null : $this->snapshot(TaxSetting::query()->forCompany((int) $company->id)->findOrFail($id));
         } elseif ($resource === 'document_sequence') {
             if ($id !== null) {
                 $sequence = DocumentSequence::visibleTo($requester)->findOrFail($id);
@@ -56,8 +73,13 @@ final class PlatformSettingsApprovalAction
             $before = $this->snapshot($sequence);
         }
 
+        if ($resource === 'branch_delete' && $id !== null) {
+            $branch = Branch::visibleTo($requester)->findOrFail($id);
+            $proposed = array_merge($proposed, $this->branchDependencyContext($branch));
+        }
+
         if (in_array($resource, ['branch_delete', 'store_delete', 'store_archive', 'cash_drawer_delete'], true)) {
-            [$branchId, $storeId, $before] = $this->masterDeleteScope($resource, $id, $requester, $branchId, $storeId);
+            [$branchId, $storeId, $before] = $this->masterDeleteScope($resource, $id, $requester, $branchId, $storeId, $expectedLockVersion);
         }
 
         if (in_array($resource, ['store_delete', 'store_archive'], true)) {
@@ -160,7 +182,7 @@ final class PlatformSettingsApprovalAction
     }
 
     /** @return array{0: int, 1: int|null, 2: array<string, mixed>} */
-    private function masterDeleteScope(string $resource, ?int $id, User $requester, ?int $branchId, ?int $storeId): array
+    private function masterDeleteScope(string $resource, ?int $id, User $requester, ?int $branchId, ?int $storeId, mixed $expectedLockVersion = null): array
     {
         if ($id === null) {
             throw ValidationException::withMessages(['source' => __('An existing platform master is required for deletion approval.')]);
@@ -169,7 +191,16 @@ final class PlatformSettingsApprovalAction
         $target = match ($resource) {
             'branch_delete' => Branch::visibleTo($requester)->findOrFail($id),
             'store_delete', 'store_archive' => Store::visibleTo($requester)->findOrFail($id),
-            'cash_drawer_delete' => CashDrawer::visibleTo($requester)->findOrFail($id),
+            'cash_drawer_delete' => (function () use ($requester, $id, $expectedLockVersion): CashDrawer {
+                $drawer = CashDrawer::visibleTo($requester)->lockForUpdate()->findOrFail($id);
+                $version = $this->requirePositiveCashDrawerLockVersion($expectedLockVersion);
+
+                if ($version !== (int) $drawer->lock_version) {
+                    throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                }
+
+                return $drawer;
+            })(),
         };
         $expectedBranchId = $resource === 'branch_delete' ? $target->id : $target->branch_id;
         $expectedStoreId = $resource === 'store_delete' || $resource === 'store_archive' ? $target->id : $target->store_id;
@@ -188,6 +219,50 @@ final class PlatformSettingsApprovalAction
         return [$expectedBranchId, $expectedStoreId, $before];
     }
 
+    private function requirePositiveCashDrawerLockVersion(mixed $value): int
+    {
+        if (! is_int($value) && (! is_string($value) || preg_match('/\A[0-9]+\z/', $value) !== 1)) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        $version = (int) $value;
+
+        if ($version < 1) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        return $version;
+    }
+
+    /** @return array{store_count: int, active_store_count: int, active_selling_mapping_count: int, active_cash_drawer_count: int, active_user_scope_count: int} */
+    private function branchDependencyContext(Branch $branch): array
+    {
+        return DB::transaction(function () use ($branch): array {
+            $lockedBranch = Branch::query()->lockForUpdate()->findOrFail($branch->id);
+
+            return [
+                'store_count' => Store::query()->where('branch_id', $lockedBranch->id)->count(),
+                'active_store_count' => Store::query()->where('branch_id', $lockedBranch->id)->where('status', 'active')->count(),
+                'active_selling_mapping_count' => DB::table('branch_selling_stores')
+                    ->where('branch_id', $lockedBranch->id)
+                    ->where('status', 'active')
+                    ->count(),
+                'active_cash_drawer_count' => DB::table('cash_drawers')
+                    ->where('branch_id', $lockedBranch->id)
+                    ->where('status', 'active')
+                    ->count(),
+                'active_user_scope_count' => DB::table('user_branch_scopes')
+                    ->where('branch_id', $lockedBranch->id)
+                    ->where('status', 'active')
+                    ->count() + DB::table('user_store_scopes')
+                    ->join('stores', 'stores.id', '=', 'user_store_scopes.store_id')
+                    ->where('stores.branch_id', $lockedBranch->id)
+                    ->where('user_store_scopes.status', 'active')
+                    ->count(),
+            ];
+        });
+    }
+
     private function applyApprovedMasterDelete(string $resource, ?int $id, ApprovalRecord $approval): void
     {
         if ($id === null) {
@@ -204,8 +279,19 @@ final class PlatformSettingsApprovalAction
     private function logicalDeleteBranch(int $id, ApprovalRecord $approval): void
     {
         $branch = Branch::query()->lockForUpdate()->findOrFail($id);
-        if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
-            throw new \InvalidArgumentException(__('Cannot delete branch while it has active stores or an active selling store mapping.'));
+        $hasActiveStore = $branch->stores()
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first(['stores.id']) !== null;
+        $hasActiveSellingStoreMapping = $branch->sellingStoreMappings()
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first(['branch_selling_stores.id']) !== null;
+
+        if ($hasActiveStore || $hasActiveSellingStoreMapping) {
+            throw ValidationException::withMessages([
+                'approval' => __('Cannot deactivate branch while it has active stores or an active selling store mapping.'),
+            ]);
         }
 
         $before = $branch->getAttributes();
@@ -239,7 +325,9 @@ final class PlatformSettingsApprovalAction
         }
 
         $before = $drawer->getAttributes();
-        $drawer->update(['status' => 'inactive']);
+        $drawer->status = 'inactive';
+        $drawer->lock_version = (int) $drawer->lock_version + 1;
+        $drawer->save();
         app(RecordAuditEvent::class)->execute(
             category: 'master_data', event: 'delete_cash_drawer', source: $drawer, before: $before,
             after: ['deleted' => true, 'status' => 'inactive'], branchId: $drawer->branch_id, storeId: $drawer->store_id,
@@ -305,7 +393,7 @@ final class PlatformSettingsApprovalAction
 
         try {
             [$branchId, $storeId] = $this->targetScope($resource, $id, $proposed);
-            $canonicalBefore = $this->canonicalBefore($resource, $id);
+            $canonicalBefore = $this->canonicalBefore($resource, $id, is_array($proposed) ? $proposed : null);
         } catch (ModelNotFoundException) {
             throw ValidationException::withMessages(['approval' => __('The approval request source no longer exists.')]);
         }
@@ -340,7 +428,7 @@ final class PlatformSettingsApprovalAction
             })(),
             'document_sequence' => $this->sequenceScope($id, $proposed),
             'document_sequence_override' => $this->sequenceScope($id, $proposed),
-            'tax_setting' => $this->taxSettingScope($id),
+            'tax_setting' => $this->taxSettingScope($id, $proposed),
             default => throw ValidationException::withMessages(['approval' => __('This platform setting approval source is not supported.')]),
         };
     }
@@ -361,24 +449,31 @@ final class PlatformSettingsApprovalAction
     }
 
     /** @return array{0: null, 1: null} */
-    private function taxSettingScope(?int $id): array
+    private function taxSettingScope(?int $id, ?array $proposed): array
     {
         if ($id !== null) {
-            TaxSetting::query()->lockForUpdate()->findOrFail($id);
+            $companyId = (int) ($proposed['company_id'] ?? 0);
+            if ($companyId <= 0) {
+                throw ValidationException::withMessages(['approval' => __('An authorized company is required for the tax rule.')]);
+            }
+            TaxSetting::query()->where('company_id', $companyId)->lockForUpdate()->findOrFail($id);
         }
 
         return [null, null];
     }
 
     /** @return array<string, mixed>|null */
-    private function canonicalBefore(string $resource, ?int $id): ?array
+    private function canonicalBefore(string $resource, ?int $id, ?array $proposed = null): ?array
     {
         if ($id === null) {
             return null;
         }
 
         $target = match ($resource) {
-            'tax_setting' => TaxSetting::query()->lockForUpdate()->findOrFail($id),
+            'tax_setting' => TaxSetting::query()
+                ->where('company_id', (int) ($proposed['company_id'] ?? 0))
+                ->lockForUpdate()
+                ->findOrFail($id),
             'document_sequence', 'document_sequence_override' => DocumentSequence::query()->lockForUpdate()->findOrFail($id),
             'branch_delete' => Branch::query()->lockForUpdate()->findOrFail($id),
             'store_delete', 'store_archive' => Store::query()->lockForUpdate()->findOrFail($id),
@@ -423,7 +518,11 @@ final class PlatformSettingsApprovalAction
             return;
         }
 
-        $record = $model::query()->lockForUpdate()->find($id);
+        $recordQuery = $model::query();
+        if ($resource === 'tax_setting' && isset($context['proposed']['company_id'])) {
+            $recordQuery->where('company_id', (int) $context['proposed']['company_id']);
+        }
+        $record = $recordQuery->lockForUpdate()->find($id);
         $sourceChanged = $record === null;
         if (! $sourceChanged) {
             foreach ($before as $key => $expected) {

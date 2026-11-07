@@ -9,7 +9,7 @@
                 <flux:heading size="xl" class="mt-2">{{ __('Loyalty ledger') }}</flux:heading>
                 <flux:text class="mt-1">{{ $displayName }} · <span dir="ltr">{{ $customer->phone_display }}</span></flux:text>
             </div>
-            <div class="flex flex-wrap gap-2"><x-context-help :title="__('Loyalty behavior')" :label="__('Open loyalty help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Points are earned only from approved eligible sales under the active company policy.') }}</li><li>{{ __('Redemptions use available unexpired points oldest first.') }}</li><li>{{ __('Manual adjustments require the configured approval separation and never rewrite ledger history.') }}</li></ul></x-context-help><flux:button href="{{ route('customers.show', $customer) }}" variant="subtle" icon="arrow-left">{{ __('Customer profile') }}</flux:button><flux:button href="{{ route('customers.index') }}" variant="ghost">{{ __('All customers') }}</flux:button></div>
+            <div class="flex flex-wrap gap-2"><x-context-help :title="__('Loyalty behavior')" :label="__('Open loyalty help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Points are earned only from approved eligible sales under the active company policy.') }}</li><li>{{ __('The current balance is derived from the immutable points ledger; entries are never rewritten.') }}</li><li>{{ __('Redemptions use available unexpired points oldest first.') }}</li><li>{{ __('When the active policy configures expiry, each earning entry keeps its own expiry date and due points are removed through a compensating expiry entry.') }}</li><li>{{ __('Manual adjustments require the configured approval separation, reason, source, and before/after balance so the full history remains auditable.') }}</li></ul></x-context-help><flux:button href="{{ route('customers.show', $customer) }}" variant="subtle" icon="arrow-left">{{ __('Customer profile') }}</flux:button><flux:button href="{{ route('customers.index') }}" variant="ghost">{{ __('All customers') }}</flux:button></div>
         </div>
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
         @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>@endif
@@ -17,7 +17,7 @@
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="ledger-heading">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-zinc-800">
-                    <div><flux:heading id="ledger-heading" size="lg">{{ __('Immutable points history') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('Every entry has a source, rule snapshot, idempotency key, and before/after balance.') }}</flux:text></div>
+                    <div class="flex items-center gap-2"><flux:heading id="ledger-heading" size="lg">{{ __('Immutable points history') }}</flux:heading><x-context-help :title="__('Immutable points history')" :label="__('Open contextual help')"><p>{{ __('Every entry has a source, rule snapshot, idempotency key, and before/after balance.') }}</p></x-context-help></div>
                     <div class="text-end"><div class="text-3xl font-black tabular-nums" dir="ltr">{{ number_format($balance) }}</div><div class="text-xs text-slate-500">{{ __('Current balance') }}</div></div>
                 </div>
                 <div class="overflow-x-auto">
@@ -38,12 +38,11 @@
             <aside class="space-y-6">
                 @can('loyalty.redeem')
                     <section class="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20">
-                        <flux:heading size="lg">{{ __('Redeem points') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('Redemption is FIFO, cannot exceed available unexpired points, and is linked to an approved sale.') }}</flux:text>
+                        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Redeem points') }}</flux:heading><x-context-help :title="__('Redeem points')" :label="__('Open contextual help')"><p>{{ __('Redemption is FIFO, cannot exceed available unexpired points, and is linked to an approved sale.') }}</p></x-context-help></div>
                         <form method="POST" action="{{ route('customers.loyalty.redeem', $customer) }}" class="mt-4 space-y-3">
                             @csrf
                             <flux:select name="source_sale_id" :label="__('Approved sale')" required>
-                                @foreach ($approvedSales as $sale)<flux:select.option value="{{ $sale->id }}">{{ $sale->document_number ?? '#'.$sale->id }} · {{ $sale->total }}</flux:select.option>@endforeach
+                                @foreach ($approvedSales as $sale)<flux:select.option value="{{ $sale->id }}">{{ $sale->document_number ?? '#'.$sale->id }} · {{ \App\Modules\Retail\Support\DecimalMoney::round((string) $sale->total) }}</flux:select.option>@endforeach
                             </flux:select>
                             <flux:input name="points" :label="__('Points')" type="number" min="1" step="1" required />
                             <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
@@ -53,8 +52,7 @@
                 @endcan
                 @can('loyalty.adjust')
                     <section class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm dark:border-amber-900 dark:bg-amber-950/20">
-                        <flux:heading size="lg">{{ __('Request adjustment') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('Adjustments are pending until a separate authorized approver accepts them. Negative adjustments cannot create a negative balance.') }}</flux:text>
+                        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Request adjustment') }}</flux:heading><x-context-help :title="__('Request adjustment')" :label="__('Open contextual help')"><p>{{ __('Adjustments are pending until a separate authorized approver accepts them. Negative adjustments cannot create a negative balance.') }}</p></x-context-help></div>
                         <form method="POST" action="{{ route('customers.loyalty.adjustments.store', $customer) }}" class="mt-4 space-y-3">
                             @csrf
                             <flux:input name="points" :label="__('Signed points')" type="number" min="-1000000" max="1000000" step="1" required />
@@ -67,8 +65,7 @@
                 @endcan
                 @can('loyalty.expire')
                     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                        <flux:heading size="lg">{{ __('Expiry processing') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('Due entries are consumed oldest-first through compensating immutable expiry entries.') }}</flux:text>
+                        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Expiry processing') }}</flux:heading><x-context-help :title="__('Expiry processing')" :label="__('Open contextual help')"><p>{{ __('Due entries are consumed oldest-first through compensating immutable expiry entries.') }}</p></x-context-help></div>
                         <form method="POST" action="{{ route('customers.loyalty.expire', $customer) }}" class="mt-4">@csrf<flux:button type="submit" variant="subtle">{{ __('Post due expiry') }}</flux:button></form>
                     </section>
                 @endcan

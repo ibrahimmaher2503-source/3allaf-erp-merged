@@ -3,12 +3,14 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\CashControl\Models\CashAccount;
+use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\PosShift;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class SaveCashDrawerAction
@@ -51,21 +53,53 @@ class SaveCashDrawerAction
                     if ((int) $store->company_id !== (int) $branch->company_id) {
                         throw new InvalidArgumentException(__('Selected store does not belong to the chosen company.'));
                     }
-                    if (! $user->is_super_admin && ! $store->visibleTo($user)->whereKey($store->getKey())->exists()) {
+                    if ((! $user->hasGlobalApplicationAccess() || $user->canBypassApproval()) && ! $store->visibleTo($user)->whereKey($store->getKey())->exists()) {
                         throw new InvalidArgumentException(__('The selected POS selling location is outside your authorized scope.'));
                     }
                 }
 
                 if ($status === 'active') {
-                    if ($store === null) {
-                        throw new InvalidArgumentException(__('An active cash drawer requires a POS selling location / stock source. Assign the branch\'s active POS location before saving.'));
-                    }
-                    if ($store->status !== 'active' || $store->type !== 'selling') {
-                        throw new InvalidArgumentException(__('The POS selling location / stock source must be an active selling location.'));
-                    }
+                    $this->assertActiveSellingStore($store);
 
                     // The drawer's explicit selling outlet is authoritative. A
                     // historical branch-wide primary mapping is never a fallback.
+                }
+
+                $assignedUserId = $data['assigned_user_id'] ?? null;
+                if ($assignedUserId !== null && $assignedUserId !== '') {
+                    if ((! is_int($assignedUserId) && (! is_string($assignedUserId) || ctype_digit($assignedUserId) !== true))
+                        || (int) $assignedUserId < 1) {
+                        throw ValidationException::withMessages([
+                            'assigned_user_id' => __('The selected cashier must be active and assigned to this branch or sales outlet.'),
+                        ]);
+                    }
+
+                    $assignedCashier = User::query()
+                        ->assignableToCashDrawer((int) $data['branch_id'], $store?->id)
+                        ->sharedLock()
+                        ->find((int) $assignedUserId);
+
+                    if ($assignedCashier === null) {
+                        throw ValidationException::withMessages([
+                            'assigned_user_id' => __('The selected cashier must be active and assigned to this branch or sales outlet.'),
+                        ]);
+                    }
+
+                    $assignedUserId = (int) $assignedCashier->id;
+                } else {
+                    $assignedUserId = null;
+                }
+
+                $eligibleIds = array_values(array_unique(array_map('intval', $data['eligible_cashier_ids'] ?? [])));
+                if ($assignedUserId !== null && ! in_array($assignedUserId, $eligibleIds, true)) {
+                    $eligibleIds[] = $assignedUserId;
+                }
+                if ($eligibleIds !== []) {
+                    $validIds = User::query()->assignableToCashDrawer((int) $data['branch_id'], $store?->id)
+                        ->whereKey($eligibleIds)->sharedLock()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+                    if (count($validIds) !== count($eligibleIds)) {
+                        throw ValidationException::withMessages(['eligible_cashier_ids' => __('Select only active cashiers permitted for this outlet.')]);
+                    }
                 }
 
                 $attributes = [
@@ -75,7 +109,7 @@ class SaveCashDrawerAction
                     'company_id' => $store?->company_id ?? $branch->company_id,
                     'branch_id' => $branch->id,
                     'store_id' => $store?->id,
-                    'assigned_user_id' => ! empty($data['assigned_user_id']) ? (int) $data['assigned_user_id'] : null,
+                    'assigned_user_id' => $assignedUserId,
                     'treasury_cash_account_id' => $this->treasuryAccountId($data, (int) ($store?->company_id ?? $branch->company_id)),
                     'code' => strtoupper(trim($data['code'])),
                     'name_ar' => trim($data['name_ar']),
@@ -90,6 +124,11 @@ class SaveCashDrawerAction
                         $drawerQuery->visibleTo($user);
                     }
                     $drawer = $drawerQuery->findOrFail($id);
+
+                    $expectedLockVersion = $this->requirePositiveLockVersion($data['lock_version'] ?? null);
+                    if ($expectedLockVersion !== (int) $drawer->lock_version) {
+                        throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                    }
 
                     $assignmentChanged = (int) $drawer->branch_id !== (int) $attributes['branch_id']
                         || (int) $drawer->store_id !== (int) $attributes['store_id'];
@@ -109,7 +148,9 @@ class SaveCashDrawerAction
                     }
 
                     $oldData = $drawer->toArray();
-                    $drawer->update($attributes);
+                    $drawer->fill($attributes);
+                    $drawer->lock_version = $expectedLockVersion + 1;
+                    $drawer->save();
                     $actionName = 'update_cash_drawer';
                     $changes = [
                         'before' => $oldData,
@@ -122,6 +163,8 @@ class SaveCashDrawerAction
                         'after' => $drawer->toArray(),
                     ];
                 }
+
+                $drawer->eligibleCashiers()->sync($eligibleIds);
 
                 app(RecordAuditEvent::class)->execute(
                     category: 'master_data',
@@ -168,7 +211,7 @@ class SaveCashDrawerAction
     /**
      * Toggle or update cash drawer status with explicit TBD shift dependency guards and audit logging.
      */
-    public function toggleStatus(int $id, string $newStatus = 'inactive'): CashDrawer
+    public function toggleStatus(int $id, string $newStatus = 'inactive', mixed $expectedLockVersion = null): CashDrawer
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.edit');
         if (! in_array($newStatus, self::ALLOWED_STATUSES, true)) {
@@ -178,12 +221,59 @@ class SaveCashDrawerAction
         $blockedMutation = null;
 
         try {
-            return DB::transaction(function () use ($id, $newStatus, &$blockedMutation) {
+            return DB::transaction(function () use ($id, $newStatus, $expectedLockVersion, &$blockedMutation) {
+                $user = auth()->user();
+                $drawerSnapshot = null;
+                $branch = null;
+                $store = null;
+
+                if ($newStatus === 'active') {
+                    $snapshotQuery = CashDrawer::query();
+                    if ($user !== null) {
+                        $snapshotQuery->visibleTo($user);
+                    }
+                    $drawerSnapshot = $snapshotQuery->findOrFail($id);
+
+                    $branch = Branch::query()->lockForUpdate()->find($drawerSnapshot->branch_id);
+                    $storeQuery = Store::query();
+                    if ($user !== null) {
+                        $storeQuery->visibleTo($user);
+                    }
+                    $store = $drawerSnapshot->store_id === null
+                        ? null
+                        : $storeQuery->lockForUpdate()->find((int) $drawerSnapshot->store_id);
+                }
+
                 $drawerQuery = CashDrawer::query()->lockForUpdate();
-                if (auth()->check()) {
-                    $drawerQuery->visibleTo(auth()->user());
+                if ($user !== null) {
+                    $drawerQuery->visibleTo($user);
                 }
                 $drawer = $drawerQuery->findOrFail($id);
+                $version = $this->requirePositiveLockVersion($expectedLockVersion);
+                if ($version !== (int) $drawer->lock_version) {
+                    throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                }
+
+                if ($newStatus === 'active') {
+                    if ((int) $drawer->branch_id !== (int) $drawerSnapshot->branch_id
+                        || (int) $drawer->store_id !== (int) $drawerSnapshot->store_id) {
+                        throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                    }
+                    if ($branch === null || $branch->status !== 'active') {
+                        throw new InvalidArgumentException(__('The selected branch is an inactive branch, does not exist, or is outside your authorized scope.'));
+                    }
+                    if ($drawer->store_id !== null && $store === null) {
+                        throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+                    }
+                    if ($store !== null
+                        && ((int) $store->branch_id !== (int) $drawer->branch_id
+                            || (int) $store->company_id !== (int) $branch->company_id)) {
+                        throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+                    }
+
+                    $this->assertActiveSellingStore($store);
+                }
+
                 $oldStatus = $drawer->status;
 
                 if ($newStatus !== 'active') {
@@ -195,7 +285,9 @@ class SaveCashDrawerAction
                     $this->assertNoActiveShift($drawer);
                 }
 
-                $drawer->update(['status' => $newStatus]);
+                $drawer->status = $newStatus;
+                $drawer->lock_version = $version + 1;
+                $drawer->save();
 
                 app(RecordAuditEvent::class)->execute(
                     category: 'master_data',
@@ -229,6 +321,32 @@ class SaveCashDrawerAction
 
         if ($hasActiveShift) {
             throw new InvalidArgumentException(__('Cannot deactivate or reassign a cash drawer while it has an active POS shift. Close the shift before trying again.'));
+        }
+    }
+
+    private function requirePositiveLockVersion(mixed $value): int
+    {
+        if (! is_int($value) && (! is_string($value) || preg_match('/\A[0-9]+\z/', $value) !== 1)) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        $version = (int) $value;
+
+        if ($version < 1) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        return $version;
+    }
+
+    private function assertActiveSellingStore(?Store $store): void
+    {
+        if ($store === null) {
+            throw new InvalidArgumentException(__('An active cash drawer requires a POS selling location / stock source. Assign the branch\'s active POS location before saving.'));
+        }
+
+        if ($store->status !== 'active' || $store->type !== 'selling') {
+            throw new InvalidArgumentException(__('The POS selling location / stock source must be an active selling location.'));
         }
     }
 

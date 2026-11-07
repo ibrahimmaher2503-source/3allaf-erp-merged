@@ -12,9 +12,7 @@
         >
         <flux:button type="button" x-on:click="search()" icon="magnifying-glass">{{ __('Search') }}</flux:button>
     </div>
-    <p class="mt-1 text-xs text-text-muted">
-        {{ __('Scan a barcode and press Enter to select its exact product immediately.') }}
-    </p>
+    <x-context-help :title="__('Search')" :label="__('Open contextual help')"><p>{{ __('Scan a barcode and press Enter to select its exact product immediately.') }}</p></x-context-help>
 </div>
 
 <div x-show="loading" class="rounded-lg bg-surface-muted p-3">{{ __('Searching…') }}</div>

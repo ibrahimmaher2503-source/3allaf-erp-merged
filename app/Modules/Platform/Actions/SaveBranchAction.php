@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Pricing\Models\PriceList;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class SaveBranchAction
@@ -31,7 +32,7 @@ class SaveBranchAction
             if (auth()->check()) {
                 $branchQuery->visibleTo(auth()->user());
             }
-            $branch = $id ? $branchQuery->findOrFail($id) : null;
+            $branch = $id ? $branchQuery->lockForUpdate()->findOrFail($id) : null;
             $attributes = [
                 'company_id' => $company->id,
                 'default_price_list_id' => filled($data['default_price_list_id'] ?? null) ? (int) $data['default_price_list_id'] : null,
@@ -45,13 +46,13 @@ class SaveBranchAction
                 'status' => $data['status'] ?? 'active',
                 'policy_notes' => isset($data['policy_notes']) && trim((string) $data['policy_notes']) !== '' ? trim((string) $data['policy_notes']) : null,
             ];
-            if ($attributes['default_price_list_id'] !== null && ! PriceList::query()->where('company_id', $company->id)->whereKey($attributes['default_price_list_id'])->where('status', 'active')->exists()) throw new InvalidArgumentException(__('Select an active price list belonging to this company.'));
+            if ($attributes['default_price_list_id'] !== null && ! PriceList::query()->where('company_id', $company->id)->whereKey($attributes['default_price_list_id'])->where('status', 'active')->exists()) {
+                throw new InvalidArgumentException(__('Select an active price list belonging to this company.'));
+            }
 
             if ($id) {
                 if ($attributes['status'] === 'inactive' && $branch->status === 'active') {
-                    if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
-                        throw new InvalidArgumentException(__('Cannot deactivate branch while it has active stores or an active selling store mapping.'));
-                    }
+                    $this->assertDeactivationSafe($branch);
                 }
 
                 $oldData = $branch->toArray();
@@ -94,13 +95,11 @@ class SaveBranchAction
             if (auth()->check()) {
                 $branchQuery->visibleTo(auth()->user());
             }
-            $branch = $branchQuery->findOrFail($id);
+            $branch = $branchQuery->lockForUpdate()->findOrFail($id);
             $newStatus = $branch->status === 'active' ? 'inactive' : 'active';
 
             if ($newStatus === 'inactive') {
-                if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
-                    throw new InvalidArgumentException(__('Cannot deactivate branch while it has active stores or an active selling store mapping.'));
-                }
+                $this->assertDeactivationSafe($branch);
             }
 
             $oldStatus = $branch->status;
@@ -117,5 +116,23 @@ class SaveBranchAction
 
             return $branch;
         });
+    }
+
+    private function assertDeactivationSafe(Branch $branch): void
+    {
+        $hasActiveStore = $branch->stores()
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first(['stores.id']) !== null;
+        $hasActiveSellingStoreMapping = $branch->sellingStoreMappings()
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first(['branch_selling_stores.id']) !== null;
+
+        if ($hasActiveStore || $hasActiveSellingStoreMapping) {
+            throw ValidationException::withMessages([
+                'branch' => __('Cannot deactivate branch while it has active stores or an active selling store mapping.'),
+            ]);
+        }
     }
 }

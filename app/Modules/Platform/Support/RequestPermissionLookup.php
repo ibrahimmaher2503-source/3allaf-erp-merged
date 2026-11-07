@@ -20,16 +20,20 @@ final class RequestPermissionLookup
             return request()->attributes->get($requestKey);
         }
 
-        $lookup = $this->lookups[$user->id] ??= DB::table('permissions')
-            ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
-            ->join('roles', 'roles.id', '=', 'role_permissions.role_id')
-            ->join('role_user', 'role_user.role_id', '=', 'roles.id')
-            ->where('role_user.user_id', $user->id)
-            ->where('roles.status', 'active')
-            ->where('permissions.status', 'active')
-            ->distinct()
-            ->pluck('permissions.code')
-            ->mapWithKeys(static fn (string $code): array => [$code => true])
+        $permissions = DB::table('permissions')->where('permissions.status', 'active');
+        if (! $user->hasGlobalApplicationAccess() && ! $user->isCompanyOwner()) {
+            $permissions->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
+                ->join('roles', 'roles.id', '=', 'role_permissions.role_id')
+                ->join('role_user', 'role_user.role_id', '=', 'roles.id')
+                ->where('role_user.user_id', $user->id)
+                ->where('roles.status', 'active')
+                ->distinct();
+        }
+
+        $lookup = $this->lookups[$user->id] ??= $permissions->get(['permissions.code', 'permissions.module'])
+            ->filter(static fn (object $permission): bool => $user->hasGlobalApplicationAccess() || ! $user->isCompanyOwner()
+                || CompanyOwnerPermissionProfile::allows($permission->code, $permission->module))
+            ->mapWithKeys(static fn (object $permission): array => [$permission->code => true])
             ->all();
 
         if (app()->bound('request')) {

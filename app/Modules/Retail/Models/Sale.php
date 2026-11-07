@@ -12,6 +12,7 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -100,13 +101,28 @@ final class Sale extends Model implements ImmutableSourceContract
         return $query->where('status', 'approved');
     }
 
+    /** @param Builder<self> $query @return Builder<self> */
+    public function scopeSearchSource(Builder $query, string $term): Builder
+    {
+        return $query->when($term !== '', fn (Builder $query) => $query->where(function (Builder $query) use ($term): void {
+            $query->where('document_number', 'like', '%'.$term.'%')
+                ->orWhereHas('customer', function (Builder $customer) use ($term): void {
+                    $customer->whereAny(['name_ar', 'name_en', 'phone_display', 'phone_normalized', 'secondary_phone', 'secondary_phone_normalized'], 'like', '%'.$term.'%');
+                });
+        }));
+    }
+
     /**
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

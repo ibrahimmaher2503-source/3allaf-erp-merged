@@ -23,7 +23,7 @@ final class ProductPricingReadiness
         }
 
         $version = (int) Cache::get('setup-readiness-version', 1);
-        $cacheKey = sprintf('product-pricing-readiness:v%d:c%d:l%s:n%d', $version, $companyId, app()->getLocale(), $displayLimit);
+        $cacheKey = sprintf('product-pricing-readiness:optional-model:v%d:c%d:l%s:n%d', $version, $companyId, app()->getLocale(), $displayLimit);
         $snapshot = Cache::remember($cacheKey, now()->addMinutes(10), fn (): array => $this->buildSnapshot($companyId, $displayLimit));
 
         if (app()->bound('request')) {
@@ -41,7 +41,6 @@ final class ProductPricingReadiness
             $issues->whereNull('sale_price')->orWhere('sale_price', '<=', 0)
                 ->orWhereNull('item_code')->orWhere('item_code', '')
                 ->orWhereNull('name_ar')->orWhere('name_ar', '')
-                ->orWhereNull('model_number')->orWhere('model_number', '')
                 ->orWhereNull('category_id')
                 ->orWhereDoesntHave('category', fn (Builder $category): Builder => $category->where('status', 'active'))
                 ->orWhereNull('barcode_registration_type')
@@ -49,9 +48,9 @@ final class ProductPricingReadiness
         });
         $counts = (clone $products)
             ->leftJoin('categories as readiness_categories', 'readiness_categories.id', '=', 'products.category_id')
-            ->selectRaw("COUNT(*) AS applicable_count")
-            ->selectRaw("SUM(CASE WHEN products.sale_price IS NULL OR products.sale_price <= 0 THEN 1 ELSE 0 END) AS invalid_price_count")
-            ->selectRaw("SUM(CASE WHEN products.sale_price IS NULL OR products.sale_price <= 0 OR products.item_code IS NULL OR products.item_code = '' OR products.name_ar IS NULL OR products.name_ar = '' OR products.model_number IS NULL OR products.model_number = '' OR products.category_id IS NULL OR readiness_categories.status <> 'active' OR products.barcode_registration_type IS NULL OR products.barcode_registration_type NOT IN ('international', 'local') THEN 1 ELSE 0 END) AS affected_count")
+            ->selectRaw('COUNT(*) AS applicable_count')
+            ->selectRaw('SUM(CASE WHEN products.sale_price IS NULL OR products.sale_price <= 0 THEN 1 ELSE 0 END) AS invalid_price_count')
+            ->selectRaw("SUM(CASE WHEN products.sale_price IS NULL OR products.sale_price <= 0 OR products.item_code IS NULL OR products.item_code = '' OR products.name_ar IS NULL OR products.name_ar = '' OR products.category_id IS NULL OR readiness_categories.status <> 'active' OR products.barcode_registration_type IS NULL OR products.barcode_registration_type NOT IN ('international', 'local') THEN 1 ELSE 0 END) AS affected_count")
             ->first();
         $applicableCount = (int) $counts->applicable_count;
         $affectedCount = (int) $counts->affected_count;
@@ -98,12 +97,21 @@ final class ProductPricingReadiness
             $categoryActive = is_array($product) ? (bool) ($product['category_active'] ?? true) : ($product->category?->status === 'active');
             $price = $value('sale_price');
             $issues = [];
-            if ($price === null || ! is_numeric($price) || (float) $price <= 0) $issues[] = 'invalid_base_price';
-            if (trim((string) $value('item_code')) === '') $issues[] = 'missing_item_code';
-            if (trim((string) $value('name_ar')) === '') $issues[] = 'missing_arabic_name';
-            if (trim((string) $value('model_number')) === '') $issues[] = 'missing_model_number';
-            if (! $value('category_id') || ! $categoryActive) $issues[] = 'missing_active_category';
-            if (! in_array((string) $value('barcode_registration_type'), ['international','local'], true)) $issues[] = 'missing_barcode_mode';
+            if ($price === null || ! is_numeric($price) || (float) $price <= 0) {
+                $issues[] = 'invalid_base_price';
+            }
+            if (trim((string) $value('item_code')) === '') {
+                $issues[] = 'missing_item_code';
+            }
+            if (trim((string) $value('name_ar')) === '') {
+                $issues[] = 'missing_arabic_name';
+            }
+            if (! $value('category_id') || ! $categoryActive) {
+                $issues[] = 'missing_active_category';
+            }
+            if (! in_array((string) $value('barcode_registration_type'), ['international', 'local'], true)) {
+                $issues[] = 'missing_barcode_mode';
+            }
 
             return [
                 'id' => (int) $value('id'),

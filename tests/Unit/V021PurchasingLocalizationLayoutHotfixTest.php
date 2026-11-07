@@ -41,7 +41,7 @@ final class V021PurchasingLocalizationLayoutHotfixTest extends TestCase
     {
         $badge = $this->source('resources/views/components/status/badge.blade.php');
         $money = $this->source('resources/views/components/money.blade.php');
-        self::assertStringContainsString("'awaiting_distribution' => __('Awaiting Distribution')", $badge);
+        self::assertStringContainsString("'awaiting_distribution' => __('Awaiting approval')", $badge);
         self::assertStringContainsString("'reversed' => __('Reversed')", $badge);
         self::assertStringContainsString("str_starts_with(app()->getLocale(), 'ar') ? 'ج.م' : 'EGP'", $money);
     }

@@ -1,0 +1,2 @@
+* * * * * cd /home/rajeh/laravel && /usr/local/bin/php artisan schedule:run >/dev/null 2>&1
+* * * * * flock -n /home/rajeh/shared/toyjoy/queue-worker.lock sh -c 'cd /home/rajeh/laravel && /usr/local/bin/php artisan queue:work database --queue=reports,default --stop-when-empty --sleep=1 --tries=3 --max-time=50' >/dev/null 2>&1

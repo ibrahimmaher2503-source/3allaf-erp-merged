@@ -1,0 +1,17 @@
+[
+  {
+    "path": "/up",
+    "status": 200,
+    "expected": 200
+  },
+  {
+    "path": "/login",
+    "status": 200,
+    "expected": 200
+  },
+  {
+    "path": "/admin",
+    "status": 302,
+    "expected": 302
+  }
+]

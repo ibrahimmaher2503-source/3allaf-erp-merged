@@ -26,6 +26,15 @@ class Product extends Model
 
     protected static function booted(): void
     {
+        self::saving(function (self $product): void {
+            if (blank($product->item_code)) {
+                $product->item_code = null;
+                if ($product->status === 'active') {
+                    throw new \InvalidArgumentException(__('A product without a final item code must remain an inactive draft.'));
+                }
+            }
+        });
+
         self::deleting(function (self $product): void {
             if (! $product->permanentRemovalAuthorized) {
                 throw new \LogicException('Products must be archived or removed through the guarded product-removal action.');
@@ -130,8 +139,8 @@ class Product extends Model
 
     public function hasIncompleteCard(): bool
     {
-        return blank($this->name_ar)
-            || blank($this->model_number)
+        return blank($this->item_code)
+            || blank($this->name_ar)
             || $this->category_id === null
             || $this->sale_price === null
             || bccomp((string) $this->sale_price, '0', 2) <= 0
@@ -230,6 +239,11 @@ class Product extends Model
             ->orderBy('id');
     }
 
+    public function filterValues(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductOptionValue::class, 'product_filter_values')->withTimestamps();
+    }
+
     public function familyOptionGroups(): BelongsToMany
     {
         return $this->belongsToMany(ProductOptionGroup::class, 'product_family_option_groups')
@@ -322,16 +336,50 @@ class Product extends Model
         });
     }
 
+    /**
+     * Preserve legacy products with no assortment rows as company-global while
+     * requiring assigned products and company-owned tax overrides to match the
+     * requested operational scope.
+     *
+     * @param  list<int>  $companyIds
+     */
+    public function scopeAvailableToCompanies(Builder $query, array $companyIds, ?int $branchId = null, ?int $storeId = null): Builder
+    {
+        $companyIds = collect($companyIds)->map(fn ($id): int => (int) $id)->filter(fn (int $id): bool => $id > 0)->unique()->values()->all();
+        if ($companyIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $scope) use ($companyIds, $branchId, $storeId): void {
+            $scope->where(function (Builder $legacy) use ($companyIds): void {
+                $legacy->whereDoesntHave('storeAssignments')
+                    ->where(fn (Builder $tax): Builder => $tax->whereNull('products.tax_setting_id')
+                        ->orWhereHas('taxSetting', fn (Builder $setting): Builder => $setting->whereIn('company_id', $companyIds)));
+            })->orWhereHas('storeAssignments', fn (Builder $assignments): Builder => $assignments
+                ->whereIn('company_id', $companyIds)
+                ->where('status', 'active')
+                ->when($branchId !== null, fn (Builder $branch): Builder => $branch->where('branch_id', $branchId))
+                ->when($storeId !== null, fn (Builder $store): Builder => $store->where('store_id', $storeId)));
+        });
+    }
+
+    public function scopeAvailableToCompany(Builder $query, int $companyId, ?int $branchId = null, ?int $storeId = null): Builder
+    {
+        return $query->availableToCompanies([$companyId], $branchId, $storeId);
+    }
+
     public function scopeCompleteCard(Builder $query): Builder
     {
-        return $query->whereNotNull('products.category_id')->whereNotNull('products.model_number')->where('products.model_number', '<>', '')
+        return $query->whereNotNull('products.item_code')->where('products.item_code', '<>', '')
+            ->whereNotNull('products.category_id')
             ->whereNotNull('products.name_ar')->where('products.name_ar', '<>', '')->where('products.sale_price', '>', 0)
             ->where(fn (Builder $scope) => $scope->where('products.product_type', 'service')->orWhereHas('barcodes', fn (Builder $codes) => $codes->where('status', 'active')));
     }
 
     public function scopeIncompleteCard(Builder $query): Builder
     {
-        return $query->where(fn (Builder $scope) => $scope->whereNull('products.category_id')->orWhereNull('products.model_number')->orWhere('products.model_number', '')
+        return $query->where(fn (Builder $scope) => $scope->whereNull('products.item_code')->orWhere('products.item_code', '')
+            ->orWhereNull('products.category_id')
             ->orWhereNull('products.name_ar')->orWhere('products.name_ar', '')->orWhereNull('products.sale_price')->orWhere('products.sale_price', '<=', 0)
             ->orWhere(fn (Builder $stock) => $stock->where('products.product_type', '<>', 'service')->whereDoesntHave('barcodes', fn (Builder $codes) => $codes->where('status', 'active'))));
     }

@@ -3,7 +3,7 @@ const registerDashboardAssistant = () => {
 
     window.Alpine.data('dashboardAssistant', ({ context, locale, fallback, preferences, progress, preferencesUrl, progressUrl }) => ({
             context, locale, fallback, progress, preferencesUrl, progressUrl,
-            defaults: { appearance: 'system', accent_color: 'teal', sidebar_mode: 'expanded', navbar_mode: 'sticky', content_width: 'wide', table_density: 'comfortable', font_scale: 'normal', reduced_motion: false },
+            defaults: { appearance: 'system', accent_color: 'teal', sidebar_mode: 'expanded', menu_variant: 'a', navbar_mode: 'sticky', content_width: 'wide', table_density: 'comfortable', font_scale: 'normal', reduced_motion: false },
             preferences: {},
             darkSidebar: false,
             guideOpen: false, customizerOpen: false, mobileMenuOpen: false,
@@ -87,6 +87,7 @@ const registerDashboardAssistant = () => {
             normalizePreferences(value = {}) {
                 const merged = { ...this.defaults, ...(value || {}) };
                 if (!['expanded', 'collapsed'].includes(merged.sidebar_mode)) merged.sidebar_mode = 'expanded';
+                if (!['a', 'b'].includes(merged.menu_variant)) merged.menu_variant = 'a';
                 merged.reduced_motion = merged.reduced_motion === true || merged.reduced_motion === 1 || merged.reduced_motion === '1' || merged.reduced_motion === 'true';
                 return merged;
             },
@@ -205,6 +206,10 @@ const registerDashboardAssistant = () => {
                     console.warn('UI preference save failed', error);
                     this.saveStatus = 'error';
                 }
+            },
+            async switchMenu() {
+                await this.savePreferences();
+                if (this.saveStatus === 'saved') window.location.reload();
             },
             updateDarkSidebar() {
                 const isDark = Boolean(this.darkSidebar);

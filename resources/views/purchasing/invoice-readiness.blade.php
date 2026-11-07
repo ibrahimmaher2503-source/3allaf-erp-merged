@@ -24,9 +24,9 @@
         </flux:callout>
 
         <section aria-labelledby="invoice-readiness-decisions">
-            <div class="mb-4">
+            <div class="mb-4 flex items-center gap-2">
                 <flux:heading id="invoice-readiness-decisions" size="lg">{{ __('Required decisions before operation') }}</flux:heading>
-                <flux:text>{{ __('Decision groups and blockers show the work still needed before invoice and receiving operations are enabled.') }}</flux:text>
+                <x-context-help :title="__('Required decisions before operation')" :label="__('Open contextual help')"><p>{{ __('Decision groups and blockers show the work still needed before invoice and receiving operations are enabled.') }}</p></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 @foreach ($decisionGroups as $group)

@@ -1,13 +1,13 @@
 @if (! $fullPage)
-    <div>
+    <div class="flex items-center gap-2">
         <h2 class="text-lg font-bold text-zinc-900 dark:text-white">{{ __('Edit Draft Purchase Order') }}</h2>
-        <p class="mt-1 text-xs text-zinc-500">{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p>
+        <x-context-help :title="__('Edit Draft Purchase Order')" :label="__('Open contextual help')"><p>{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p></x-context-help>
     </div>
 @endif
 
-<form wire:submit.prevent="saveOrder" class="space-y-4" data-product-line-editor data-autofocus="true">
+<form wire:submit.prevent="saveOrder" class="space-y-4" data-product-line-editor data-authoritative-financial-preview data-autofocus="true">
     @if($editingOrderId)<flux:callout variant="info" icon="pencil-square">{{ __('Draft') }} · {{ auth()->user()?->canBypassApproval() ? __('Saving will approve this purchase order immediately.') : __('Saving will send this purchase order to admin for approval.') }}</flux:callout>@endif
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1.45fr)_minmax(13rem,1.3fr)_10.5rem_10.5rem]">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
             <option value="">{{ __('Select Supplier') }}</option>
             @foreach ($suppliers as $sup)
@@ -15,31 +15,68 @@
             @endforeach
         </flux:select>
 
-        @if($stores->count() === 1)
-            <input type="hidden" wire:model="orderForm.store_id" />
-            <div><span class="text-xs font-semibold text-text-muted">{{ __('Receiving Store / Warehouse') }}</span><strong class="mt-1 flex h-10 items-center rounded-lg bg-surface-muted px-3 text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? $stores->first()->name_ar : $stores->first()->name_en }}</strong></div>
-        @else
-            <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse') . ' *'">
-                <option value="">{{ __('Select Store') }}</option>
-                @foreach ($stores as $st)
-                    <option value="{{ $st->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
-                @endforeach
-            </flux:select>
-        @endif
+        <flux:select wire:model.live="orderForm.branch_id" :label="__('Creating Branch') . ' *'">
+            <option value="">{{ __('Select Branch') }}</option>
+            @foreach ($branches as $branch)
+                <option value="{{ $branch->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }} ({{ $branch->code }})</option>
+            @endforeach
+        </flux:select>
+
+        <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse') . ' *'" :disabled="blank($orderForm['branch_id'])">
+            <option value="">{{ __('Select store') }}</option>
+            @foreach ($stores as $st)
+                <option value="{{ $st->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
+            @endforeach
+        </flux:select>
 
         <flux:input type="date" wire:model="orderForm.order_date" :label="__('Order Date') . ' *'" />
         <flux:input type="date" wire:model="orderForm.expected_delivery_date" :label="__('Expected Delivery Date')" />
     </div>
+    @if(filled($orderForm['branch_id']))
+        @php($creatingBranch = $branches->firstWhere('id', (int) $orderForm['branch_id']))
+        <div class="flex items-center gap-2 text-xs text-text-muted">
+            <p>
+            @if($editingOrderId && filled($editingOrderNumber))
+                {{ __('Saved reference') }}: <span class="font-mono" dir="ltr">{{ $editingOrderNumber }}</span>
+            @else
+                {{ __('Unallocated preview') }}: <span class="font-mono" dir="ltr">{{ $creatingBranch?->code }}-PO-000000</span>
+            @endif
+            · {{ str_starts_with(app()->getLocale(), 'ar') ? $creatingBranch?->name_ar : $creatingBranch?->name_en }}
+            </p>
+            @unless($editingOrderId && filled($editingOrderNumber))
+                <x-context-help :title="__('Unallocated preview')" :label="__('Open contextual help')"><p>{{ __('The final sequence is allocated only when the draft is saved.') }}</p></x-context-help>
+            @endunless
+        </div>
+    @endif
 
     <div class="space-y-2 border-t border-border pt-3">
         <flux:callout variant="info">{{ __('Choose a purchase unit, enter its quantity and price. Stock is received in the base unit only after invoice approval.') }}</flux:callout>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
+            <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
+                <x-context-help :title="__('Purchase cost and totals')" :label="__('Open contextual help')">
+                    <p>{{ __('Purchase cost uses only the latest approved cost for this product and supplier in the current company. If no history exists, the cost starts at zero.') }}</p>
+                    <p>{{ __('New purchase-order totals are quantity multiplied by unit purchase cost. Invoice discounts and taxes remain available on purchase invoices.') }}</p>
+                </x-context-help>
+            </div>
             <div class="flex flex-wrap items-center gap-3 sm:justify-end">
                 <flux:checkbox wire:model.live="supplierProductsOnly" :label="__('Use supplier products only')" :disabled="blank($orderForm['supplier_id'])" />
+                <flux:button type="button" size="xs" variant="subtle" icon="arrow-up-tray" wire:click="$set('showImportPreview', true)" :disabled="blank($orderForm['supplier_id']) || blank($orderForm['branch_id'])">{{ str_starts_with(app()->getLocale(), 'ar') ? 'استيراد من Excel' : 'Import from Excel' }}</flux:button>
+                <flux:button size="xs" variant="subtle" icon="arrow-down-tray" href="{{ route('purchasing.orders.import-template') }}">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تحميل نموذج Excel' : 'Download Excel template' }}</flux:button>
                 <flux:button type="button" size="xs" variant="subtle" icon="plus" wire:click="addLine" data-add-line :disabled="blank($orderForm['supplier_id'])">{{ __('Add item') }}</flux:button>
             </div>
         </div>
+
+        @if($showImportPreview)
+            <section class="space-y-2 rounded-lg border border-sky-200 bg-sky-50/50 p-3" data-po-import-preview>
+                <div class="flex flex-wrap items-end gap-2"><label class="text-xs font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملف أمر الشراء (.xlsx)' : 'Purchase order workbook (.xlsx)' }}<input type="file" wire:model="importFile" accept=".xlsx" class="mt-1 block max-w-full text-sm"></label><flux:button type="button" size="sm" wire:click="previewOrderImport">{{ str_starts_with(app()->getLocale(), 'ar') ? 'معاينة الصفوف' : 'Preview rows' }}</flux:button></div>
+                @error('importFile')<p role="alert" class="text-sm text-rose-700">{{ $message }}</p>@enderror
+                @if($importPreview !== [])
+                    <div class="max-h-64 overflow-auto rounded border bg-white"><table class="w-full text-start text-xs"><thead><tr><th class="p-2">#</th><th class="p-2">{{ __('Product') }}</th><th class="p-2">{{ __('Quantity') }}</th><th class="p-2">{{ __('Unit cost') }}</th><th class="p-2">{{ __('Status') }}</th></tr></thead><tbody>@foreach($importPreview as $row)<tr class="border-t" data-po-import-row><td class="p-2">{{ $row['row'] }}</td><td class="p-2"><bdi dir="ltr">{{ $row['identifier'] }}</bdi><span class="block">{{ $row['product_name'] ?: $row['name'] }}</span></td><td class="p-2">{{ $row['quantity'] }}</td><td class="p-2">{{ $row['unit_cost'] }}</td><td class="p-2 {{ $row['error'] ? 'text-rose-700' : 'text-emerald-700' }}">{{ $row['error'] ?? (str_starts_with(app()->getLocale(), 'ar') ? 'صالح' : 'Valid') }}</td></tr>@endforeach</tbody></table></div>
+                    <flux:button type="button" size="sm" variant="primary" wire:click="confirmOrderImport" :disabled="collect($importPreview)->contains(fn (array $row) => $row['error'] !== null)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تأكيد إضافة البنود' : 'Confirm line import' }}</flux:button>
+                @endif
+            </section>
+        @endif
 
         <div class="max-h-[32rem] overflow-y-auto rounded-lg border border-border" data-order-lines-scroll>
             <div class="sticky top-0 z-20 hidden grid-cols-[minmax(0,1fr)_7rem_5rem_7rem_7rem_2.5rem] gap-2 border-b border-border bg-zinc-100 px-2 py-1.5 text-[11px] font-semibold text-zinc-600 xl:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
@@ -115,9 +152,8 @@
 
         <div class="flex justify-end pt-2">
             <div class="rounded-lg bg-zinc-100 px-4 py-2 text-end dark:bg-zinc-800">
-                <span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
-                <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</span>
-                <span class="mt-0.5 block text-xs text-zinc-400">{{ __('Tax is not configured') }}</span>
+                <span class="text-xs text-zinc-500">{{ __('Estimated total') }}: </span>
+                <output data-editor-total class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format((float) $orderPreview['total'], 2) }}</output>
             </div>
         </div>
     </div>

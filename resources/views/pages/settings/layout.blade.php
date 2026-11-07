@@ -10,8 +10,12 @@
     <flux:separator class="md:hidden" />
 
     <div class="flex-1 self-stretch max-md:pt-6">
-        <flux:heading>{{ $heading ?? '' }}</flux:heading>
-        <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
+        <div class="flex items-center gap-2">
+            <flux:heading>{{ $heading ?? '' }}</flux:heading>
+            @if (filled($subheading ?? null))
+                <x-context-help :title="$heading ?? __('Settings')" :label="__('Open contextual help')"><p>{{ $subheading }}</p></x-context-help>
+            @endif
+        </div>
 
         <div class="mt-5 w-full max-w-lg">
             {{ $slot }}

@@ -15,7 +15,6 @@ use App\Modules\Customer\Models\LoyaltyAdjustment;
 use App\Modules\Customer\Models\PartyWalletAdjustment;
 use App\Modules\Customer\Models\ProductWalletAdjustment;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
-use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
@@ -52,7 +51,7 @@ final class DecideApprovalSource
             'purchase_returns' => app(ApprovePurchaseReturnAction::class)->execute((int) $record->source_id, (int) $record->source_version),
             'inventory_adjustments' => app(ApproveInventoryAdjustmentAction::class)->execute((int) $record->source_id),
             'stock_counts' => app(ReconcileStockCountAction::class)->execute((int) $record->source_id),
-            'stock_transfers' => app(ApproveStockTransferAction::class)->execute((int) $record->source_id),
+            'stock_transfers' => throw ValidationException::withMessages(['approval' => __('Open the final transfer review to edit and approve this transfer.')]),
             'loyalty_adjustments' => app(ApproveLoyaltyAdjustmentAction::class)->execute(
                 auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
                 $record,
@@ -157,7 +156,7 @@ final class DecideApprovalSource
             'purchase_returns' => route('purchasing.returns.show', $record->source_id),
             'inventory_adjustments' => route('inventory.adjustments'),
             'stock_counts' => route('inventory.counts.reconcile-page', $record->source_id),
-            'stock_transfers' => route('inventory.transfers'),
+            'stock_transfers' => route('inventory.transfers.approval-review', $record->source_id),
             'loyalty_adjustments' => ($adjustment = LoyaltyAdjustment::query()->find($record->source_id)) !== null
                 ? route('customers.loyalty', $adjustment->customer_id)
                 : route('admin.approvals'),

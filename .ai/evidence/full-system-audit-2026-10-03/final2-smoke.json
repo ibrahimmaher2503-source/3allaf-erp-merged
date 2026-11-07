@@ -1,0 +1,15 @@
+{
+    "result": "pass",
+    "release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final2-24f1c5a",
+    "identity": {
+        "commit": "24f1c5a93e6085c1d9a680776bffae6e530288a0",
+        "tree": "68f3fdac056b1a00a2cc5ee4e2e71dad1c168898",
+        "version": "0.1.22-audit-final2"
+    },
+    "version": "0.1.22-audit-final2",
+    "maintenance": "off",
+    "runtime_links": "pass",
+    "nested_storage": "absent",
+    "failed_jobs": 0,
+    "backup_schedules": "registered"
+}

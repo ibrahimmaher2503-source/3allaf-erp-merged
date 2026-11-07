@@ -143,7 +143,7 @@ new #[Title('Roles')] class extends Component
 
     <flux:modal wire:model="roleModalOpen" class="md:max-w-xl">
         <form wire:submit="saveRole" class="space-y-5">
-            <div><flux:heading size="lg">{{ $editingRoleId === null ? __('Add role') : __('Edit role') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ __('A local role starts without permissions. Open its matrix after saving.') }}</flux:text></div>
+            <div class="flex items-center gap-2"><flux:heading size="lg">{{ $editingRoleId === null ? __('Add role') : __('Edit role') }}</flux:heading><x-context-help :title="$editingRoleId === null ? __('Add role') : __('Edit role')" :label="__('Open contextual help')"><p>{{ __('A local role starts without permissions. Open its matrix after saving.') }}</p></x-context-help></div>
             <div class="grid gap-4 sm:grid-cols-2"><flux:input wire:model="roleForm.code" :label="__('Role code')" placeholder="store-observer" required dir="ltr" /><flux:input wire:model="roleForm.name_ar" :label="__('Arabic role name')" required dir="rtl" /><flux:input wire:model="roleForm.name_en" :label="__('English role name')" required dir="ltr" /><flux:select wire:model="roleForm.status" :label="__('Status')"><option value="active">{{ __('Active') }}</option><option value="inactive">{{ __('Inactive') }}</option></flux:select></div>
             <flux:textarea wire:model="roleForm.description_ar" :label="__('Arabic description (optional)')" dir="rtl" rows="2" /><flux:textarea wire:model="roleForm.description_en" :label="__('English description (optional)')" dir="ltr" rows="2" />
             @error('roleForm')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror

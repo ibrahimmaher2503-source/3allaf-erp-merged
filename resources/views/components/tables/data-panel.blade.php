@@ -6,13 +6,17 @@
 <section {{ $attributes->class('data-table-panel overflow-hidden rounded-xl border border-border bg-surface shadow-card') }} data-table-panel>
     @if ($title || $description || isset($actions))
         <header class="flex flex-col gap-3 border-b border-border/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
-            <div class="min-w-0 space-y-1">
-                @if ($title)
-                    <flux:heading size="lg" class="text-text-primary">{{ $title }}</flux:heading>
-                @endif
-                @if ($description)
-                    <flux:text size="sm" class="text-text-muted">{{ $description }}</flux:text>
-                @endif
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    @if ($title)
+                        <flux:heading size="lg" class="text-text-primary">{{ $title }}</flux:heading>
+                    @endif
+                    @if ($description)
+                        <x-context-help :title="$title ?: __('Table help')" :label="__('Open contextual help')">
+                            <p>{{ $description }}</p>
+                        </x-context-help>
+                    @endif
+                </div>
             </div>
             @if (isset($actions))
                 <div class="flex shrink-0 flex-wrap items-center gap-2">{{ $actions }}</div>

@@ -3,16 +3,20 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\UserBranchScope;
 use App\Modules\Platform\Models\UserStoreScope;
 use App\Modules\Platform\Models\UserUiPreference;
+use App\Modules\Platform\Support\CompanyOwnerPermissionProfile;
 use App\Modules\Platform\Support\RequestPermissionLookup;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -49,6 +53,10 @@ class User extends Authenticatable implements PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
+    private ?bool $systemAdministratorRole = null;
+
+    private ?bool $companyOwnerRole = null;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -75,7 +83,82 @@ class User extends Authenticatable implements PasskeyUser
 
     public function canBypassApproval(): bool
     {
-        return $this->is_super_admin;
+        return $this->is_super_admin || $this->isSystemAdministrator() || $this->isCompanyOwner();
+    }
+
+    public function isCompanyOwner(): bool
+    {
+        return $this->companyOwnerRole ??= $this->status === 'active'
+            && $this->roles()
+                ->where('roles.code', CompanyOwnerPermissionProfile::ROLE_CODE)
+                ->where('roles.status', 'active')
+                ->exists();
+    }
+
+    /** @return array<int, int> */
+    public function operationalCompanyIds(): array
+    {
+        if (! $this->canBypassApproval()) {
+            return [];
+        }
+
+        $branchCompanyIds = Branch::query()
+            ->whereIn('id', $this->branchScopes()->where('status', 'active')->select('branch_id'))
+            ->where('status', 'active')
+            ->whereNotNull('company_id')
+            ->pluck('company_id');
+        $storeCompanyIds = Store::query()
+            ->whereIn('id', $this->storeScopes()->where('status', 'active')->select('store_id'))
+            ->where('status', 'active')
+            ->pluck('company_id');
+        $companyIds = Company::query()
+            ->where('status', 'active')
+            ->whereIn('id', $branchCompanyIds->merge($storeCompanyIds)->unique())
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+
+        if ($companyIds === [] && ($this->is_super_admin || $this->isSystemAdministrator())) {
+            $companyIds = Company::query()->where('status', 'active')->limit(2)->pluck('id')->all();
+
+            return count($companyIds) === 1 ? array_map('intval', $companyIds) : [];
+        }
+
+        return count($companyIds) === 1 ? array_values($companyIds) : [];
+    }
+
+    public function canOperateInCompany(int $companyId): bool
+    {
+        return $companyId > 0 && in_array($companyId, $this->operationalCompanyIds(), true);
+    }
+
+    public function canBypassPurchaseInvoiceApproval(): bool
+    {
+        return $this->canBypassApproval() || $this->isSystemAdministrator();
+    }
+
+    public function canBypassShiftCloseApproval(): bool
+    {
+        return $this->canBypassApproval() || $this->isSystemAdministrator();
+    }
+
+    public function isSystemAdministrator(): bool
+    {
+        return $this->systemAdministratorRole ??= $this->status === 'active'
+            && $this->roles()
+                ->where('roles.code', 'system-administrator')
+                ->where('roles.status', 'active')
+                ->exists();
+    }
+
+    /**
+     * System Administrator keeps its existing application-wide permissions;
+     * operational self-approval and company scope use canBypassApproval().
+     */
+    public function hasGlobalApplicationAccess(): bool
+    {
+        return $this->status === 'active'
+            && ($this->is_super_admin || $this->isSystemAdministrator());
     }
 
     /**
@@ -100,10 +183,65 @@ class User extends Authenticatable implements PasskeyUser
         return $this->belongsToMany(Role::class, 'role_user');
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeAssignableToCashDrawer(Builder $query, int $branchId, ?int $storeId): Builder
+    {
+        if ($branchId < 1) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->where('users.status', 'active')
+            ->where(function (Builder $eligible): void {
+                $eligible->where('users.is_super_admin', true)
+                    ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
+                        ->where('roles.status', 'active')
+                        ->where(function (Builder $role): void {
+                            $role->whereIn('roles.code', ['cashier', 'system-administrator'])
+                                ->orWhereHas('permissions', fn (Builder $permissions): Builder => $permissions
+                                    ->where('permissions.code', 'pos_sales.create')
+                                    ->where('permissions.status', 'active'));
+                        }));
+            })
+            ->where(function (Builder $scope) use ($branchId): void {
+                $scope->where('users.is_super_admin', true)
+                    ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
+                        ->where('roles.code', 'system-administrator')
+                        ->where('roles.status', 'active'))
+                    ->orWhereHas('branchScopes', fn (Builder $branchScopes): Builder => $branchScopes
+                        ->where('branch_id', $branchId)
+                        ->where('status', 'active'))
+                    ->orWhereHas('storeScopes', fn (Builder $storeScopes): Builder => $storeScopes
+                        ->whereHas('store', fn (Builder $store): Builder => $store->where('branch_id', $branchId))
+                        ->where('status', 'active'));
+            })
+            ->when($storeId !== null && $storeId > 0, function (Builder $query) use ($branchId, $storeId): void {
+                $query->where(function (Builder $scope) use ($branchId, $storeId): void {
+                    $scope->where('users.is_super_admin', true)
+                        ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
+                            ->where('roles.code', 'system-administrator')
+                            ->where('roles.status', 'active'))
+                        ->orWhereHas('storeScopes', fn (Builder $storeScopes): Builder => $storeScopes
+                            ->where('store_id', $storeId)
+                            ->where('status', 'active'))
+                        ->orWhereHas('branchScopes', fn (Builder $branchScopes): Builder => $branchScopes
+                            ->where('branch_id', $branchId)
+                            ->where('status', 'active'));
+                });
+            });
+    }
+
     public function hasPermission(string $code): bool
     {
         if ($this->status === 'inactive') {
             return false;
+        }
+
+        if ($code === 'products_categories_brands.cost_view' && $this->isSystemAdministrator()) {
+            return true;
         }
 
         return isset($this->activePermissionLookup()[$code]);
@@ -121,7 +259,13 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
-        if ($this->is_super_admin) {
+        if ($this->canBypassApproval()) {
+            $companyId = Branch::query()->whereKey($branchId)->value('company_id');
+
+            return $companyId !== null && $this->canOperateInCompany((int) $companyId);
+        }
+
+        if ($this->hasGlobalApplicationAccess()) {
             return true;
         }
 
@@ -137,7 +281,13 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
-        if ($this->is_super_admin) {
+        if ($this->canBypassApproval()) {
+            $companyId = Store::query()->whereKey($storeId)->value('company_id');
+
+            return $companyId !== null && $this->canOperateInCompany((int) $companyId);
+        }
+
+        if ($this->hasGlobalApplicationAccess()) {
             return true;
         }
 

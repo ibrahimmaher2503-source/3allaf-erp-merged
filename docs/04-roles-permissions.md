@@ -15,7 +15,8 @@ All permissions must be enforced through server-side policies/gates and scoped q
 
 | Role | Source capability | Default scope | Sensitive boundary |
 |---|---|---|---|
-| System Administrator | Company settings, users, roles, policies, global review, audit. | Global, subject to policy. | Operational approve/override rights are R, not automatic. |
+| System Administrator | Company settings, users, roles, policies, global review, audit, and privileged operational authority. | Global application permissions; operational actions stay inside the actor's company. | No cross-company, state-integrity, or duplicate-posting bypass. |
+| General Manager (`company-owner`) | All existing operational actions and approvals, including own documents. | One assigned company; all of its branches, stores, and warehouses. | No cross-company, infrastructure, impersonation, or duplicate-posting bypass. |
 | Branch Manager | Branch monitoring, cash control, store override, shift review, return/adjustment approvals. | Assigned branches/stores. | No global configuration unless separately granted. |
 | Cashier | POS, own shift, payment evidence, suspended sales, receipts, availability search. | Assigned active branch/store/drawer; own shift. | Party Wallet is N; expected close before submission is N. |
 | Purchasing Officer | Suppliers, purchase orders/invoices, supplier returns. | Delegated branches/stores/suppliers. | Price approval and stock adjustment approval are N unless separate permission. |
@@ -79,8 +80,13 @@ Cell values name the permitted roles followed by status code. `—` means no rol
 - Stock Counter: no reconciliation approval.
 - Reviewer: no operational edits unless a distinct, explicit operational role grants them.
 - No role directly edits an approved document or ledger entry.
+- Active account-level Super Admin (`is_super_admin`), `system-administrator`, and General Manager (`company-owner`) bypass ordinary operational permission and maker/checker restrictions within their own company. Their actions retain state, integrity, audit, and idempotency checks.
 - Logical delete never removes approved history; exports and audit access are separately permissioned.
 
 ## Owner Approval Required
 
 The owner must approve exact role aliases, branch/store assignments, own-record rules, approval separation, amount/quantity limits, override reasons, cross-branch visibility, cost visibility, customer-sensitive-field access, export limits, audit redaction, and every `P`/`R` cell before production use.
+
+## 2026-11-05 launch operational grants (owner-authorized Core amendment)
+
+Capabilities remain permission-gated and location-scoped; custom roles retain their assignments. Built-in cashier grants include dashboard, POS Open Price, Gift Card redemption, transfer view/receipt, and existing shift operations. Branch Manager receives branch-relevant transfer create/edit/send/receive/difference grants. Warehouse Manager receives transfer and stocktake operations; Stock Counter receives count view/edit. Menu A/B show Incoming Transfers only with `transfers.receive`. Server receiving reads only allocated, visible destination stores; source Send requires source scope. Transfer pages authorize `transfers.view` in both route middleware and the shared page renderer, so a transfer grant is sufficient without an unrelated inventory-view grant. The additive migration inserts only absent role-permission pairs; it does not rewrite staff, documents, or custom-role grants. Existing explicit administrator/company-owner privilege semantics remain as documented above.

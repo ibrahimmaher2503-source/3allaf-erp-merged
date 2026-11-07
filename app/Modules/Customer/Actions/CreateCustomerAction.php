@@ -13,6 +13,7 @@ use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Support\ResidenceGeography;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Retail\Enums\InvoiceDeliveryMethod;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -21,16 +22,20 @@ use InvalidArgumentException;
 final class CreateCustomerAction
 {
     /** @param array<string, mixed> $data */
-    public function execute(User $actor, Store $store, array $data): Customer
+    public function execute(User $actor, Store $store, array $data, bool $cityOptional = false, bool $allowWithoutConsent = false): Customer
     {
         Gate::forUser($actor)->authorize('customers.create');
         abort_unless($store->status === 'active' && $actor->canAccessStore((int) $store->id), 403);
 
         CustomerPolicy::phoneNormalization();
         [$phone, $secondaryPhone] = CustomerIdentity::normalizedPhones((string) ($data['phone'] ?? ''), $data['secondary_phone'] ?? null);
-        [$governorateId, $cityId] = ResidenceGeography::validate((int) $store->company_id, $data['governorate_id'] ?? null, $data['city_id'] ?? null);
+        [$governorateId, $cityId] = ResidenceGeography::validate((int) $store->company_id, $data['governorate_id'] ?? null, $data['city_id'] ?? null, $cityOptional);
         [$firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn] = self::normaliseNames($data);
         $email = filled($data['email'] ?? null) ? strtolower(trim((string) $data['email'])) : null;
+        $deliveryMethod = InvoiceDeliveryMethod::tryFrom((string) ($data['invoice_delivery_method'] ?? 'print'));
+        if ($deliveryMethod === null) {
+            throw new InvalidArgumentException(__('Invalid invoice delivery method.'));
+        }
         if ($firstNameAr === '' || $lastNameAr === '') {
             throw new InvalidArgumentException(__('Customer Arabic first and last names are required.'));
         }
@@ -39,17 +44,17 @@ final class CreateCustomerAction
             throw new InvalidArgumentException(__('A customer idempotency key is required.'));
         }
         $consents = $data['consents'] ?? [];
-        if (! is_array($consents) || $consents === []) {
+        if (! is_array($consents) || ($consents === [] && ! $allowWithoutConsent)) {
             throw new InvalidArgumentException(__('At least one customer consent record is required.'));
         }
 
         $customerGroupId = filled($data['customer_group_id'] ?? null) ? (int) $data['customer_group_id'] : null;
 
         try {
-            return DB::transaction(function () use ($actor, $store, $data, $phone, $secondaryPhone, $governorateId, $cityId, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $email, $idempotencyKey, $consents, $customerGroupId): Customer {
+            return DB::transaction(function () use ($actor, $store, $data, $phone, $secondaryPhone, $governorateId, $cityId, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $email, $deliveryMethod, $idempotencyKey, $consents, $customerGroupId): Customer {
                 $existingByKey = Customer::query()->where('idempotency_key', $idempotencyKey)->lockForUpdate()->first();
                 if ($existingByKey !== null) {
-                    if ($existingByKey->phone_normalized !== $phone || $existingByKey->name_ar !== $nameAr || $existingByKey->name_en !== $nameEn) {
+                    if ($existingByKey->phone_normalized !== $phone || $existingByKey->name_ar !== $nameAr || $existingByKey->name_en !== $nameEn || $existingByKey->invoice_delivery_method !== $deliveryMethod->value) {
                         throw new InvalidArgumentException(__('This customer idempotency key was already used with a different payload.'));
                     }
 
@@ -79,6 +84,7 @@ final class CreateCustomerAction
                     'name_ar' => $nameAr,
                     'name_en' => $nameEn,
                     'email' => $email,
+                    'invoice_delivery_method' => $deliveryMethod->value,
                     'secondary_phone' => $secondaryPhone,
                     'secondary_phone_normalized' => $secondaryPhone,
                     'address_ar' => filled($data['address_ar'] ?? null) ? trim((string) $data['address_ar']) : null,
@@ -112,7 +118,7 @@ final class CreateCustomerAction
                     after: $customer->only(['public_id', 'phone_normalized', 'name_ar', 'name_en', 'email', 'customer_group_id', 'status', 'lock_version']),
                     branchId: (int) $store->branch_id,
                     storeId: (int) $store->id,
-                    metadata: ['idempotency_key' => $idempotencyKey, 'purpose_scoped' => true, 'actor_id' => $actor->id],
+                    metadata: ['idempotency_key' => $idempotencyKey, 'purpose_scoped' => $consents !== [], 'actor_id' => $actor->id],
                 );
 
                 $consentAction = app(RecordCustomerConsentAction::class);
@@ -135,7 +141,7 @@ final class CreateCustomerAction
             }, 5);
         } catch (UniqueConstraintViolationException $exception) {
             $existing = Customer::query()->where('idempotency_key', $idempotencyKey)->first();
-            if ($existing !== null && $existing->phone_normalized === $phone && $existing->name_ar === $nameAr && $existing->name_en === $nameEn) {
+            if ($existing !== null && $existing->phone_normalized === $phone && $existing->name_ar === $nameAr && $existing->name_en === $nameEn && $existing->invoice_delivery_method === $deliveryMethod->value) {
                 return $existing;
             }
 

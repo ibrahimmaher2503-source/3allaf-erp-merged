@@ -55,15 +55,30 @@ class SaveProductSupplierAction
             }
 
             if ($isPreferred) {
-                // Clear preference on all other suppliers for this product
-                ProductSupplier::query()
+                // Clear preference on all other suppliers for this product and retain
+                // an append-only before/after event for each changed relation.
+                $previousPreferred = ProductSupplier::query()
                     ->where('product_id', $product->id)
                     ->where('supplier_id', '!=', $supplier->id)
                     ->where('is_preferred', true)
-                    ->update([
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($previousPreferred as $previousRelation) {
+                    $previousBefore = $previousRelation->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']);
+                    $previousRelation->update([
                         'is_preferred' => false,
                         'updated_by' => $userId,
                     ]);
+
+                    app(RecordAuditEvent::class)->execute(
+                        category: 'master_data',
+                        event: 'change_product_supplier_preference',
+                        source: $previousRelation,
+                        before: $previousBefore,
+                        after: $previousRelation->fresh()->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']),
+                    );
+                }
             }
 
             if ($relation === null) {
@@ -76,7 +91,7 @@ class SaveProductSupplierAction
                     'created_by' => $userId,
                     'updated_by' => $userId,
                 ]);
-                $event = 'create_product_supplier';
+                $event = $isPreferred ? 'change_product_supplier_preference' : 'create_product_supplier';
             } else {
                 $relation->update([
                     'supplier_item_code' => $supplierItemCode,
@@ -84,7 +99,9 @@ class SaveProductSupplierAction
                     'notes' => $notes,
                     'updated_by' => $userId,
                 ]);
-                $event = 'update_product_supplier';
+                $event = ($before['is_preferred'] ?? false) !== $isPreferred
+                    ? 'change_product_supplier_preference'
+                    : 'update_product_supplier';
             }
 
             app(RecordAuditEvent::class)->execute(

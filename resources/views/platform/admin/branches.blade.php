@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Actions\SaveBranchAction;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
@@ -8,8 +9,8 @@ use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceList;
-use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Support\Bulk\WithBulkSelection;
+use App\Support\UserSafeError;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -29,6 +31,7 @@ new #[Title('Branch Management')] class extends Component
     public string $search = '';
 
     public string $statusFilter = 'all';
+
     #[Url(as: 'setup', except: false)]
     public bool $setupMode = false;
 
@@ -178,7 +181,7 @@ new #[Title('Branch Management')] class extends Component
                 $this->savedBranchName = str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en;
             }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', text: $this->branchErrorMessage($e));
         }
     }
 
@@ -190,7 +193,7 @@ new #[Title('Branch Management')] class extends Component
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Branch status updated successfully.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', text: $this->branchErrorMessage($e));
         }
     }
 
@@ -205,7 +208,7 @@ new #[Title('Branch Management')] class extends Component
             $this->clearBulkSelection();
             Flux::toast(variant: 'success', text: __('Branch status updated for :count records.', ['count' => $count]));
         } catch (Exception $exception) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: $this->branchErrorMessage($exception));
         }
     }
 
@@ -218,8 +221,17 @@ new #[Title('Branch Management')] class extends Component
             $approvalAction->request('branch_delete', $branch->id, ['deleted' => true], $branch->getAttributes(), $branch->id);
             Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Branch deletion submitted for independent approval.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', text: $this->branchErrorMessage($e));
         }
+    }
+
+    private function branchErrorMessage(Exception $exception): string
+    {
+        if ($exception instanceof ValidationException) {
+            return $exception->validator->errors()->first() ?: UserSafeError::message($exception);
+        }
+
+        return UserSafeError::message($exception);
     }
 
     public function openMappingModal(int $branchId): void
@@ -253,7 +265,7 @@ new #[Title('Branch Management')] class extends Component
             Flux::toast(variant: 'success', text: __('Primary point of sale saved successfully.'));
             $this->showMappingModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($e));
         }
     }
 
@@ -439,9 +451,7 @@ new #[Title('Branch Management')] class extends Component
                 <flux:icon icon="building-office-2" class="size-12 text-zinc-400" />
             </div>
             <flux:heading level="3" size="lg">{{ __('No Branches Configured') }}</flux:heading>
-            <flux:text class="text-zinc-500 max-w-md mx-auto">
-                {{ __('Add a branch to organize stores and daily operations.') }}
-            </flux:text>
+            <x-context-help :title="__('No Branches Configured')" :label="__('Open contextual help')"><p>{{ __('Add a branch to organize stores and daily operations.') }}</p></x-context-help>
             <div class="pt-2">
                 @can('branches_stores.create')
                     <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal">{{ __('Add Branch') }}</flux:button>
@@ -539,9 +549,9 @@ new #[Title('Branch Management')] class extends Component
 
     <!-- Create / Edit Branch Modal -->
     <flux:modal wire:model="showBranchModal" class="md:w-160 space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading size="lg">{{ $editingBranchId ? __('Edit Branch Master') : __('Create Branch Master') }}</flux:heading>
-            <flux:subheading>{{ __('Define the branch code, bilingual name, contact information, and operating policies.') }}</flux:subheading>
+            <x-context-help :title="$editingBranchId ? __('Edit Branch Master') : __('Create Branch Master')" :label="__('Open contextual help')"><p>{{ __('Define the branch code, bilingual name, contact information, and operating policies.') }}</p></x-context-help>
         </div>
 
         <form wire:submit="saveBranch" novalidate class="space-y-4" data-guide="branch-master-form">
@@ -647,7 +657,7 @@ new #[Title('Branch Management')] class extends Component
                 @endforeach
             </flux:select>
             @if ($availableSellingStores->isNotEmpty())
-                <p class="text-xs text-zinc-500">{{ __('Only active points of sale for this branch are shown.') }}</p>
+                <x-context-help :title="__('Choose primary point of sale')" :label="__('Open contextual help')"><p>{{ __('Only active points of sale for this branch are shown.') }}</p></x-context-help>
             @endif
 
             <flux:textarea

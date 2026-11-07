@@ -121,8 +121,7 @@ new #[Title('Purchase Invoice Import')] class extends Component
     </flux:callout>
 
     <flux:card class="space-y-4">
-        <flux:heading size="lg">{{ __('1. Upload and stage') }}</flux:heading>
-        <flux:text>{{ __('Accepted: .xlsx or .csv, maximum 10 MB and 5,000 rows. Formula-like cells and macros are rejected.') }}</flux:text>
+        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('1. Upload and stage') }}</flux:heading><x-context-help :title="__('1. Upload and stage')" :label="__('Open contextual help')"><p>{{ __('Accepted: .xlsx or .csv, maximum 10 MB and 5,000 rows. Formula-like cells and macros are rejected.') }}</p><p>{{ __('Required headers: supplier_code, supplier_invoice_number, invoice_date, receiving_store_code, item_code or barcode, quantity, unit_cost.') }}</p></x-context-help></div>
         <form wire:submit="stage" class="flex flex-wrap items-end gap-4">
             <div class="min-w-72 flex-1">
                 <flux:label>{{ __('Invoice import file') }}</flux:label>
@@ -131,7 +130,6 @@ new #[Title('Purchase Invoice Import')] class extends Component
             </div>
             <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="stage"><span wire:loading.remove wire:target="stage">{{ __('Stage file') }}</span><span wire:loading wire:target="stage">{{ __('Staging...') }}</span></flux:button>
         </form>
-        <flux:text size="sm">{{ __('Required headers: supplier_code, supplier_invoice_number, invoice_date, receiving_store_code, item_code or barcode, quantity, unit_cost.') }}</flux:text>
     </flux:card>
 
     <flux:card>

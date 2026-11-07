@@ -17,6 +17,8 @@ use App\Modules\Assets\Queries\AssetDashboard;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
+use App\Modules\Platform\Support\WorkContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
@@ -42,7 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']);
         $requestedStoreId = filled($validated['store_id'] ?? null) ? (int) $validated['store_id'] : null;
         abort_if($requestedStoreId !== null && ! $stores->contains('id', $requestedStoreId), 404);
-        $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($user);
+        $contextStoreId = app(WorkContext::class)->id($user);
         $storeId = $requestedStoreId ?? ($stores->contains('id', $contextStoreId) ? $contextStoreId : null);
         $term = trim((string) ($validated['q'] ?? ''));
         $assets = RentalAsset::query()->visibleTo($user)
@@ -150,7 +152,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('party/asset-events/{event}/approve', function (Request $request, AssetEvent $event, ApproveAssetEventAction $action) {
         /** @var User $user */ $user = $request->user();
         $event = AssetEvent::query()->whereKey($event->id)->where(function ($q) use ($user): void {
-            if (! $user->is_super_admin) {
+            if ($user->canBypassApproval()) {
+                app(OperationalCompanyScope::class)->apply($q, $user);
+            } elseif (! $user->hasGlobalApplicationAccess()) {
                 $q->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id'));
             }
         })->firstOrFail();

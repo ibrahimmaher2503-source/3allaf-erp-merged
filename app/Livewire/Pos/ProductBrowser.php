@@ -11,11 +11,13 @@ use App\Modules\Catalog\Models\ProductImage;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Actions\PosCartAction;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 final class ProductBrowser extends Component
@@ -38,10 +40,19 @@ final class ProductBrowser extends Component
         Gate::authorize('pos_sales.view');
     }
 
+    #[On('pos-cart-updated')]
+    public function refreshProducts(): void {}
+
     public function submitSearch(PosCartAction $cart): void
     {
         $term = trim($this->search);
         if ($term === '') {
+            return;
+        }
+        if (GiftCard::query()->where('identifier', $term)->exists() || str_starts_with(strtoupper($term), 'GC-')) {
+            $this->dispatch('pos-gift-card-scanned', identifier: $term);
+            $this->search = '';
+
             return;
         }
         $matches = Product::query()->sellable()
@@ -91,15 +102,16 @@ final class ProductBrowser extends Component
         $this->selectedVariantId = $match?->id;
     }
 
-    public function addProduct(int $productId, PosCartAction $cart): void
+    public function addProduct(int $productId, PosCartAction $cart): bool
     {
         Gate::authorize('pos_sales.create');
+        $this->resetErrorBag('selection');
         /** @var User $user */ $user = auth()->user();
         $context = app(PosContextResolver::class)->resolve($user);
         if (! $context->isReady()) {
             $this->addError('selection', $context->disabledReason ?? __('POS is not ready for selling.'));
 
-            return;
+            return false;
         }
         try {
             $cart->add(request(), $user, $productId, $this->quantity);
@@ -109,8 +121,12 @@ final class ProductBrowser extends Component
             $this->openFamilyId = null;
             $this->selectedVariantId = null;
             $this->quantity = '1';
+
+            return true;
         } catch (\Throwable $exception) {
             $this->addError('selection', UserSafeError::message($exception));
+
+            return false;
         }
     }
 
@@ -144,11 +160,13 @@ final class ProductBrowser extends Component
                     ->orWhereHas('variants', fn ($v) => $v->where('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', 'like', $prefix))->orWhereHas('variantValues.value', fn ($value) => $value->where('name_ar', 'like', $contains)->orWhere('name_en', 'like', $contains)));
             });
         }
-        $products = $query->get();
+        $showCategories = $this->categoryId === null && trim($this->search) === '';
+        $products = $showCategories ? collect() : $query->get();
         $simpleIds = $products->where('has_variations', false)->pluck('id');
         $customerId = request()->session()->get('pos.customer_id');
         $simplePrices = $store ? $prices->resolveForStore($simpleIds->all(), $store->id, customerId: $customerId ? (int) $customerId : null) : collect();
         $simpleStock = $store ? StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $simpleIds)->get()->keyBy('product_id') : collect();
+        $cartQuantities = collect(request()->session()->get('pos.cart', []))->mapWithKeys(fn (array $line): array => [(int) ($line['product_id'] ?? 0) => (string) ($line['quantity'] ?? '0')]);
         $familyIds = $products->where('has_variations', true)->pluck('id');
         $familyVariants = Product::query()->whereIn('parent_product_id', $familyIds)->where('status', 'active')->get(['id', 'parent_product_id']);
         $variantPrices = $store ? $prices->resolveForStore($familyVariants->pluck('id')->all(), $store->id, customerId: $customerId ? (int) $customerId : null) : collect();
@@ -194,8 +212,8 @@ final class ProductBrowser extends Component
                 }
             }
         }
-        $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->limit(12)->get();
+        $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->orderBy('id')->get();
 
-        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'simplePrices', 'simpleStock', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
+        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'showCategories', 'simplePrices', 'simpleStock', 'cartQuantities', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
     }
 }

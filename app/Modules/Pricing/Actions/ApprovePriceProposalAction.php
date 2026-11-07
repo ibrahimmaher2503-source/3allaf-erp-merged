@@ -52,9 +52,25 @@ final class ApprovePriceProposalAction
                 $activeKey = $this->activeKey($line->product_id, $line->store_id);
                 $old = PriceLine::query()->lockForUpdate()->where('active_key', $activeKey)->first();
                 if ($old !== null && $old->price_version_id !== $version->id) {
-                    $old->mutateApprovedParentLine(['active_key' => null]);
                     $oldVersion = $old->version()->lockForUpdate()->firstOrFail();
+                    $before = ['state' => $oldVersion->state->value, 'active_key' => $old->active_key];
+                    $old->mutateApprovedParentLine(['active_key' => null]);
                     $oldVersion->mutateApprovedDocument(['state' => PriceVersionState::Superseded, 'superseded_at' => now()]);
+                    app(RecordAuditEvent::class)->execute(
+                        category: 'pricing',
+                        event: 'price_version_superseded',
+                        source: $oldVersion,
+                        before: $before,
+                        after: [
+                            'state' => PriceVersionState::Superseded->value,
+                            'active_key' => null,
+                            'superseded_at' => $oldVersion->superseded_at?->toIso8601String(),
+                            'product_id' => $line->product_id,
+                            'store_id' => $line->store_id,
+                        ],
+                        branchId: $line->branch_id,
+                        storeId: $line->store_id,
+                    );
                 }
                 $line->update(['active_key' => $activeKey]);
             }

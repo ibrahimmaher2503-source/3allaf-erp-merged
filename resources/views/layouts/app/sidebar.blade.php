@@ -37,7 +37,8 @@
         .app-topbar__identity { min-width: 0; overflow: hidden; flex: 0 0 7.5rem; }
         .app-topbar__search { flex: 0 0 2.75rem; }
         .app-topbar__mobile-brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .app-topbar__actions { flex: none; }
+        .app-topbar { flex-wrap: wrap; }
+        .app-topbar__actions { flex: 1 1 100%; width: 100%; flex-wrap: wrap; justify-content: flex-start; }
         .app-topbar__actions > form { display: none !important; }
     }
 </style>
@@ -47,11 +48,15 @@
     $navigationGroups = app(\App\Modules\Platform\Support\ApplicationNavigation::class)->for($actor, app()->getLocale());
     $activeGroup = collect($navigationGroups)->firstWhere('active', true);
     $activeItem = collect($activeGroup['items'] ?? [])->firstWhere('active', true);
-    $contextBranch = app(\App\Modules\Platform\Support\DefaultOperatingContext::class)->branch($actor);
-    $contextName = $contextBranch
-        ? ($isArabic ? $contextBranch->name_ar : $contextBranch->name_en)
-        : ($isArabic ? 'الفرع الرئيسي' : 'Main branch');
-    $companyName = config('app.name', '3allaf | علاف');
+    $workContext = app(\App\Modules\Platform\Support\WorkContext::class);
+    $contextBranches = $workContext->branches($actor);
+    $contextBranch = $workContext->branch($actor);
+    $contextStores = $workContext->stores($actor);
+    $contextStore = $workContext->selected($actor) ?? ($contextStores->count() === 1 ? $contextStores->first() : null);
+    $contextName = $contextBranch ? ($isArabic ? $contextBranch->name_ar : $contextBranch->name_en) : ($isArabic ? 'كل الفروع' : 'All Branches');
+    $companyStore = $contextStore ?? $contextStores->first();
+    $company = $contextBranch?->company ?? $companyStore?->company;
+    $companyName = $company ? ($isArabic ? $company->name_ar : $company->name_en) : config('app.name');
     $unreadNotifications = $actor->unreadNotifications()->count();
 @endphp
 <flux:sidebar
@@ -74,7 +79,7 @@
             <ul>
                 <li>{{ __('Use Tab to reach links and section controls, then Enter or Space to activate them.') }}</li>
                 <li>{{ __('Use Up and Down arrows to move between visible navigation controls. Use Left and Right arrows to close or open a section.') }}</li>
-                <li>{{ __('The highlighted destination is your current screen. Your expanded sections and sidebar position are preserved during navigation.') }}</li>
+                <li>{{ $isArabic ? 'القسم الذي يضم الشاشة الحالية يفتح تلقائيًا، وتبقى الأقسام الأخرى مطوية.' : 'The section containing the current screen opens automatically; other sections stay collapsed.' }}</li>
                 <li>{{ __('Supplier groups appear before customer groups. Product cards, categories, brands, filters, and inventory destinations are kept together.') }}</li>
             </ul>
         </x-context-help>
@@ -93,6 +98,17 @@
         </div>
         <button type="button" class="app-topbar__search" x-data x-on:click="$dispatch('open-navigation-search')" aria-label="{{ app()->isLocale('ar-EG') ? 'دوّر سريع في النظام' : ($isArabic ? 'بحث سريع في النظام' : 'Quick system search') }}"><flux:icon.magnifying-glass class="size-5" /><span>{{ app()->isLocale('ar-EG') ? 'ادوّر عن شاشة أو إجراء' : ($isArabic ? 'ابحث عن شاشة أو إجراء' : 'Search screens and actions') }}</span><kbd dir="ltr">Ctrl K</kbd></button>
         <div class="app-topbar__actions">
+            @if($contextBranches->isNotEmpty())
+                <flux:dropdown position="bottom" align="end">
+                    <flux:button variant="ghost" class="app-topbar__context min-h-11" icon="building-storefront" icon-trailing="chevron-down" aria-label="{{ __('Branch') }}: {{ $contextName }}">{{ $contextName }}</flux:button>
+                    <flux:menu>
+                        <form method="POST" action="{{ route('platform.work-context') }}">@csrf<input type="hidden" name="branch_id" value=""><flux:menu.item as="button" type="submit">{{ __('All Branches') }}</flux:menu.item></form>
+                        @foreach($contextBranches as $availableBranch)
+                            <form method="POST" action="{{ route('platform.work-context') }}">@csrf<input type="hidden" name="branch_id" value="{{ $availableBranch->id }}"><flux:menu.item as="button" type="submit">{{ $availableBranch->code }} · {{ $isArabic ? $availableBranch->name_ar : $availableBranch->name_en }}</flux:menu.item></form>
+                        @endforeach
+                    </flux:menu>
+                </flux:dropdown>
+            @endif
             <flux:dropdown position="bottom" align="end">
                 <flux:tooltip content="{{ app()->isLocale('ar-EG') ? 'إنشاء سريع' : ($isArabic ? 'إنشاء سريع' : 'Quick create') }}" position="bottom"><flux:button variant="ghost" square icon="plus" aria-label="{{ app()->isLocale('ar-EG') ? 'إنشاء سريع' : ($isArabic ? 'إنشاء سريع' : 'Quick create') }}" /></flux:tooltip>
                 <flux:menu>
@@ -101,6 +117,7 @@
                     @can('products_categories_brands.create')<flux:menu.item :href="route('catalog.products.create')" icon="cube" wire:navigate>{{ $isArabic ? 'منتج جديد' : 'New product' }}</flux:menu.item>@endcan
                     @can('transfers.create')<flux:menu.item :href="route('inventory.transfers.create')" icon="arrows-right-left" wire:navigate>{{ $isArabic ? 'تحويل مخزون' : 'Stock transfer' }}</flux:menu.item>@endcan
                     @can('inventory_stock_card.create')<flux:menu.item :href="route('inventory.adjustments.create')" icon="adjustments-horizontal" wire:navigate>{{ $isArabic ? 'تسوية مخزون' : 'Inventory adjustment' }}</flux:menu.item>@endcan
+                    @can('inventory_stock_card.create')<flux:menu.item :href="route('inventory.additions')" icon="plus-circle" wire:navigate>{{ $isArabic ? 'إذن إضافة' : 'Inventory addition' }}</flux:menu.item><flux:menu.item :href="route('inventory.deductions')" icon="minus-circle" wire:navigate>{{ $isArabic ? 'إذن خصم' : 'Inventory deduction' }}</flux:menu.item>@endcan
                 </flux:menu>
             </flux:dropdown>
             <flux:tooltip content="{{ $isArabic ? 'الإشعارات' : 'Notifications' }}" position="bottom"><flux:button :href="route('notifications.index')" variant="ghost" square aria-label="{{ $isArabic ? 'الإشعارات، غير المقروءة: '.$unreadNotifications : 'Notifications, unread: '.$unreadNotifications }}" wire:navigate><span class="relative"><flux:icon.bell class="size-5" />@if($unreadNotifications > 0)<span class="absolute -end-2 -top-2 min-w-4 rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-4 text-white" dir="ltr">{{ min($unreadNotifications, 99) }}</span>@endif</span></flux:button></flux:tooltip>

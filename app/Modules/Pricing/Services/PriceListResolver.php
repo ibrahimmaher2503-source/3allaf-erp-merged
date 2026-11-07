@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Data\ResolvedListPrice;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\ProductPriceOverride;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 final class PriceListResolver
@@ -18,7 +19,10 @@ final class PriceListResolver
     public function calculate(string $basePrice, string $percentage): array
     {
         $base = $this->normalized($basePrice, 3);
-        $percent = $this->normalized($percentage, 4);
+        if (! preg_match('/^-?\d+(?:\.\d{1,4})?$/', trim($percentage)) || bccomp($percentage, '-100', 4) <= 0 || bccomp($percentage, '9999', 4) > 0) {
+            throw ValidationException::withMessages(['price' => __('Enter a percentage greater than -100 and at most 9999.')]);
+        }
+        $percent = $percentage;
         $factor = bcadd('1', bcdiv($percent, '100', 8), 8);
         $calculated = bcmul($base, $factor, 8);
         $multiples = bcdiv($calculated, self::DERIVED_PRICE_INCREMENT, 0);
@@ -94,14 +98,37 @@ final class PriceListResolver
             throw ValidationException::withMessages(['store' => __('Only a Sales Outlet resolves a selling price list.')]);
         }
         $list = $outlet->priceList ?: $outlet->branch?->defaultPriceList;
-        if (! $list?->isEffective($at)) {
-            $list = PriceList::query()->where('company_id', $outlet->company_id)->where('list_number', 0)->first();
+        if ($list !== null) {
+            if ((int) $list->company_id !== (int) $outlet->company_id || ! $list->isEffective($at)) {
+                throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
+            }
+
+            return $list;
         }
-        if (! $list?->isEffective($at)) {
+
+        $base = PriceList::query()->where('company_id', $outlet->company_id)->where('list_number', 0)->first();
+        if ($base !== null) {
+            if (! $base->isEffective($at)) {
+                throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);
+            }
+
+            return $base;
+        }
+
+        $effectiveDate = Carbon::instance($at ?? now())->toDateString();
+        $applicable = PriceList::query()
+            ->where('company_id', $outlet->company_id)
+            ->where('status', 'active')
+            ->where(fn ($query) => $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', $effectiveDate))
+            ->where(fn ($query) => $query->whereNull('effective_to')->orWhereDate('effective_to', '>=', $effectiveDate))
+            ->limit(2)
+            ->get();
+
+        if ($applicable->count() !== 1) {
             throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);
         }
 
-        return $list;
+        return $applicable->first();
     }
 
     public function assignmentIsValid(Store $outlet, ?\DateTimeInterface $at = null): bool

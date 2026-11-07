@@ -33,6 +33,7 @@ use App\Modules\Retail\Models\SuspendedSale;
 use App\Modules\Retail\Services\DiscountPolicy;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
+use App\Modules\Retail\Support\InvoiceDiscount;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use App\Support\ProductQuantity;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -56,7 +57,7 @@ final class RetailSaleAction
     /**
      * @param  array<int, array<string, mixed>>  $requestedLines
      * @param  array<int, array{method: PaymentMethod, amount?: numeric-string, tendered?: numeric-string|null, evidence_reference?: string|null, evidence_attachment_id?: string|null, gift_card?: GiftCard|null}>  $tenders
-     * @param  array{tax_applicable?: bool}  $financial
+     * @param  array{tax_applicable?: bool, invoice_discount_type?: string|null, invoice_discount_value?: string}  $financial
      */
     public function create(
         User $cashier,
@@ -77,9 +78,14 @@ final class RetailSaleAction
         }
 
         $lines = $this->resolveLines($cashier, $store, $requestedLines, $customer);
-        $tax = $this->resolveTax($cashier, (bool) ($financial['tax_applicable'] ?? false));
+        $tax = $this->resolveTax($cashier, (int) $store->company_id, (bool) ($financial['tax_applicable'] ?? false));
+        $discountType = $financial['invoice_discount_type'] ?? null;
+        $discountValue = (string) ($financial['invoice_discount_value'] ?? '0.00');
+        $calculationLines = array_map(static fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines);
+        $beforeDiscount = $this->calculator->calculate($calculationLines);
+        $invoiceDiscount = InvoiceDiscount::amount($discountType, $discountValue, $beforeDiscount['taxable_base']);
         $tenders = $this->orderedTenders($tenders);
-        $fingerprint = $this->fingerprint($store, $cashier, $lines, $tax, $tenders, $suspend, $customer);
+        $fingerprint = $this->fingerprint($store, $cashier, $lines, $tax, $tenders, $suspend, $customer, $discountType, $invoiceDiscount);
 
         $existing = Sale::query()->where('idempotency_key', $idempotencyKey)->with('lines', 'payments')->first();
         if ($existing !== null) {
@@ -89,7 +95,7 @@ final class RetailSaleAction
         try {
             $shift = $this->openShift($cashier, $store);
 
-            return $this->createSale($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders, $customer);
+            return $this->createSale($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders, $customer, $discountType, $invoiceDiscount);
         } catch (UniqueConstraintViolationException $exception) {
             if (! str_contains($exception->getMessage(), 'idempotency_key')) {
                 throw $exception;
@@ -131,8 +137,10 @@ final class RetailSaleAction
         bool $suspend,
         array $tenders,
         ?Customer $customer,
+        ?string $discountType,
+        string $invoiceDiscount,
     ): Sale {
-        return DB::transaction(function () use ($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders, $customer): Sale {
+        return DB::transaction(function () use ($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders, $customer, $discountType, $invoiceDiscount): Sale {
             $shift = PosShift::query()->lockForUpdate()->findOrFail((int) $shift->getKey());
             /** @var ShiftState $shiftState */
             $shiftState = $shift->status;
@@ -154,7 +162,7 @@ final class RetailSaleAction
                     'unit_price' => $line['unit_price'],
                     'discount_amount' => $line['discount_amount'],
                 ], $lines),
-                '0.00',
+                $invoiceDiscount,
                 $tax === null
                     ? ['applicable' => false]
                     : ['applicable' => true, 'rate' => (string) $tax->rate, 'inclusive' => (bool) $tax->is_tax_inclusive],
@@ -190,6 +198,8 @@ final class RetailSaleAction
                 'suspended_at' => $suspend ? now() : null,
                 'subtotal' => $totals['subtotal'],
                 'discount_total' => $totals['discount_total'],
+                'invoice_discount_type' => $discountType,
+                'invoice_discount_applied_by' => $discountType === null ? null : $cashier->id,
                 'tax_total' => $totals['tax_total'],
                 'tax_applicable' => $tax !== null,
                 'tax_setting_id' => $tax?->id,
@@ -240,7 +250,7 @@ final class RetailSaleAction
                     'discount_replaced_by' => $line['discount_replaced'] ? $cashier->id : null,
                     'discount_replaced_at' => $line['discount_replaced'] ? now() : null,
                     'discount_approval_record_id' => $line['discount_approval_id'],
-                    'allocated_invoice_discount' => '0.00',
+                    'allocated_invoice_discount' => $computed['allocated_invoice_discount'],
                     'net_amount' => $computed['net_amount'],
                 ]);
 
@@ -396,7 +406,7 @@ final class RetailSaleAction
                     'discount_reason' => $line['discount_reason'],
                     'discount_applied_by' => $line['discount_type'] ? $cashier->id : null,
                     'discount_approval_record_id' => $line['discount_approval_id'],
-                    'allocated_invoice_discount' => '0.00',
+                    'allocated_invoice_discount' => $computed['allocated_invoice_discount'],
                     'net_amount' => $computed['net_amount'],
                 ]);
             }
@@ -485,7 +495,7 @@ final class RetailSaleAction
             $openPriceApproverId = null;
             if ($isOpenPrice) {
                 abort_unless($cashier->can('pos_sales.open_price'), 403);
-                if (! $price->open_price_allowed) {
+                if (! $product->open_price || ! $price->open_price_allowed) {
                     throw new InvalidArgumentException(__('Open price is not enabled for this product price.'));
                 }
                 $enteredUnitPrice = DecimalMoney::normalize((string) $requested['open_price_amount'], 4);
@@ -858,25 +868,27 @@ final class RetailSaleAction
         unset($line);
     }
 
-    private function resolveTax(User $cashier, bool $applicable): ?TaxSetting
+    private function resolveTax(User $cashier, int $companyId, bool $applicable): ?TaxSetting
     {
         if (! $applicable) {
             return null;
         }
         abort_unless($cashier->can('pos_sales.apply_tax'), 403);
 
-        $setting = TaxSetting::query()
+        $settings = TaxSetting::query()
+            ->where('company_id', $companyId)
             ->where('status', 'active')
             ->where('is_default', true)
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->first();
+            ->limit(2)
+            ->get();
 
-        if ($setting === null || $setting->rate === null) {
-            throw new InvalidArgumentException(__('Tax was enabled, but one effective company default tax rule with an explicit rate is required.'));
+        if ($settings->count() !== 1 || $settings->first()?->rate === null) {
+            throw new InvalidArgumentException(__('Tax cannot be enabled until exactly one effective company default tax rule with a configured rate exists.'));
         }
 
-        return $setting;
+        return $settings->first();
     }
 
     /** @param array<int, array<string, mixed>> $tenders @return array<int, array<string, mixed>> */
@@ -1040,10 +1052,9 @@ final class RetailSaleAction
             'lock_version' => ((int) $sale->lock_version) + 1,
         ]);
 
-        // Customer loyalty is part of the same approval transaction. If a
-        // configured rule is missing or the ledger cannot be posted, the sale
-        // and every stock/payment effect roll back together.
-        app(EarnLoyaltyAction::class)->executeForSale($cashier, $sale->fresh(['customer', 'store']));
+        if (config('pos.loyalty_enabled', false) === true) {
+            app(EarnLoyaltyAction::class)->executeForSale($cashier, $sale->fresh(['customer', 'store']));
+        }
 
         if ($sale->suspendedSale !== null) {
             $sale->suspendedSale->update(['status' => 'resumed', 'resumed_at' => now()]);
@@ -1167,14 +1178,14 @@ final class RetailSaleAction
         $this->assertPricesRemainCurrent($store, $lines);
         $this->assertOpenPriceApprovalsRemainCurrent($cashier, $store, $lines);
         $this->assertDiscountApprovalsRemainCurrent($cashier, $store, $lines);
-        $tax = $this->resolveTax($cashier, (bool) $sale->tax_applicable);
+        $tax = $this->resolveTax($cashier, (int) $store->company_id, (bool) $sale->tax_applicable);
         $totals = $this->calculator->calculate(
             array_map(static fn (array $line): array => [
                 'quantity' => $line['quantity'],
                 'unit_price' => $line['unit_price'],
                 'discount_amount' => $line['discount_amount'],
             ], $lines),
-            '0.00',
+            $sale->lines->reduce(static fn (string $sum, SaleLine $line): string => bcadd($sum, (string) $line->allocated_invoice_discount, 2), '0.00'),
             $tax === null ? ['applicable' => false] : ['applicable' => true, 'rate' => (string) $tax->rate, 'inclusive' => (bool) $tax->is_tax_inclusive],
         );
         $this->assertMinimumPrices($cashier, $lines, $totals);
@@ -1183,7 +1194,7 @@ final class RetailSaleAction
     }
 
     /** @param array<int, array<string, mixed>> $lines @param array<int, array<string, mixed>> $tenders */
-    private function fingerprint(Store $store, User $cashier, array $lines, ?TaxSetting $tax, array $tenders, bool $suspend, ?Customer $customer): string
+    private function fingerprint(Store $store, User $cashier, array $lines, ?TaxSetting $tax, array $tenders, bool $suspend, ?Customer $customer, ?string $discountType, string $invoiceDiscount): string
     {
         $payload = [
             'store_id' => $store->id,
@@ -1191,6 +1202,8 @@ final class RetailSaleAction
             'customer_id' => $customer?->id,
             'suspend' => $suspend,
             'tax_setting_id' => $tax?->id,
+            'invoice_discount_type' => $discountType,
+            'invoice_discount' => $invoiceDiscount,
             'lines' => array_map(static fn (array $line): array => [
                 'product_id' => $line['product']->id,
                 'product_unit_id' => $line['product_unit_id'],

@@ -10,6 +10,7 @@ use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
+use App\Modules\Inventory\Actions\AllocateStockTransferNumberAction;
 use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Enums\ApprovalState;
@@ -23,6 +24,7 @@ use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\StockMovement;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
 use App\Modules\Purchasing\Support\SupplierBalance;
+use App\Support\ProductQuantity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -45,18 +47,19 @@ final class ApprovePurchaseInvoiceAction
                 ->with(['lines.distributions', 'lines.product', 'charges'])
                 ->lockForUpdate()
                 ->findOrFail($id);
-            if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
-                throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload before approving.'));
-            }
             if ($invoice->status === 'approved') {
                 return $invoice->fresh(['supplier', 'store', 'lines.product']);
             }
-            if (! in_array($invoice->status, ['awaiting_distribution', 'submitted'], true)) {
-                throw new InvalidArgumentException(__('Only purchase invoices awaiting distribution can be approved.'));
+            if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
+                throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload before approving.'));
             }
-            if ($invoice->created_by === $actorId && ! $actor->canBypassApproval()) {
+            if (! in_array($invoice->status, ['awaiting_distribution', 'submitted'], true)) {
+                throw new InvalidArgumentException(__('Only submitted purchase invoices can be approved.'));
+            }
+            if ($invoice->created_by === $actorId && ! $actor->canBypassPurchaseInvoiceApproval()) {
                 throw new InvalidArgumentException(__('The invoice creator cannot approve the same invoice.'));
             }
+            $receivingStore = Store::query()->visibleTo($actor)->where('status', 'active')->lockForUpdate()->findOrFail($invoice->store_id);
 
             $before = $invoice->only(['invoice_number', 'status', 'total_amount', 'lock_version']);
             $approval = ApprovalRecord::query()
@@ -71,12 +74,15 @@ final class ApprovePurchaseInvoiceAction
             $this->validateSupplierCreditLimit($invoice, $supplier);
             $this->snapshotSupplierTerms($invoice, $supplier);
             $invoice->load('lines.distributions');
+            Product::query()->whereKey($invoice->lines->pluck('product_id'))->orderBy('id')->lockForUpdate()->get();
             $this->validateBusinessRules($invoice);
 
-            $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute((int) $invoice->store->branch_id);
+            $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute($receivingStore);
             foreach ($invoice->lines as $line) {
                 $this->postLine($invoice, $line, $actorId);
-                $this->updateProductCard($invoice, $line, $actorId);
+                if ($this->compare($line->quantity, '0') > 0) {
+                    $this->updateProductCard($invoice, $line, $actorId);
+                }
             }
             $this->createDestinationTransfers($invoice, $actorId);
             $this->updatePurchaseOrderState($invoice);
@@ -88,8 +94,13 @@ final class ApprovePurchaseInvoiceAction
                 'approved_by' => $actorId,
                 'lock_version' => $invoice->lock_version + 1,
             ]);
+            if (bccomp((string) $invoice->total_amount, '0', 4) > 0) {
+                app(PostSupplierPayableEntryAction::class)->execute($invoice->supplier_id, $invoice->store_id, 'purchase_invoice', $invoice->id, (string) $invoice->total_amount, $actorId);
+            }
             foreach ($invoice->lines as $line) {
-                app(SyncSupplierProductAssociation::class)->recordApprovedPrice($invoice, $line, $actorId);
+                if ($this->compare($line->quantity, '0') > 0) {
+                    app(SyncSupplierProductAssociation::class)->recordApprovedPrice($invoice, $line, $actorId);
+                }
             }
             app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Purchase invoice and stock receipt approved.'));
             app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'approve_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['invoice_number', 'status', 'approved_at', 'approved_by', 'lock_version']), storeId: $invoice->store_id, metadata: ['stock_posted' => true, 'wac_posted' => true, 'approval_record_id' => $approval->id]);
@@ -105,19 +116,23 @@ final class ApprovePurchaseInvoiceAction
             if (StockMovement::query()->where('idempotency_key', $idempotencyKey)->exists()) {
                 continue;
             }
-            if ($this->compare($line->quantity, '0') <= 0) {
-                throw new InvalidArgumentException(__('Received quantity must be greater than zero.'));
-            }
+            ProductQuantity::normalize($line->quantity, 'quantity', true, decimalPlaces: 6);
             $distributed = $line->distributions->reduce(fn (string $total, $allocation): string => $this->add($total, $allocation->quantity, 6), '0');
-            if ($this->compare($distributed, $line->quantity) !== 0) {
-                throw new InvalidArgumentException(__('Every purchased unit must be distributed before approval.'));
+            if ($this->compare($distributed, $line->quantity) > 0) {
+                throw new InvalidArgumentException(__('Distribution cannot exceed the accepted quantity.'));
             }
-            if ($line->distributions->isEmpty() || $line->distributions->contains(fn ($allocation): bool => $this->compare($allocation->quantity, '0') <= 0 || (int) $allocation->destination_store_id === (int) $invoice->store_id)) {
-                throw new InvalidArgumentException(__('Distribution destinations and quantities are invalid.'));
+            foreach ($line->distributions as $allocation) {
+                if ($this->compare($allocation->quantity, '0') <= 0 || (int) $allocation->destination_store_id === (int) $invoice->store_id
+                    || ! Store::query()->whereKey($allocation->destination_store_id)->where('status', 'active')->where('company_id', $invoice->store->company_id)->exists()) {
+                    throw new InvalidArgumentException(__('Distribution destinations and quantities are invalid.'));
+                }
+            }
+            if ($this->compare($line->quantity, '0') === 0) {
+                continue;
             }
 
             $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $invoice->store_id)->lockForUpdate()->first();
-            $onHand = $balance?->on_hand ?? '0';
+            $onHand = $balance->on_hand ?? '0';
             if ($this->compare($onHand, '0') < 0) {
                 throw new InvalidArgumentException(__('Negative on-hand balance must be reconciled before receiving.'));
             }
@@ -125,7 +140,7 @@ final class ApprovePurchaseInvoiceAction
             $quantity = $this->decimal($line->quantity);
             $lineCost = $this->decimal($line->subtotal);
             $newQuantity = $this->add($onHand, $quantity, 6);
-            $newValue = $this->add($balance?->total_value ?? '0', $lineCost, 4);
+            $newValue = $this->add($balance->total_value ?? '0', $lineCost, 4);
             $this->divide($newValue, $newQuantity, 4);
             $this->divide($lineCost, $quantity, 4);
         }
@@ -147,7 +162,7 @@ final class ApprovePurchaseInvoiceAction
             }
             $transfer = StockTransfer::query()->create([
                 'purchase_invoice_id' => $invoice->id,
-                'transfer_number' => app(AllocateDocumentNumber::class)->executeForBranch('stock_transfer', (int) $invoice->store->branch_id),
+                'transfer_number' => app(AllocateStockTransferNumberAction::class)->execute($invoice->store),
                 'source_store_id' => $invoice->store_id,
                 'destination_store_id' => (int) $destinationId,
                 'status' => 'approved',
@@ -173,12 +188,6 @@ final class ApprovePurchaseInvoiceAction
             $transfer->mutateApprovedDocument(['status' => 'in_transit', 'dispatched_by' => $actorId, 'dispatched_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('inventory', 'dispatch_purchase_distribution_transfer', $transfer, ['status' => 'approved'], $transfer->only(['status', 'dispatched_by', 'dispatched_at', 'lock_version']), storeId: $invoice->store_id, metadata: ['purchase_invoice_id' => $invoice->id, 'destination_store_id' => (int) $destinationId]);
         }
-        foreach ($invoice->lines as $line) {
-            $remaining = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $invoice->store_id)->lockForUpdate()->firstOrFail();
-            if ($this->compare($remaining->on_hand, '0') !== 0) {
-                throw new InvalidArgumentException(__('The temporary receiving warehouse must finish with zero remaining quantity for this receipt.'));
-            }
-        }
     }
 
     private function updateProductCard(PurchaseInvoice $invoice, PurchaseInvoiceLine $line, int $actorId): void
@@ -196,8 +205,10 @@ final class ApprovePurchaseInvoiceAction
         if (StockMovement::query()->where('idempotency_key', $idempotencyKey)->exists()) {
             return;
         }
-        if ($this->compare($line->quantity, '0') <= 0) {
-            throw new InvalidArgumentException(__('Received quantity must be greater than zero.'));
+        if ($this->compare($line->quantity, '0') === 0) {
+            $line->update(['quantity_received' => 0]);
+
+            return;
         }
 
         $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $invoice->store_id)->lockForUpdate()->first();

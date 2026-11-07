@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Responses;
 
+use App\Models\User;
+use App\Modules\Platform\Support\AuthenticatedLanding;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
 final class PosAwareLoginResponse implements LoginResponseContract
@@ -14,19 +16,18 @@ final class PosAwareLoginResponse implements LoginResponseContract
             return response()->json(['two_factor' => false]);
         }
 
-        $fallback = '/dashboard';
         $user = $request->user();
-
-        if ($user !== null
-            && ! $user->can('dashboard_reports.view')
-            && $user->can('pos_sales.view')) {
-            $fallback = route('pos');
-        } elseif ($user !== null
-            && ! $user->can('dashboard_reports.view')
-            && $user->can('party_bookings_invoices.view')) {
-            $fallback = route('parties.bookings.index');
+        if (! $user instanceof User) {
+            return redirect('/login');
         }
 
-        return redirect()->intended($fallback);
+        $landing = app(AuthenticatedLanding::class);
+        if (($scopeSetup = $landing->scopeSetupDestination($user)) !== null) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->to($scopeSetup);
+        }
+
+        return redirect()->intended($landing->destination($user));
     }
 }

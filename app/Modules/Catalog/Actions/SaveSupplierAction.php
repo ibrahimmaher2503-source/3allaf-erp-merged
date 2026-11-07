@@ -6,8 +6,10 @@ use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
+use App\Modules\Catalog\Support\SupplierTaxIdentity;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\PaymentMethod;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -31,6 +33,10 @@ class SaveSupplierAction
             $status = (string) ($data['status'] ?? 'active');
             if (! in_array($status, ['active', 'inactive'], true)) {
                 throw new InvalidArgumentException(__('The selected supplier status is not supported.'));
+            }
+            $englishName = trim((string) ($data['name_en'] ?? ''));
+            if ($englishName === '') {
+                throw new InvalidArgumentException(__('Supplier English name is required.'));
             }
 
             $barcodePrefix = strtoupper(trim((string) ($data['barcode_prefix'] ?? '')));
@@ -82,20 +88,41 @@ class SaveSupplierAction
                 throw new InvalidArgumentException(__('Supplier credit limit must be a non-negative decimal.'));
             }
 
+            $preferredPaymentMethodId = filled($data['preferred_payment_method_id'] ?? null)
+                ? (int) $data['preferred_payment_method_id']
+                : null;
+            if ($preferredPaymentMethodId !== null
+                && ! PaymentMethod::query()->whereKey($preferredPaymentMethodId)->where('status', 'active')->exists()) {
+                throw new InvalidArgumentException(__('Select an active supplier preferred payment method.'));
+            }
+
+            $countryCode = SupplierTaxIdentity::normalizeCountry($data['country_code'] ?? null);
+            $taxNumber = SupplierTaxIdentity::normalizeTaxNumber($data['tax_number'] ?? null, $countryCode);
+            $taxQuery = Supplier::query()->where('tax_number', $taxNumber);
+            if ($supplier !== null) {
+                $taxQuery->whereKeyNot($supplier->id);
+            }
+            if ($taxNumber !== null && $taxQuery->exists()) {
+                throw new InvalidArgumentException(__('This supplier Tax ID is already used by another supplier.'));
+            }
+
             $attributes = [
                 'code' => strtoupper(trim((string) $data['code'])),
                 'barcode_prefix' => $barcodePrefix !== '' ? $barcodePrefix : null,
                 'name_ar' => trim((string) $data['name_ar']),
-                'name_en' => trim((string) ($data['name_en'] ?? '')),
+                'name_en' => $englishName,
                 'contact_name' => ! empty($data['contact_name']) ? trim((string) $data['contact_name']) : null,
                 'email' => ! empty($data['email']) ? trim((string) $data['email']) : null,
                 'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
-                'tax_number' => ! empty($data['tax_number']) ? trim((string) $data['tax_number']) : null,
+                'tax_number' => $taxNumber,
+                'country_code' => $countryCode,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
                 'payment_policy' => $paymentPolicy,
                 'credit_days' => $creditDays === false ? null : $creditDays,
                 'credit_limit' => $creditLimit === null ? null : bcadd($creditLimit, '0', 4),
                 'commercial_registration' => filled($data['commercial_registration'] ?? null) ? trim((string) $data['commercial_registration']) : null,
+                'lead_time_days' => filled($data['lead_time_days'] ?? null) ? (int) $data['lead_time_days'] : null,
+                'preferred_payment_method_id' => $preferredPaymentMethodId,
                 'settlement_method' => $settlementMethod,
                 'settlement_other_description' => $settlementMethod === 'other' ? $settlementOther : null,
                 'address' => ! empty($data['address']) ? trim((string) $data['address']) : null,
@@ -112,7 +139,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'commercial_registration', 'payment_terms', 'payment_policy', 'credit_days', 'credit_limit', 'settlement_method', 'settlement_other_description', 'address', 'notes', 'status', 'supplier_group_id', 'lock_version']);
+                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'commercial_registration', 'payment_terms', 'payment_policy', 'credit_days', 'credit_limit', 'lead_time_days', 'preferred_payment_method_id', 'settlement_method', 'settlement_other_description', 'address', 'notes', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -125,7 +152,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'commercial_registration', 'payment_terms', 'payment_policy', 'credit_days', 'credit_limit', 'settlement_method', 'settlement_other_description', 'address', 'notes', 'status', 'supplier_group_id', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'commercial_registration', 'payment_terms', 'payment_policy', 'credit_days', 'credit_limit', 'lead_time_days', 'preferred_payment_method_id', 'settlement_method', 'settlement_other_description', 'address', 'notes', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();

@@ -8,15 +8,25 @@ use App\Models\User;
 use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
+use Database\Factories\StockTransferFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 final class StockTransfer extends Model implements ImmutableSourceContract
 {
-    use GuardsApprovedDocument;
+    protected static function newFactory(): Factory
+    {
+        return StockTransferFactory::new();
+    }
 
-    protected $fillable = ['purchase_invoice_id', 'transfer_number', 'source_store_id', 'destination_store_id', 'status', 'difference_status', 'reason_code', 'reason_notes', 'requested_by', 'approved_by', 'dispatched_by', 'received_by', 'approved_at', 'dispatched_at', 'received_at', 'idempotency_key', 'lock_version', 'notes'];
+    use GuardsApprovedDocument;
+    use HasFactory;
+
+    protected $fillable = ['purchase_invoice_id', 'invoice_reference', 'transfer_number', 'source_store_id', 'destination_store_id', 'status', 'difference_status', 'reason_code', 'reason_notes', 'requested_by', 'approved_by', 'dispatched_by', 'received_by', 'approved_at', 'dispatched_at', 'received_at', 'idempotency_key', 'lock_version', 'notes'];
 
     protected $casts = ['approved_at' => 'datetime', 'dispatched_at' => 'datetime', 'received_at' => 'datetime', 'lock_version' => 'integer'];
 
@@ -36,6 +46,18 @@ final class StockTransfer extends Model implements ImmutableSourceContract
     public function lines(): HasMany
     {
         return $this->hasMany(StockTransferLine::class);
+    }
+
+    /** @return HasManyThrough<StockTransferAllocation, StockTransferLine, $this> */
+    public function allocations(): HasManyThrough
+    {
+        return $this->hasManyThrough(StockTransferAllocation::class, StockTransferLine::class, 'stock_transfer_id', 'stock_transfer_line_id');
+    }
+
+    /** @return HasMany<StockTransferReceivingDraft, $this> */
+    public function receivingDrafts(): HasMany
+    {
+        return $this->hasMany(StockTransferReceivingDraft::class);
     }
 
     /** @return BelongsTo<User, $this> */

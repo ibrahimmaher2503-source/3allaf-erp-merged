@@ -1,0 +1,14 @@
+Disposable database (before creation): qa_rajh_20261005173119_24094; socket /tmp/rajeh-qa-mariadb.Iq7RKP/mariadb.sock; networking disabled
+PASS A browser persisted cost confirmed directly in MariaDB
+PASS B browser persisted cost confirmed directly in MariaDB
+PASS D browser persisted cost confirmed directly in MariaDB
+PASS E browser persisted cost confirmed directly in MariaDB
+PASS Admin browser new product finalized with genuine null cost
+PASS Editor browser new product finalized with genuine null cost
+PASS F opening inventory without explicit/master cost remains safely rejected
+PASS F pending-cost opening rejection creates no accounting document
+PASS Product Card workbook uses optional cost contract and rejects invalid entered cost
+PASS import creates genuine null cost
+PASS import preserves exact entered cost
+PASS browser database readback, pending-cost accounting safety and affected import path
+Preserved QA runtime: /tmp/rajeh-qa-mariadb.Iq7RKP; DB qa_rajh_20261005173119_24094

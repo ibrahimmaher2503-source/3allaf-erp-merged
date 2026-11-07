@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\RequestApproval;
 use App\Modules\Platform\Data\ApprovalRequestData;
-use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Retail\Data\BlindShiftCloseResult;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
@@ -47,7 +46,11 @@ final class SubmitBlindShiftCloseAction
         abort_unless($cashier->can('shifts_cash_movements.submit'), 403);
 
         $actual = $this->money($actualCash);
-        $normalizedMethods = $this->normalizeActualMethods($actualByMethod);
+        if ($actualByMethod !== []) {
+            throw new InvalidArgumentException(__('Only the physical cash count may be entered. Electronic totals are calculated from recorded shift transactions.'));
+        }
+
+        $normalizedMethods = [];
         $normalizedNotes = filled($notes) ? trim((string) $notes) : null;
 
         try {
@@ -64,7 +67,6 @@ final class SubmitBlindShiftCloseAction
                 $cashier,
                 $shift,
                 $actual,
-                $normalizedMethods,
                 $normalizedNotes,
             );
         }
@@ -86,7 +88,7 @@ final class SubmitBlindShiftCloseAction
         return DB::transaction(function () use ($cashier, $shift, $actual, $actualByMethod, $idempotencyKey, $notes): ShiftClosingSubmission {
             $existing = ShiftClosingSubmission::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                return $this->assertReplaySafe($existing, $cashier, $shift, $actual, $actualByMethod, $notes);
+                return $this->assertReplaySafe($existing, $cashier, $shift, $actual, $notes);
             }
 
             $shift = PosShift::query()->lockForUpdate()->findOrFail((int) $shift->getKey());
@@ -101,19 +103,24 @@ final class SubmitBlindShiftCloseAction
             }
 
             abort_unless(
-                (int) $shift->getAttribute('cashier_id') === $cashier->id || $cashier->is_super_admin,
+                (int) $shift->getAttribute('cashier_id') === $cashier->id
+                    || ($cashier->hasGlobalApplicationAccess() && $cashier->can('shifts_cash_movements.approve')),
                 403,
             );
+            if ((int) $shift->getAttribute('cashier_id') !== $cashier->id && blank($notes)) {
+                throw new InvalidArgumentException(__('An administrator must record a reason for resolving another cashier shift.'));
+            }
 
             if (bccomp($actual, '0', 2) < 0) {
                 throw new InvalidArgumentException(__('The counted cash cannot be negative.'));
             }
 
-            $this->assertActiveElectronicMethods(array_keys($actualByMethod));
-
             // Expected values are derived only now — after the actual count is
             // in hand (CSH-03).
             $expected = $this->totals->derive($shift);
+            // Non-cash amounts are immutable system totals. The cashier never
+            // enters or edits them during a blind close.
+            $actualByMethod = $expected['expected_by_method'];
             $variance = $this->totals->variance($actual, $actualByMethod, $expected);
 
             $attempt = (int) ShiftClosingSubmission::query()->where('shift_id', $shift->getKey())->max('attempt') + 1;
@@ -149,6 +156,11 @@ final class SubmitBlindShiftCloseAction
                 'closing_cash' => $actual,
                 'lock_version' => (int) $shift->getAttribute('lock_version') + 1,
             ]);
+
+            // Submission ends operational ownership. The immutable close and
+            // approval record retain the historical custody evidence while a
+            // new open shift may safely use the drawer.
+            DB::table('active_pos_shift_assignments')->where('shift_id', $shift->getKey())->delete();
 
             // The variance decision is a shared Platform approval, not a
             // Retail-only status change.  Keep request creation in this same
@@ -202,61 +214,17 @@ final class SubmitBlindShiftCloseAction
         return DecimalMoney::round($value, 2, __('A counted amount must be a valid number.'));
     }
 
-    /** @param array<string, string> $values @return array<string, numeric-string> */
-    private function normalizeActualMethods(array $values): array
-    {
-        $normalized = [];
-        foreach ($values as $code => $value) {
-            $code = trim((string) $code);
-            if ($code === '') {
-                throw new InvalidArgumentException(__('A payment method code is required for every electronic actual.'));
-            }
-
-            $amount = $this->money((string) $value);
-            if (bccomp($amount, '0', 2) < 0) {
-                throw new InvalidArgumentException(__('A counted electronic amount cannot be negative.'));
-            }
-            $normalized[$code] = $amount;
-        }
-        ksort($normalized);
-
-        return $normalized;
-    }
-
-    /** @param list<string> $methodCodes */
-    private function assertActiveElectronicMethods(array $methodCodes): void
-    {
-        if ($methodCodes === []) {
-            return;
-        }
-
-        $methods = PaymentMethod::query()->whereIn('code', $methodCodes)->where('status', 'active')->get()->keyBy('code');
-        foreach ($methodCodes as $code) {
-            $method = $methods->get($code);
-            if (! $method instanceof PaymentMethod || $method->isCash()) {
-                throw new InvalidArgumentException(__('Actual electronic totals may use only active non-cash payment methods.'));
-            }
-        }
-    }
-
-    /**
-     * @param array<string, numeric-string> $actualByMethod
-     */
     private function assertReplaySafe(
         ?ShiftClosingSubmission $existing,
         User $cashier,
         PosShift $shift,
         string $actual,
-        array $actualByMethod,
         ?string $notes,
     ): ShiftClosingSubmission {
-        $storedMethods = (array) ($existing?->getAttribute('actual_by_method') ?? []);
-        ksort($storedMethods);
         $replaySafe = $existing !== null
             && (int) $existing->getAttribute('shift_id') === (int) $shift->getKey()
             && (int) $existing->getAttribute('submitted_by') === $cashier->id
             && bccomp((string) $existing->getAttribute('actual_cash'), $actual, 2) === 0
-            && $storedMethods === $actualByMethod
             && (string) ($existing->getAttribute('notes') ?? '') === (string) ($notes ?? '');
 
         if (! $replaySafe) {

@@ -9,9 +9,9 @@ use App\Modules\Assets\Models\AssetEvent;
 use App\Modules\Assets\Models\AssetReservation;
 use App\Modules\Assets\Models\AssetReturn;
 use App\Modules\Assets\Models\RentalAsset;
-use App\Modules\Catalog\Models\Category;
-use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
@@ -27,6 +27,8 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Inventory\Support\InventoryMovementLabel;
+use App\Modules\Inventory\Support\StockMovementSourceReferences;
 use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Party\Models\PartyInvoice;
 use App\Modules\Party\Models\PartyOperatingOrder;
@@ -46,6 +48,7 @@ use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Models\ShiftClosingSubmission;
+use App\Support\ProductQuantity;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -85,12 +88,12 @@ final class ReportSnapshot
         $stores = Store::query()->visibleTo($user)->where('status', 'active');
         if (filled($filters['branch_id'] ?? null)) {
             $branchId = (int) $filters['branch_id'];
-            abort_unless($user->is_super_admin || $user->canAccessBranch($branchId), 403);
+            abort_unless($user->canAccessBranch($branchId), 403);
             $stores->where('branch_id', $branchId);
         }
         if (filled($filters['store_id'] ?? null)) {
             $storeId = (int) $filters['store_id'];
-            abort_unless($user->is_super_admin || $user->canAccessStore($storeId), 403);
+            abort_unless($user->canAccessStore($storeId), 403);
             $stores->whereKey($storeId);
         }
 
@@ -324,7 +327,13 @@ final class ReportSnapshot
             $openShiftCount = (clone $shifts)->where('status', 'open')->count();
             $unclosedShiftCount = (clone $shifts)->whereNotIn('status', ['closed', 'cancelled'])->count();
             if (Gate::forUser($user)->allows('shifts_cash_movements.approve')) {
-                $shiftVariance = (float) ShiftClosingSubmission::query()->whereIn('shift_id', (clone $shifts)->select('id'))->sum('total_variance');
+                $shiftVariance = (float) ShiftClosingSubmission::query()
+                    ->whereIn('shift_id', (clone $shifts)->where('status', 'closed')->select('id'))
+                    ->where('attempt', fn ($query) => $query
+                        ->from('shift_closing_submissions as latest_submission')
+                        ->selectRaw('MAX(latest_submission.attempt)')
+                        ->whereColumn('latest_submission.shift_id', 'shift_closing_submissions.shift_id'))
+                    ->sum('total_variance');
             }
         }
 
@@ -410,7 +419,9 @@ final class ReportSnapshot
             'module' => $module,
             'search' => $search, 'sort' => $sort, 'direction' => $direction,
         ];
-        if (! $forExport) { $normalizedFilters['page'] = $page; }
+        if (! $forExport) {
+            $normalizedFilters['page'] = $page;
+        }
 
         $kpis = [
             'gross_sales' => round($salesGross, 2),
@@ -690,7 +701,7 @@ final class ReportSnapshot
                 'product' => str_starts_with(app()->getLocale(), 'ar') ? $line->name_ar : $line->name_en,
                 'options_ar' => $this->snapshotOptions($line->variant_snapshot, 'ar'),
                 'options_en' => $this->snapshotOptions($line->variant_snapshot, 'en'),
-                'quantity' => \App\Support\ProductQuantity::format($line->quantity),
+                'quantity' => ProductQuantity::format($line->quantity),
                 'net' => (float) $line->net_amount,
             ]));
         }
@@ -727,8 +738,8 @@ final class ReportSnapshot
             $section('inventory_balances', __('Stock balances'), $balanceColumns, $balances->map(function (StockBalance $balance) use ($canViewCost): array {
                 $row = [
                     'product' => $balance->product?->item_code, 'store' => $balance->store?->code,
-                    'on_hand' => \App\Support\ProductQuantity::format($balance->on_hand), 'reserved' => \App\Support\ProductQuantity::format($balance->reserved),
-                    'available' => \App\Support\ProductQuantity::format(bcsub((string)$balance->on_hand,(string)$balance->reserved,6)), 'in_transit' => \App\Support\ProductQuantity::format($balance->in_transit),
+                    'on_hand' => ProductQuantity::format($balance->on_hand), 'reserved' => ProductQuantity::format($balance->reserved),
+                    'available' => ProductQuantity::format(bcsub((string) $balance->on_hand, (string) $balance->reserved, 6)), 'in_transit' => ProductQuantity::format($balance->in_transit),
                 ];
                 if ($canViewCost) {
                     $row += ['average_cost' => (float) $balance->average_cost, 'value' => (float) $balance->total_value];
@@ -760,15 +771,16 @@ final class ReportSnapshot
                 ->when($filters['product_type'], fn (Builder $query, string $value): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('product_type', $value)))
                 ->when($filters['product_status'], fn (Builder $query, string $value): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('status', $value)))
                 ->latest('posted_at')->limit(50)->get();
+            $movementReferences = new StockMovementSourceReferences($movements);
             $movementColumns = ['posted_at' => __('Posted'), 'product' => __('Product'), 'store' => __('Store'), 'type' => __('Movement'), 'quantity' => __('Quantity'), 'source' => __('Source')];
             if ($canViewCost) {
                 $movementColumns += ['unit_cost' => __('Unit cost'), 'total_cost' => __('Total cost')];
             }
-            $section('inventory_movements', __('Stock movements'), $movementColumns, $movements->map(function (StockMovement $movement) use ($canViewCost): array {
+            $section('inventory_movements', __('Stock movements'), $movementColumns, $movements->map(function (StockMovement $movement) use ($canViewCost, $movementReferences): array {
                 $row = [
                     'posted_at' => $movement->posted_at?->toIso8601String(), 'product' => $movement->product?->item_code,
-                    'store' => $movement->store?->code, 'type' => \App\Modules\Inventory\Support\InventoryMovementLabel::label($movement->movement_type), 'quantity' => \App\Support\ProductQuantity::format($movement->quantity),
-                    'source' => app(\App\Modules\Platform\Support\AuditLogPresentation::class)->source($movement->source_type).':'.$movement->source_id,
+                    'store' => $movement->store?->code, 'type' => InventoryMovementLabel::label($movement->movement_type), 'quantity' => ProductQuantity::format($movement->quantity),
+                    'source' => $movementReferences->label($movement),
                 ];
                 if ($canViewCost) {
                     $row += ['unit_cost' => (float) $movement->unit_cost, 'total_cost' => (float) $movement->total_cost];
@@ -829,8 +841,8 @@ final class ReportSnapshot
 
                 return $row;
             }));
-            $movements = CashMovement::query()->whereIn('store_id', $storeIds)->whereBetween('created_at', [$from, $to])->latest('id')->limit(50)->get();
-            $section('cash_movements', __('Drawer movements'), ['created' => __('Created'), 'type' => __('Movement'), 'amount' => __('Amount'), 'reference' => __('Reference')], $movements->map(fn (CashMovement $row): array => ['created' => $row->created_at?->toIso8601String(), 'type' => $this->status($row->movement_type), 'amount' => (float) $row->amount, 'reference' => $row->reference]));
+            $movements = CashMovement::query()->with('creator')->whereIn('store_id', $storeIds)->whereBetween('created_at', [$from, $to])->latest('id')->limit(50)->get();
+            $section('cash_movements', __('Drawer movements'), ['created' => __('Created'), 'type' => __('Movement'), 'amount' => __('Amount'), 'reason' => __('Reason'), 'actor' => __('Actor'), 'reference' => __('Reference')], $movements->map(fn (CashMovement $row): array => ['created' => $row->created_at?->toIso8601String(), 'type' => $this->status($row->movement_type), 'amount' => (float) $row->amount, 'reason' => $row->reason, 'actor' => $row->creator?->name ?? '—', 'reference' => $row->reference]));
         }
 
         if (in_array('customers', $modules, true)) {
@@ -1045,9 +1057,7 @@ final class ReportSnapshot
     /** @param Collection<int, int> $storeIds */
     private function assertUserFilter(User $viewer, int $userId, Collection $storeIds): void
     {
-        if ($viewer->is_super_admin) {
-            abort_unless(User::query()->whereKey($userId)->where('status', 'active')->exists(), 403);
-
+        if ($viewer->canBypassApproval() && $userId === $viewer->id) {
             return;
         }
 

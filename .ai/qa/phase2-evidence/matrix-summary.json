@@ -1,0 +1,9 @@
+{
+  "seed": 20261004,
+  "pos": 2097,
+  "purchase": 1327,
+  "rounding": 400,
+  "cash": 60,
+  "unique_generated_cases": 3884,
+  "result": "PASS; initial Infection baseline plus individually validated additions; no standalone passing matrix rerun"
+}

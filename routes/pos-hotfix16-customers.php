@@ -54,22 +54,34 @@ Route::post('pos/customer/create', function (Request $request, CreateCustomerAct
     $validated = $request->validate([
         'idempotency_key' => ['required', 'uuid'],
         'phone' => ['required', 'string', 'max:64', PhoneNormalizer::validationRule()],
-        'name_ar' => ['required', 'string', 'max:190'],
-        'name_en' => ['required', 'string', 'max:190'],
-        'consent_purpose' => ['required', 'string', 'max:80'],
-    ]);
+        'first_name_ar' => ['required', 'string', 'max:190'],
+        'last_name_ar' => ['required', 'string', 'max:190'],
+        'first_name_en' => ['nullable', 'string', 'max:190'],
+        'last_name_en' => ['nullable', 'string', 'max:190'],
+        'email' => ['nullable', 'email', 'max:190'],
+        'invoice_delivery_method' => ['nullable', 'in:print,email'],
+        'secondary_phone' => ['nullable', 'string', 'max:64', PhoneNormalizer::validationRule()],
+        'address_ar' => ['nullable', 'string', 'max:4000'],
+        'address_en' => ['nullable', 'string', 'max:4000'],
+        'customer_group_id' => ['nullable', 'integer'],
+        'governorate_id' => ['required', 'integer'],
+        'city_id' => ['nullable', 'integer'],
+    ], ['governorate_id.required' => __('Please select a governorate.')]);
     try {
         $context = $contexts->resolve($user);
         if (! $context->isReady() || $context->store === null) {
             throw new InvalidArgumentException($context->disabledReason ?? __('The active order is unavailable.'));
         }
-        $customer = $customers->execute($user, $context->store, $validated + ['consents' => [[
-            'purpose' => $validated['consent_purpose'], 'status' => 'granted', 'source' => 'pos',
-        ]]]);
+        $customer = $customers->execute($user, $context->store, $validated, cityOptional: true, allowWithoutConsent: true);
         $orders->setCustomer($request, $user, $context, $customer);
 
-        return back()->with('success', __('Customer created and attached only to the active order.'));
+        return back()->with('success', __('Customer created and attached only to the active order.'))->with('pos_customer_code', $customer->customer_code);
     } catch (Throwable $exception) {
-        return back()->withInput()->withErrors(['customer' => UserSafeError::message($exception)]);
+        $message = UserSafeError::message($exception);
+        if (str_starts_with(app()->getLocale(), 'ar') && preg_match('/[A-Za-z]{3,}/u', $message) === 1) {
+            $message = __('Customer creation could not be completed. Check the entered details and try again.');
+        }
+
+        return back()->withInput()->withErrors(['customer' => $message]);
     }
 })->middleware(['can:pos_sales.create', 'can:customers.create'])->name('pos.customer.create');

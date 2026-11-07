@@ -54,7 +54,10 @@ class ApprovalRecordTransition
                     'source_type' => $record->source_type,
                     'source_id' => $record->source_id,
                     'requested_action' => $record->requested_action,
-                    ...((Auth::user()?->canBypassApproval() ?? false) ? ['super_admin_bypass' => true] : []),
+                    ...((Auth::user()?->is_super_admin ?? false) ? ['super_admin_bypass' => true] : []),
+                    ...((Auth::user()?->isCompanyOwner() ?? false) ? ['company_owner_bypass' => true] : []),
+                    ...(($record->source_type === 'purchase_invoices' && $record->requested_action === 'approve' && $record->requester_id === Auth::id() && (Auth::user()?->isSystemAdministrator() ?? false)) ? ['system_administrator_bypass' => true] : []),
+                    ...(($record->source_type === 'pos_shifts' && $record->requested_action === 'approve_close' && $record->requester_id === Auth::id() && (Auth::user()?->isSystemAdministrator() ?? false)) ? ['system_administrator_bypass' => true] : []),
                 ],
                 requestId: $record->request_id,
             );

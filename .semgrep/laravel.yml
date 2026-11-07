@@ -1,0 +1,35 @@
+rules:
+  - id: laravel-raw-sql-interpolation
+    languages: [php]
+    message: Review interpolated SQL; use bindings/query builder.
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: DB::select("...$VAR...")
+          - pattern: DB::statement("...$VAR...")
+          - pattern: DB::raw("...$VAR...")
+  - id: laravel-mass-assignment-request
+    languages: [php]
+    message: Review request data passed directly to create/fill/update.
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: $MODEL->fill($REQUEST->all())
+          - pattern: $MODEL::create($REQUEST->all())
+  - id: laravel-dangerous-eval
+    languages: [php]
+    message: Dangerous dynamic PHP execution.
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: shell_exec(...)
+          - pattern: passthru(...)
+  - id: laravel-user-input-path
+    languages: [php]
+    message: Review user-controlled path construction before filesystem access.
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: file_get_contents($REQUEST->...)
+          - pattern: Storage::get($REQUEST->...)

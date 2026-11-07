@@ -44,6 +44,9 @@ final class SaveInventoryAdjustmentAction
             if (! in_array($type, ['entry', 'exit', 'exchange', 'adjustment'], true)) {
                 throw new InvalidArgumentException(__('Select a supported inventory document type.'));
             }
+            if ($adjustment !== null && in_array($adjustment->adjustment_type, ['entry', 'exit'], true) && $type !== $adjustment->adjustment_type) {
+                throw new InvalidArgumentException(__('The inventory document type cannot be changed after creation.'));
+            }
             $reason = trim((string) ($data['reason_code'] ?? ''));
             if (! in_array($reason, self::REASONS, true)) {
                 throw new InvalidArgumentException(__('An inventory document reason is required.'));
@@ -94,7 +97,11 @@ final class SaveInventoryAdjustmentAction
             if ($adjustment === null) {
                 $adjustment = InventoryAdjustment::query()->create([
                     ...$attributes,
-                    'adjustment_number' => app(AllocateDocumentNumber::class)->executeForBranch('inventory_adjustment', (int) $store->branch_id),
+                    'adjustment_number' => app(AllocateDocumentNumber::class)->executeForBranch(match ($type) {
+                        'entry' => 'inventory_addition',
+                        'exit' => 'inventory_deduction',
+                        default => 'inventory_adjustment',
+                    }, (int) $store->branch_id),
                     'created_by' => Auth::id(),
                     'idempotency_key' => (string) ($data['idempotency_key'] ?? 'inventory-adjustment:'.Str::uuid()),
                     'lock_version' => 1,
@@ -110,7 +117,7 @@ final class SaveInventoryAdjustmentAction
             foreach ($normalizedLines as $line) {
                 $adjustment->lines()->create($line);
             }
-            app(RecordAuditEvent::class)->execute('inventory', $event, $adjustment, $before, $adjustment->fresh(['lines'])->only(['adjustment_number', 'store_id', 'adjustment_type', 'reason_code', 'allow_negative', 'status', 'lock_version']), storeId: $store->id, reasonCode: $reason, reasonText: $adjustment->reason_notes, metadata: ['line_count' => count($normalizedLines)]);
+            app(RecordAuditEvent::class)->execute('inventory', $event, $adjustment, $before, $adjustment->fresh(['lines'])->only(['adjustment_number', 'store_id', 'adjustment_type', 'reason_code', 'allow_negative', 'status', 'lock_version']), branchId: $store->branch_id, storeId: $store->id, reasonCode: $reason, reasonText: $adjustment->reason_notes, metadata: ['line_count' => count($normalizedLines)]);
 
             return $adjustment->fresh(['store', 'lines.product']);
         });
@@ -123,6 +130,7 @@ final class SaveInventoryAdjustmentAction
         if (! preg_match('/^-?\d+(?:\.\d{1,6})?$/', $value)) {
             throw new InvalidArgumentException(__('Quantity must be a valid decimal with up to 6 places.'));
         }
+
         return bcadd($value, '0', 6);
     }
 
@@ -132,6 +140,7 @@ final class SaveInventoryAdjustmentAction
         if (! preg_match('/^\d+(?:\.\d{1,4})?$/', $value)) {
             throw new InvalidArgumentException(__('Unit cost must be a valid decimal with up to 4 places.'));
         }
+
         return bcadd($value, '0', 4);
     }
 }

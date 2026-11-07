@@ -1,0 +1,89 @@
+{
+  "results": [
+    {
+      "name": "authenticated-login",
+      "ok": true
+    },
+    {
+      "name": "products",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "suppliers",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "customer-groups",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "opening",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "purchase-orders",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "purchase-invoices",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "tax-settings",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "exports",
+      "status": 200,
+      "dir": "ltr",
+      "ok": true
+    },
+    {
+      "name": "product-lookup-keyboard",
+      "options": 1,
+      "selected": "2",
+      "companyContext": "1",
+      "ok": true
+    },
+    {
+      "name": "zero-opening-refusal",
+      "status": 302,
+      "message": true,
+      "ok": true
+    },
+    {
+      "name": "arabic-locale",
+      "dir": "rtl",
+      "lang": "ar",
+      "ok": true
+    },
+    {
+      "name": "arabic-egypt-locale",
+      "dir": "rtl",
+      "lang": "ar-EG",
+      "ok": true
+    },
+    {
+      "name": "mobile-products",
+      "width": 390,
+      "dir": "rtl",
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "failures": []
+}

@@ -16,8 +16,7 @@
             </flux:card>
             <flux:card>
                 @can('party_bookings_invoices.create')
-                    <flux:heading size="lg">{{ __('Record payment on account') }}</flux:heading>
-                    <flux:text class="mt-1 text-sm">{{ __('Overpayment is rejected. Retry with the same idempotency key returns the original receipt.') }}</flux:text>
+                    <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Record payment on account') }}</flux:heading><x-context-help :title="__('Record payment on account')" :label="__('Open contextual help')"><p>{{ __('Overpayment is rejected. Retry with the same idempotency key returns the original receipt.') }}</p></x-context-help></div>
                     <form method="POST" action="{{ route('parties.invoices.payments.store', $invoice->id) }}" class="mt-5 space-y-4">
                         @csrf<input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                         <flux:select name="payment_method_id" :label="__('Payment method')" required><flux:select.option value="">{{ __('Choose method') }}</flux:select.option>@foreach($methods as $method)<flux:select.option value="{{ $method->id }}" :selected="(string) old('payment_method_id') === (string) $method->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en }} ({{ $method->type }})</flux:select.option>@endforeach</flux:select>

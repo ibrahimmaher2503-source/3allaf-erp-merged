@@ -3,6 +3,7 @@
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\DefaultOperatingContext;
@@ -10,20 +11,32 @@ use App\Modules\Purchasing\Actions\ApprovePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseOrderAction;
 use App\Modules\Purchasing\Actions\ClosePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
+use App\Modules\Purchasing\Actions\PreviewPurchaseOrderWorkbook;
+use App\Modules\Purchasing\Actions\ReturnPurchaseOrderToDraftAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrderAction;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\PurchasingDashboard;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
+use App\Modules\Purchasing\Services\PurchaseOrderCalculator;
+use App\Modules\Purchasing\Support\DefaultReceivingWarehouse;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new #[Title('Purchase Orders')] class extends Component
 {
     use WithPagination;
+    use WithFileUploads;
+
+    public mixed $importFile = null;
+
+    public array $importPreview = [];
+
+    public bool $showImportPreview = false;
 
     public string $search = '';
 
@@ -41,8 +54,11 @@ new #[Title('Purchase Orders')] class extends Component
 
     public ?int $editingOrderId = null;
 
+    public string $editingOrderNumber = '';
+
     public array $orderForm = [
         'supplier_id' => '',
+        'branch_id' => '',
         'store_id' => '',
         'order_date' => '',
         'expected_delivery_date' => '',
@@ -77,12 +93,20 @@ new #[Title('Purchase Orders')] class extends Component
 
     public string $cancelReason = '';
 
+    public bool $showReturnModal = false;
+
+    public ?int $returningOrderId = null;
+
+    public string $returnReason = '';
+
     public function mount(): void
     {
         $this->createPage = request()->routeIs('purchasing.orders.create', 'purchasing.orders.edit');
         Gate::authorize(request()->routeIs('purchasing.orders.edit') ? 'purchase_orders.edit' : ($this->createPage ? 'purchase_orders.create' : 'purchase_orders.view'));
         $defaultWarehouse = app(DefaultOperatingContext::class)->warehouse(auth()->user());
         $this->storeFilter = $defaultWarehouse === null ? 'all' : (string) $defaultWarehouse->id;
+        $contextBranchId = app(\App\Modules\Platform\Support\WorkContext::class)->branchId(auth()->user());
+        $this->branchFilter = $contextBranchId === null ? 'all' : (string) $contextBranchId;
         if (request()->routeIs('purchasing.orders.edit')) {
             $order = request()->route('order');
             $this->loadDraft($order instanceof PurchaseOrder ? $order->id : (int) $order);
@@ -114,9 +138,11 @@ new #[Title('Purchase Orders')] class extends Component
     {
         $this->resetValidation();
         $this->editingOrderId = null;
+        $this->editingOrderNumber = '';
         $this->paymentTermsManuallyEdited = false;
         $this->orderForm = [
             'supplier_id' => '',
+            'branch_id' => '',
             'store_id' => (string) (app(DefaultOperatingContext::class)->warehouse(auth()->user())?->id ?? ''),
             'order_date' => now()->toDateString(),
             'expected_delivery_date' => '',
@@ -128,6 +154,19 @@ new #[Title('Purchase Orders')] class extends Component
         $this->confirmedSupplierId = '';
         $this->pendingSupplierId = '';
         $this->supplierProductsOnly = true;
+
+        $actor = auth()->user();
+        $contextStoreId = $actor ? app(\App\Modules\Platform\Support\WorkContext::class)->id($actor) : null;
+        $contextStore = $contextStoreId ? Store::query()->visibleTo($actor)->find($contextStoreId) : null;
+        if ($actor && $contextStore?->branch_id && $contextStore?->company_id) {
+            $this->orderForm['branch_id'] = (string) $contextStore->branch_id;
+            $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextStore->company_id, (int) $contextStore->branch_id);
+            $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+        } elseif ($actor && ($contextBranch = app(\App\Modules\Platform\Support\WorkContext::class)->branch($actor)) !== null) {
+            $this->orderForm['branch_id'] = (string) $contextBranch->id;
+            $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextBranch->company_id, (int) $contextBranch->id);
+            $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+        }
     }
 
     public function openEditModal(int $id): void
@@ -149,9 +188,11 @@ new #[Title('Purchase Orders')] class extends Component
 
         $this->resetValidation();
         $this->editingOrderId = $order->id;
+        $this->editingOrderNumber = (string) $order->po_number;
         $this->paymentTermsManuallyEdited = true;
         $this->orderForm = [
             'supplier_id' => (string) $order->supplier_id,
+            'branch_id' => (string) $order->branch_id,
             'store_id' => $order->store_id ? (string) $order->store_id : '',
             'order_date' => $order->order_date?->format('Y-m-d') ?: now()->toDateString(),
             'expected_delivery_date' => $order->expected_delivery_date?->format('Y-m-d') ?: '',
@@ -168,6 +209,11 @@ new #[Title('Purchase Orders')] class extends Component
                 'conversion_factor' => $line->conversion_factor_snapshot ?? '1.000000',
                 'quantity_ordered' => (string) ($line->entered_quantity ?? $line->quantity_ordered),
                 'unit_cost' => (string) ($line->entered_unit_price ?? $line->unit_cost),
+                'discount_type' => $line->discount_type ?: '',
+                'discount_value' => (string) $line->discount_value,
+                'tax_rate' => (string) $line->tax_rate,
+                'tax_code' => $line->tax_code ?: '',
+                'tax_inclusive' => (bool) $line->tax_inclusive,
                 'notes' => $line->notes ?: '',
                 'price_source' => 'saved_draft_cost',
                 'price_date' => '',
@@ -201,12 +247,29 @@ new #[Title('Purchase Orders')] class extends Component
         $this->dispatch('purchasing-product-focus');
     }
 
-    public function confirmSupplierChange(): void
+    public function confirmSupplierChange(SupplierProductPrice $prices): void
     {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
         $this->orderForm['supplier_id'] = $this->pendingSupplierId;
         $this->confirmedSupplierId = $this->pendingSupplierId;
         $this->pendingSupplierId = '';
-        $this->lineItems = [$this->emptyOrderLine()];
+        $branch = filled($this->orderForm['branch_id'])
+            ? Branch::query()->visibleTo(auth()->user())->find((int) $this->orderForm['branch_id'])
+            : null;
+        foreach ($this->lineItems as &$line) {
+            if (! filled($line['product_id'] ?? null) || ($line['price_source'] ?? '') === 'manual_authorized_cost') {
+                continue;
+            }
+            $product = Product::query()->sellable()->find((int) $line['product_id']);
+            $price = $product && $branch && filled($this->confirmedSupplierId)
+                ? $prices->resolve($product, (int) $this->confirmedSupplierId, (int) $branch->company_id)
+                : ['unit_cost' => null, 'price_source' => 'no_supplier_history', 'price_date' => null, 'price_currency' => null];
+            $line['unit_cost'] = $price['unit_cost'];
+            $line['price_source'] = $price['price_source'];
+            $line['price_date'] = $price['price_date'] ?? '';
+            $line['price_currency'] = $price['price_currency'] ?? '';
+        }
+        unset($line);
         $this->supplierProductsOnly = $this->confirmedSupplierId !== '';
         $this->showSupplierChangeConfirmation = false;
         $this->paymentTermsManuallyEdited = false;
@@ -241,6 +304,18 @@ new #[Title('Purchase Orders')] class extends Component
         }
     }
 
+    public function updatedOrderFormBranchId(): void
+    {
+        $actor = auth()->user();
+        $branch = $actor && filled($this->orderForm['branch_id'])
+            ? Branch::query()->visibleTo($actor)->find((int) $this->orderForm['branch_id'])
+            : null;
+        $warehouse = $actor && $branch
+            ? app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $branch->company_id, (int) $branch->id)
+            : null;
+        $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+    }
+
     public function addLine(): void
     {
         if (! filled($this->orderForm['supplier_id'])) {
@@ -249,6 +324,61 @@ new #[Title('Purchase Orders')] class extends Component
             return;
         }
         $this->lineItems[] = $this->emptyOrderLine();
+    }
+
+    public function previewOrderImport(PreviewPurchaseOrderWorkbook $importer): void
+    {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
+        $this->validate([
+            'orderForm.supplier_id' => 'required|exists:suppliers,id',
+            'orderForm.branch_id' => 'required|exists:branches,id',
+            'importFile' => 'required|file|mimes:xlsx|max:2048',
+        ]);
+        $branch = Branch::query()->visibleTo(auth()->user())->where('status', 'active')->findOrFail((int) $this->orderForm['branch_id']);
+        try {
+            $this->importPreview = $importer->execute($this->importFile, (int) $branch->company_id);
+            $this->showImportPreview = true;
+        } catch (\Throwable $exception) {
+            $this->addError('importFile', \App\Support\UserSafeError::message($exception));
+            $this->importPreview = [];
+            $this->showImportPreview = false;
+        }
+    }
+
+    public function confirmOrderImport(): void
+    {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
+        if (! $this->showImportPreview || $this->importPreview === []) {
+            $this->addError('importFile', __('Preview a workbook before importing its lines.'));
+
+            return;
+        }
+        if (collect($this->importPreview)->contains(fn (array $row): bool => $row['error'] !== null)) {
+            $this->addError('importFile', __('Fix invalid workbook rows before confirming the import.'));
+
+            return;
+        }
+        $existing = collect($this->lineItems)->filter(fn (array $line): bool => filled($line['product_id'] ?? null))->pluck('product_id')->map(fn ($id): int => (int) $id);
+        if (collect($this->importPreview)->contains(fn (array $row): bool => $existing->contains((int) $row['product_id']))) {
+            $this->addError('importFile', __('A workbook product already exists in this order. Remove the duplicate before importing.'));
+
+            return;
+        }
+        $this->lineItems = array_values(array_filter($this->lineItems, fn (array $line): bool => filled($line['product_id'] ?? null)));
+        foreach ($this->importPreview as $row) {
+            $this->lineItems[] = [
+                ...$this->emptyOrderLine(),
+                'product_id' => (string) $row['product_id'],
+                'quantity_ordered' => $row['quantity'],
+                'unit_cost' => $row['unit_cost'],
+                'notes' => $row['notes'],
+                'price_source' => 'manual_authorized_cost',
+            ];
+        }
+        $this->importFile = null;
+        $this->importPreview = [];
+        $this->showImportPreview = false;
+        Flux::toast(__('Purchase order lines imported into this draft. Save the order to persist them.'), variant: 'success');
     }
 
     public function removeLine(int $index): void
@@ -260,9 +390,11 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function selectOrderProduct(int $index, int $productId, SupplierProductPrice $prices): void
     {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
         abort_unless(filled($this->orderForm['supplier_id']), 422, __('Select a supplier before adding products.'));
-        $product = Product::query()->sellable()->with('productUnits.unit')->findOrFail($productId);
-        $price = $prices->resolve($product, (int) $this->orderForm['supplier_id']);
+        $branch = Branch::query()->visibleTo(auth()->user())->findOrFail((int) $this->orderForm['branch_id']);
+        $product = Product::query()->sellable()->availableToCompany((int) $branch->company_id)->with('productUnits.unit')->findOrFail($productId);
+        $price = $prices->resolve($product, (int) $this->orderForm['supplier_id'], (int) $branch->company_id);
         $purchaseUnits = $product->productUnits->filter(fn ($unit) => $unit->is_purchase_unit && $unit->unit?->status === 'active');
         $unit = $purchaseUnits->firstWhere('is_base_unit', true) ?? $purchaseUnits->first();
         $this->lineItems[$index]['product_id'] = (string) $product->id;
@@ -300,6 +432,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $this->validate([
             'orderForm.supplier_id' => 'required|exists:suppliers,id',
+            'orderForm.branch_id' => 'required|exists:branches,id',
             'orderForm.store_id' => 'required|exists:stores,id',
             'orderForm.order_date' => 'required|date',
             'orderForm.expected_delivery_date' => 'nullable|date|after_or_equal:orderForm.order_date',
@@ -308,8 +441,11 @@ new #[Title('Purchase Orders')] class extends Component
             'lineItems.*.product_unit_id' => 'nullable|integer|exists:product_units,id',
             'lineItems.*.quantity_ordered' => 'required|numeric|gt:0|decimal:0,6',
             'lineItems.*.unit_cost' => 'required|numeric|gte:0',
+            'lineItems.*.discount_type' => 'nullable|in:percentage,amount',
+            'lineItems.*.discount_value' => 'nullable|numeric|gte:0',
         ]);
 
+        $wasEditing = $this->editingOrderId !== null;
         try {
             $order = \Illuminate\Support\Facades\DB::transaction(function (): PurchaseOrder {
                 $order = app(SavePurchaseOrderAction::class)->execute(
@@ -322,27 +458,60 @@ new #[Title('Purchase Orders')] class extends Component
                 return app(SubmitPurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             });
 
-            app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
 
-            $this->showFormModal = false;
+            return;
+        }
+
+        $pdfReady = true;
+        try {
+            app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order);
+        } catch (Throwable $e) {
+            report($e);
+            $pdfReady = false;
+        }
+
+        $this->showFormModal = false;
+        if ($pdfReady) {
             Flux::toast(
                 $order->status === 'approved'
                     ? __('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number])
                     : __('Purchase Order :number sent to admin for approval.', ['number' => $order->po_number]),
                 variant: 'success',
             );
-            if ($this->createPage) $this->redirectRoute('purchasing.orders', navigate: true);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (Throwable $e) {
-            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
+        } else {
+            Flux::toast(__('Purchase Order :number was saved, but its PDF could not be generated. Open the saved order and retry PDF generation.', ['number' => $order->po_number]), variant: 'warning');
         }
+        if ($this->createPage) $this->redirectRoute('purchasing.orders', navigate: true);
     }
 
     /** @return array<string, int|string> */
     private function emptyOrderLine(): array
     {
-        return ['product_id' => '', 'product_unit_id' => '', 'conversion_factor' => '1.000000', 'quantity_ordered' => '1', 'unit_cost' => '', 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
+        return ['product_id' => '', 'product_unit_id' => '', 'conversion_factor' => '1.000000', 'quantity_ordered' => '1', 'unit_cost' => '', 'discount_type' => '', 'discount_value' => '0', 'tax_rate' => '0', 'tax_code' => '', 'tax_inclusive' => false, 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
+    }
+
+    /** @return array{lines: array<int, string>, total: string} */
+    private function orderPreview(): array
+    {
+        $calculator = app(PurchaseOrderCalculator::class);
+        $lines = [];
+        $total = '0.0000';
+
+        foreach ($this->lineItems as $index => $line) {
+            try {
+                $calculated = $calculator->calculateLine($line);
+                $lines[$index] = $calculated['line_total'];
+                $total = bcadd($total, $calculated['line_total'], 4);
+            } catch (InvalidArgumentException) {
+                $lines[$index] = '0.0000';
+            }
+        }
+
+        return compact('lines', 'total');
     }
 
     public function submitOrder(int $id): void
@@ -372,9 +541,36 @@ new #[Title('Purchase Orders')] class extends Component
 
         try {
             $order = PurchaseOrder::findOrFail($id);
-            app(ApprovePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
-            app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order->fresh());
-            Flux::toast(__('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number]), variant: 'success');
+            $order = app(ApprovePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
+            try {
+                app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order->fresh());
+                Flux::toast(__('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number]), variant: 'success');
+            } catch (Throwable $pdfFailure) {
+                report($pdfFailure);
+                Flux::toast(__('Purchase Order :number was approved, but its PDF could not be generated. Retry PDF generation from the saved order.', ['number' => $order->po_number]), variant: 'warning');
+            }
+        } catch (Throwable $e) {
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
+        }
+    }
+
+    public function openReturnModal(int $id): void
+    {
+        Gate::authorize('purchase_orders.approve');
+        $this->returningOrderId = $id;
+        $this->returnReason = '';
+        $this->showReturnModal = true;
+    }
+
+    public function returnOrderToDraft(ReturnPurchaseOrderToDraftAction $action): void
+    {
+        Gate::authorize('purchase_orders.approve');
+        $this->validate(['returnReason' => ['required', 'string', 'min:3', 'max:1000']]);
+        try {
+            $order = PurchaseOrder::query()->findOrFail($this->returningOrderId);
+            $action->execute($order->id, $this->returnReason, $order->lock_version);
+            $this->showReturnModal = false;
+            Flux::toast(__('Purchase Order :number was returned to draft with the review reason recorded.', ['number' => $order->po_number]), variant: 'success');
         } catch (Throwable $e) {
             Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
@@ -434,26 +630,34 @@ new #[Title('Purchase Orders')] class extends Component
     {
         $user = auth()->user();
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
-        $stores = Store::visibleTo($user)->where('status', 'active')->where('type', 'warehouse')->orderBy('name_ar')->get();
+        $branches = Branch::query()->where('status', 'active')
+            ->when($user && ! $user->hasGlobalApplicationAccess(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($user)->whereNotNull('branch_id')->select('branch_id')))
+            ->withCount('purchaseOrders')->orderBy('code')->get();
+        $stores = filled($this->orderForm['branch_id'])
+            ? Store::visibleTo($user)->where('status', 'active')
+                ->where('branch_id', (int) $this->orderForm['branch_id'])->where('type', 'warehouse')->orderBy('name_ar')->get()
+            : collect();
         $products = Product::query()->sellable()->with(['productUnits.unit', 'baseProductUnit.unit', 'productSuppliers' => fn($query) => $query->when(filled($this->orderForm['supplier_id']), fn($scope) => $scope->where('supplier_id',(int)$this->orderForm['supplier_id']))])->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
-        $formSubtotal = collect($this->lineItems)->sum(fn (array $item): float => (float) ($item['quantity_ordered'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
+        $orderPreview = $this->orderPreview();
 
         if ($this->createPage) {
             return view('purchasing.orders', [
                 'createPage' => $this->createPage,
                 'suppliers' => $suppliers,
+                'branches' => $branches,
                 'stores' => $stores,
                 'products' => $products,
-                'formSubtotal' => $formSubtotal,
+                'orderPreview' => $orderPreview,
                 'viewingOrder' => null,
                 'auditLogs' => collect(),
+                'approvalHistory' => collect(),
                 'canPrint' => false,
             ]);
         }
 
         $query = PurchaseOrder::query()->with(['supplier', 'store', 'branch', 'creator', 'lines']);
 
-        if ($user && ! $user->is_super_admin) {
+        if ($user && ! $user->hasGlobalApplicationAccess()) {
             $query->where(function ($scope) use ($user) {
                 $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
                     ->orWhereIn('branch_id', Branch::visibleTo($user)->select('id'));
@@ -487,7 +691,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $orders = $query->latest('id')->paginate(15);
         $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'branch', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product', 'invoices.store', 'documents.attachment']);
-        if ($user && ! $user->is_super_admin) {
+        if ($user && ! $user->hasGlobalApplicationAccess()) {
             $viewingOrderQuery->where(function ($scope) use ($user) {
                 $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
                     ->orWhereIn('branch_id', Branch::visibleTo($user)->select('id'));
@@ -500,17 +704,19 @@ new #[Title('Purchase Orders')] class extends Component
             ->where('source_id', (string) $viewingOrder->id)
             ->latest('id')
             ->get() : collect();
+        $approvalHistory = $viewingOrder ? ApprovalRecord::query()->where('source_type', 'purchase_orders')->where('source_id', (string) $viewingOrder->id)->latest('id')->get() : collect();
 
         return view('purchasing.orders', [
             'createPage' => $this->createPage,
             'orders' => $orders,
             'suppliers' => $suppliers,
             'stores' => $stores,
-            'branches' => Branch::query()->visibleTo($user)->where('status', 'active')->withCount('purchaseOrders')->orderBy('code')->get(),
+            'branches' => $branches,
             'products' => $products,
             'viewingOrder' => $viewingOrder,
             'auditLogs' => $auditLogs,
-            'formSubtotal' => $formSubtotal,
+            'approvalHistory' => $approvalHistory,
+            'orderPreview' => $orderPreview,
             'canCreate' => Gate::allows('purchase_orders.create'),
             'canEdit' => Gate::allows('purchase_orders.edit'),
             'canCancel' => Gate::allows('purchase_orders.cancel'),
@@ -641,9 +847,10 @@ new #[Title('Purchase Orders')] class extends Component
 
                                     @if ($order->status === 'submitted' && $canApprove && ($order->submitted_by !== auth()->id() || auth()->user()?->canBypassApproval()))
                                         <x-actions.button semantic="approve" :label="__('Approve Order')" size="xs" wire:click="approveOrder({{ $order->id }})" />
+                                        <flux:button size="xs" variant="subtle" icon="arrow-uturn-left" wire:click="openReturnModal({{ $order->id }})">{{ __('Return to draft') }}</flux:button>
                                     @endif
 
-                                    @if (in_array($order->status, ['approved', 'partially_received'], true) && Gate::allows('purchase_invoices_supplier_returns.create') && $order->lines->contains(fn ($line): bool => bccomp(bcsub((string) $line->quantity_ordered, (string) $line->quantity_received, 6), '0', 6) > 0))
+                                    @if (in_array($order->status, ['approved', 'partially_received'], true) && Gate::allows('purchase_invoices.draft') && $order->lines->contains(fn ($line): bool => bccomp(bcsub((string) $line->quantity_ordered, (string) $line->quantity_received, 6), '0', 6) > 0))
                                         <flux:button size="xs" variant="primary" icon="inbox-arrow-down" href="{{ route('purchasing.invoices', ['purchase_order' => $order->id]) }}" wire:navigate>
                                             {{ __('Receive') }}
                                         </flux:button>
@@ -670,8 +877,7 @@ new #[Title('Purchase Orders')] class extends Component
                             <td colspan="7" class="px-4 py-12 text-center" data-guide="po-empty">
                                 <div class="max-w-xs mx-auto space-y-3">
                                     <flux:icon name="document-text" class="size-10 mx-auto text-zinc-400" />
-                                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('No purchase orders found') }}</h3>
-                                    <p class="text-xs text-zinc-500">{{ __('Try adjusting search query or filters, or create a new draft purchase order.') }}</p>
+                                    <div class="flex items-center justify-center gap-2"><h3 class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('No purchase orders found') }}</h3><x-context-help :title="__('No purchase orders found')" :label="__('Open contextual help')"><p>{{ __('Try adjusting search query or filters, or create a new draft purchase order.') }}</p></x-context-help></div>
                                 </div>
                             </td>
                         </tr>
@@ -686,11 +892,11 @@ new #[Title('Purchase Orders')] class extends Component
     <!-- Create / Edit Form Modal -->
     @if(false) {{-- Retained only as inert rollback-compatible markup; create/edit routes are full-page. --}}
     <flux:modal wire:model="showFormModal" class="md:max-w-4xl space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <h2 class="text-lg font-bold text-zinc-900 dark:text-white">
                 {{ $editingOrderId ? __('Edit Draft Purchase Order') : __('New Purchase Order') }}
             </h2>
-            <p class="text-xs text-zinc-500 mt-1">{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p>
+            <x-context-help :title="$editingOrderId ? __('Edit Draft Purchase Order') : __('New Purchase Order')" :label="__('Open contextual help')"><p>{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p></x-context-help>
         </div>
 
         <form wire:submit.prevent="saveOrder" class="space-y-6" data-product-line-editor data-autofocus="true">
@@ -737,7 +943,7 @@ new #[Title('Purchase Orders')] class extends Component
                         <div class="grid grid-cols-12 gap-2 items-end bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-lg border border-border" data-product-line wire:key="order-line-{{ $index }}">
                             <div class="col-span-12 sm:col-span-4">
                                 @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
-                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
+                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :label-visually-hidden="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :company-id="filled($orderForm['branch_id']) ? Branch::query()->whereKey($orderForm['branch_id'])->value('company_id') : ''" :disabled="blank($orderForm['supplier_id']) || blank($orderForm['branch_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
                             </div>
 
                             <div class="col-span-4 sm:col-span-2">
@@ -748,7 +954,6 @@ new #[Title('Purchase Orders')] class extends Component
                             <div class="col-span-4 sm:col-span-2">
                                 <label class="text-xs font-semibold">{{ __('Unit cost') }}</label>
                                 <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
-                                <p class="mt-1 text-[11px] text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
                             </div>
 
                             <div class="col-span-3 sm:col-span-2">
@@ -768,8 +973,7 @@ new #[Title('Purchase Orders')] class extends Component
                 <div class="flex justify-end pt-2">
                     <div class="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-end">
                         <span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
-                        <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</span>
-                        <span class="text-xs text-zinc-400 block mt-0.5">{{ __('Tax is not configured') }}</span>
+                        <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format((float) ($orderPreview['total'] ?? 0), 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -789,7 +993,7 @@ new #[Title('Purchase Orders')] class extends Component
             <flux:callout variant="warning">{{ __('Changing the supplier clears existing product lines and supplier prices so no price is retained for the wrong supplier.') }}</flux:callout>
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="subtle" wire:click="cancelSupplierChange">{{ __('Keep current supplier') }}</flux:button>
-                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and clear lines') }}</flux:button>
+                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and refresh suggested costs') }}</flux:button>
             </div>
         </div>
     </flux:modal>
@@ -833,6 +1037,7 @@ new #[Title('Purchase Orders')] class extends Component
             @if ($detailTab === 'items')
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 text-xs bg-zinc-50 dark:bg-zinc-800/40 p-4 rounded-lg">
+                        <div class="col-span-2 rounded-lg border border-border bg-surface p-3"><span class="text-zinc-500">{{ __('Next action') }}:</span> <strong>{{ __($viewingOrder->nextAction()) }}</strong><div class="mt-1 text-zinc-500">{{ __('Responsible role') }}: {{ __($viewingOrder->responsibleRoleLabel()) }} @if($viewingOrder->responsiblePermission())<span class="font-mono" dir="ltr">({{ $viewingOrder->responsiblePermission() }})</span>@endif</div></div>
                         <div>
                             <span class="text-zinc-500">{{ __('Order Date') }}:</span>
                             <span class="font-mono font-medium text-zinc-800 dark:text-zinc-200 block">{{ $viewingOrder->order_date?->format('Y-m-d') }}</span>
@@ -856,7 +1061,9 @@ new #[Title('Purchase Orders')] class extends Component
                                     <th class="px-3 py-2 text-start">{{ __('Product') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Qty') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Price per selected unit') }}</th>
-                                    <th class="px-3 py-2 text-end">{{ __('Subtotal') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Discount') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Tax') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Line total') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
@@ -865,11 +1072,13 @@ new #[Title('Purchase Orders')] class extends Component
                                         <td class="px-3 py-2 font-mono text-zinc-400">{{ $line->line_number }}</td>
                                         <td class="px-3 py-2">
                                             <div class="font-medium text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
-                                            <div class="text-[11px] font-mono text-zinc-500">{{ $line->product->sku ?: $line->product->code }}</div>
+                                            <div class="text-[11px] font-mono text-zinc-500">{{ $line->product->item_code }}</div>
                                         </td>
                                         <td class="px-3 py-2 text-end font-mono"><x-product-quantity :value="$line->entered_quantity ?? $line->quantity_ordered" /> {{ $line->unit_code_snapshot }}<div class="text-xs text-text-muted">{{ __('Base quantity') }}: <x-product-quantity :value="$line->quantity_ordered" /></div></td>
                                         <td class="px-3 py-2 text-end font-mono">{{ number_format((float) ($line->entered_unit_price ?? $line->unit_cost), 2) }}</td>
-                                        <td class="px-3 py-2 text-end font-mono font-semibold">{{ number_format((float) $line->subtotal, 2) }}</td>
+                                        <td class="px-3 py-2 text-end font-mono">{{ number_format((float) $line->discount_amount, 2) }}</td>
+                                        <td class="px-3 py-2 text-end"><span class="font-mono">{{ number_format((float) $line->tax_amount, 2) }}</span><div class="text-[10px] text-zinc-500">{{ $line->tax_code ?: '—' }} · {{ number_format((float)$line->tax_rate,2) }}% · {{ $line->tax_inclusive ? __('Inclusive') : __('Exclusive') }}</div></td>
+                                        <td class="px-3 py-2 text-end font-mono font-semibold">{{ number_format((float) $line->line_total, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -903,6 +1112,9 @@ new #[Title('Purchase Orders')] class extends Component
                 <div class="space-y-3">@forelse($viewingOrder->invoices as $invoice)<div class="flex items-center justify-between rounded-lg border border-border p-3"><div><strong>{{ $invoice->invoice_number ?: '#'.$invoice->id }}</strong><div class="text-xs text-zinc-500">{{ $invoice->invoice_date?->format('Y-m-d') }} · {{ __($invoice->status) }} · {{ $invoice->store?->code }}</div></div><span class="font-mono">{{ number_format((float)$invoice->total_amount,2) }}</span></div>@empty<x-state.empty :title="__('No Goods Receipts or Purchase Invoices')" :description="__('Goods receipts and purchase invoices will appear here after the order is received.')" />@endforelse</div>
             @elseif ($detailTab === 'audit')
                 <div class="space-y-3">
+                    @if($approvalHistory->isNotEmpty())
+                        <div class="rounded-lg border border-border p-3"><flux:heading size="sm">{{ __('Approval history') }}</flux:heading><div class="mt-2 space-y-2">@foreach($approvalHistory as $approval)<div class="text-xs"><strong>{{ __($approval->approval_state->value) }}</strong> · {{ $approval->created_at?->format('Y-m-d H:i:s') }} @if($approval->decision_note)<div class="mt-1 text-rose-600">{{ __('Review reason') }}: {{ $approval->decision_note }}</div>@endif</div>@endforeach</div></div>
+                    @endif
                     @forelse ($auditLogs as $log)
                         <div class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/40 border border-border text-xs space-y-1">
                             <div class="flex items-center justify-between font-semibold">
@@ -937,9 +1149,9 @@ new #[Title('Purchase Orders')] class extends Component
 
     <!-- Cancel Confirmation Modal -->
     <flux:modal wire:model="showCancelModal" class="md:max-w-md space-y-4">
-        <div>
+        <div class="flex items-center gap-2">
             <h2 class="text-lg font-bold text-zinc-900 dark:text-white">{{ __('Cancel Purchase Order') }}</h2>
-            <p class="text-xs text-zinc-500 mt-1">{{ __('Please provide a reason for cancelling this purchase order.') }}</p>
+            <x-context-help :title="__('Cancel Purchase Order')" :label="__('Open contextual help')"><p>{{ __('Please provide a reason for cancelling this purchase order.') }}</p></x-context-help>
         </div>
 
         <form wire:submit.prevent="cancelOrder" class="space-y-4">
@@ -950,5 +1162,10 @@ new #[Title('Purchase Orders')] class extends Component
                 <flux:button variant="danger" type="submit">{{ __('Confirm Cancel') }}</flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    <flux:modal wire:model="showReturnModal" class="md:max-w-md space-y-4">
+        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Return purchase order to draft') }}</flux:heading><x-context-help :title="__('Return purchase order to draft')" :label="__('Open contextual help')"><p>{{ __('The requester can edit and resubmit after the review reason is recorded.') }}</p></x-context-help></div>
+        <form wire:submit="returnOrderToDraft" class="space-y-4"><flux:textarea wire:model="returnReason" :label="__('Review / return reason')" required rows="4" />@error('returnReason')<p class="text-sm text-danger">{{ $message }}</p>@enderror<div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showReturnModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="returnOrderToDraft">{{ __('Return to draft') }}</flux:button></div></form>
     </flux:modal>
 </x-app.page>

@@ -1,14 +1,13 @@
 @props([
     'amount' => null,
     'currency' => null,
-    'precision' => 2,
     'muted' => false,
 ])
 
 @php
     $formatted = $amount === null || $amount === ''
         ? '—'
-        : number_format((float) $amount, (int) $precision, '.', ',');
+        : number_format((float) $amount, 2, '.', ',');
     $displayCurrency = strtoupper((string) $currency) === 'EGP'
         ? (str_starts_with(app()->getLocale(), 'ar') ? 'ج.م' : 'EGP')
         : $currency;

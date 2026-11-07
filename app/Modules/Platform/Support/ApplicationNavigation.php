@@ -46,7 +46,7 @@ final class ApplicationNavigation
     /** @return array<int, array<string, mixed>> */
     public function for(User $user, string $locale): array
     {
-        $configuredGroups = config('navigation', []);
+        $configuredGroups = $user->uiPreference?->menu_variant === 'b' ? config('navigation_b', []) : config('navigation', []);
 
         if (! is_array($configuredGroups)) {
             return [];
@@ -73,10 +73,11 @@ final class ApplicationNavigation
 
                         return is_string($route)
                             && $route !== ''
-                            && is_string($permission)
-                            && $permission !== ''
+                            && (is_string($permission) || is_array($permission))
+                            && ! empty($permission)
                             && Route::has($route)
-                            && collect($permissions)->every(fn (mixed $required): bool => is_string($required) && $user->can($required));
+                            && $user->canAny((array) $permission)
+                            && collect(array_merge((array) ($item['permissions_all'] ?? []), is_array($item['permissions'] ?? null) ? $item['permissions'] : []))->every(fn (mixed $required): bool => is_string($required) && $user->can($required));
                     })
                     ->map(function (array $item) use ($locale, $user): array {
                         $type = $this->entryType($item, 'item');
@@ -139,7 +140,7 @@ final class ApplicationNavigation
     private function withSetupSteps(array $item, User $user): array
     {
         $steps = collect(InitialSetupStepRegistry::activeSteps());
-        $permissions = $user->is_super_admin ? null : app(RequestPermissionLookup::class)->for($user);
+        $permissions = $user->hasGlobalApplicationAccess() ? null : app(RequestPermissionLookup::class)->for($user);
         $labels = ['basics' => __('Essentials'), 'settings' => __('Settings'), 'operations' => __('Operational Readiness')];
         $icons = ['basics' => 'building-office', 'settings' => 'cog-6-tooth', 'operations' => 'check-circle'];
 

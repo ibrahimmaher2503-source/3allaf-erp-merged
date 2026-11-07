@@ -9,4 +9,5 @@ $quickCash = array_values(array_filter(array_map(
 
 return [
     'cash_quick_denominations' => $quickCash,
+    'loyalty_enabled' => false,
 ];

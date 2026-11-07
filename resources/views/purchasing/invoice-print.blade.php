@@ -28,17 +28,16 @@
         <div><div class="muted">{{ __('Status') }}</div>{{ \App\Modules\Platform\Support\UiLabel::status($invoice->status) }}<br>{{ $invoice->invoice_date?->format('Y-m-d') }}</div>
     </div>
     <table>
-        <thead><tr><th>#</th><th>{{ __('Product') }}</th><th>{{ __('Quantity') }}</th><th>{{ __('Unit cost') }}</th><th>{{ __('Discount') }}</th><th>{{ __('Tax') }}</th><th>{{ __('Total') }}</th></tr></thead>
+        <thead><tr><th>#</th><th>{{ __('Product') }}</th><th>{{ __('Original quantity') }}</th><th>{{ __('Accepted quantity') }}</th><th>{{ __('Quantity difference') }}</th><th>{{ __('Unit cost') }}</th><th>{{ __('Discount') }}</th><th>{{ __('Total') }}</th></tr></thead>
         <tbody>
         @foreach ($invoice->lines as $index => $line)
-            <tr><td>{{ $index + 1 }}</td><td>{{ $line->product?->item_code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar) }}</td><td class="tabular-nums"><x-product-quantity :value="$line->quantity" /></td><td class="tabular-nums">{{ number_format((float) $line->unit_cost, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->discount_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->tax_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->line_total, 2) }} {{ $invoice->currency_code }}</td></tr>
+            <tr><td>{{ $index + 1 }}</td><td>{{ $line->product?->item_code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar) }}</td><td><x-product-quantity :value="$line->original_quantity ?? $line->quantity" /></td><td><x-product-quantity :value="$line->quantity" /></td><td><x-product-quantity :value="$invoice->approved_at ? $line->shortageQuantity() : 0" /></td><td class="tabular-nums">{{ number_format((float) $line->unit_cost, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->discount_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->line_total, 2) }} {{ $invoice->currency_code }}</td></tr>
         @endforeach
         </tbody>
     </table>
     <div class="totals">
         <div><span>{{ __('Subtotal') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->subtotal, 2) }} {{ $invoice->currency_code }}</span></div>
         <div><span>{{ __('Discount') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->discount_amount, 2) }} {{ $invoice->currency_code }}</span></div>
-        <div><span>{{ __('Tax') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->tax_amount, 2) }} {{ $invoice->currency_code }}</span></div>
         <div class="total"><span>{{ __('Total') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->total_amount, 2) }} {{ $invoice->currency_code }}</span></div>
     </div>
     @if ($invoice->notes)<p><span class="muted">{{ __('Notes') }}:</span> {{ $invoice->notes }}</p>@endif

@@ -33,6 +33,14 @@ new #[Title('Authorization Baseline')] class extends Component
 
     public array $storeIds = [];
 
+    protected function validationAttributes(): array
+    {
+        return [
+            'userForm.password' => $this->editingUserId === null ? __('Password') : __('New password (optional)'),
+            'userForm.username' => __('Username'),
+        ];
+    }
+
     public function mount(): void
     {
         Gate::authorize('users_roles_permissions.view');
@@ -167,7 +175,11 @@ new #[Title('Authorization Baseline')] class extends Component
 
     @if ($errors->any())
         <flux:callout variant="danger" title="{{ __('Authorization change could not be completed') }}">
-            {{ __('Review the highlighted values. No partial authorization change was performed.') }}
+            <ul class="list-disc space-y-1 ps-5">
+                @foreach ($errors->all() as $message)
+                    <li>{{ $message }}</li>
+                @endforeach
+            </ul>
         </flux:callout>
     @endif
 
@@ -239,7 +251,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
     <flux:modal wire:model="authorizationModalOpen" class="max-w-2xl">
         <form wire:submit="saveAuthorization" class="space-y-5">
-            <div><flux:heading size="lg">{{ $editingUserId === null ? __('Create user') : __('User authorization') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ __('Assign only approved roles and approved branch or store scope.') }}</flux:text></div>
+            <div class="flex items-center gap-2"><flux:heading size="lg">{{ $editingUserId === null ? __('Create user') : __('User authorization') }}</flux:heading><x-context-help :title="$editingUserId === null ? __('Create user') : __('User authorization')" :label="__('Open contextual help')"><p>{{ __('Assign only approved roles and approved branch or store scope.') }}</p></x-context-help></div>
 
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input wire:model="userForm.name" :label="__('Name')" required />

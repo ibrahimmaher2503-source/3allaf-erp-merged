@@ -13,6 +13,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\StockMovement;
+use App\Modules\Purchasing\Models\SupplierPayableEntry;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
@@ -213,6 +214,9 @@ final class ReversePurchaseReturnAction
                     return $return;
                 },
             );
+            if (SupplierPayableEntry::query()->where('source_type', 'supplier_return')->where('source_id', $return->id)->exists()) {
+                app(PostSupplierPayableEntryAction::class)->execute($return->supplier_id, $return->store_id, 'supplier_return_reversal', $return->id, (string) $return->total_amount, $actorId);
+            }
             app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'reverse_supplier_return', source: $return, before: $before, after: $return->only(['status', 'reversed_at', 'reversed_by', 'lock_version']), storeId: $return->store_id, reasonText: $reason, metadata: ['reversal_movement_type' => 'purchase_return_reversal', 'reversal_movement_ids' => $reversalMovementIds, 'correction_request_id' => $requestId]);
 
             return $return->fresh(['supplier', 'store', 'reason', 'purchaseInvoice', 'lines.product']);

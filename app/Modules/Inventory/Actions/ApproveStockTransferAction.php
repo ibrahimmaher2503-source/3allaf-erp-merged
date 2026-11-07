@@ -19,14 +19,14 @@ final class ApproveStockTransferAction
 {
     public function __construct(private readonly AssertInventoryStoreScope $scope) {}
 
-    public function execute(int $id): StockTransfer
+    /** @param array{source_store_id: int, destination_store_id: int, lines: array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}>, reason_code?: ?string, notes?: ?string, invoice_reference?: ?string}|null $reviewed */
+    public function execute(int $id, ?array $reviewed = null, ?int $expectedVersion = null): StockTransfer
     {
         Gate::authorize('transfers.approve');
 
-        return DB::transaction(function () use ($id): StockTransfer {
+        return DB::transaction(function () use ($id, $reviewed, $expectedVersion): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer);
-            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
             if ($transfer->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted transfers can be approved.'));
             }
@@ -45,12 +45,22 @@ final class ApproveStockTransferAction
                     'approval' => __('This transfer has no pending approval request. Submit it for approval before approving.'),
                 ]);
             }
+            if ($expectedVersion !== null && (int) $transfer->lock_version !== $expectedVersion) {
+                throw new InvalidArgumentException(__('The transfer changed during review. Reload the review before confirming.'));
+            }
+            $requestedVersion = (string) $transfer->lock_version;
+            if ($reviewed !== null) {
+                $transfer = app(UpdateStockTransferDraftAction::class)->saveReviewed(
+                    $id, $reviewed['source_store_id'], $reviewed['destination_store_id'], $reviewed['lines'],
+                    $reviewed['reason_code'] ?? null, $reviewed['notes'] ?? null, (int) $requestedVersion, $reviewed['invoice_reference'] ?? null,
+                );
+            }
             $before = $transfer->only(['status', 'lock_version']);
             $transfer->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
-            app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Stock transfer approved.'));
+            app(ApproveRequest::class)->execute($approval, $requestedVersion, decisionNote: __('Stock transfer approved.'));
             app(RecordAuditEvent::class)->execute('inventory', 'approve_stock_transfer', $transfer, $before, $transfer->only(['status', 'approved_by', 'approved_at', 'lock_version']), storeId: $transfer->source_store_id, metadata: ['approval_record_id' => $approval->id]);
 
-            return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
+            return app(DispatchStockTransferAction::class)->dispatchApproved($transfer->id);
         });
     }
 }

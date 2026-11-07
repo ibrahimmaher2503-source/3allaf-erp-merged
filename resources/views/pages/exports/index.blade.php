@@ -46,7 +46,7 @@
     <x-app.page :title="__('Export job center')" :description="__('Private, scoped, bounded PDF and Excel artifacts expire automatically and are downloadable only by their requester.')" :eyebrow="__('Reports & exports')" max-width="7xl">
         <x-slot:actions><flux:button href="{{ route('reports.index') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to reports') }}</flux:button></x-slot:actions>
 
-        <flux:callout variant="info" icon="shield-check">{{ __('Exports are permission-aware, formula-safe, queued for background generation, and audited on request, generation, and download.') }}</flux:callout>
+        <x-context-help :title="__('Export job center')" :label="__('Open contextual help')"><p>{{ __('Exports are permission-aware, formula-safe, queued for background generation, and audited on request, generation, and download.') }}</p></x-context-help>
 
         <section class="overflow-hidden rounded-2xl border border-border bg-surface shadow-card" aria-labelledby="export-jobs-heading">
             <header class="border-b border-border bg-surface-muted/40 px-4 py-3 sm:px-5"><h2 id="export-jobs-heading" class="font-semibold text-text-primary">{{ __('Your export requests') }}</h2><p class="mt-1 text-sm text-text-muted">{{ __('Ready files can be viewed or downloaded until their expiry time.') }}</p></header>

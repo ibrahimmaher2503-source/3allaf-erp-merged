@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Models;
 
 use App\Models\User;
+use App\Modules\Pricing\Models\PriceList;
 use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -47,7 +48,10 @@ class Store extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function priceList(): BelongsTo { return $this->belongsTo(\App\Modules\Pricing\Models\PriceList::class); }
+    public function priceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class);
+    }
 
     public function sellingStoreMappings(): HasMany
     {
@@ -61,7 +65,11 @@ class Store extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->canBypassApproval()) {
+            return $query->whereIn('company_id', $user->operationalCompanyIds());
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

@@ -2,9 +2,7 @@
     <div class="flex flex-col gap-6">
         <x-auth-header :title="__('Create your user account')" :description="__('Create the sign-in account you will use to access the workspace.')" />
 
-        <flux:callout variant="info" icon="information-circle">
-            {{ __('This creates an authentication account only. Company identity, roles, and business setup are completed separately after sign-in.') }}
-        </flux:callout>
+        <x-context-help :title="__('Create your user account')" :label="__('Open contextual help')"><p>{{ __('This creates an authentication account only. Company identity, roles, and business setup are completed separately after sign-in.') }}</p></x-context-help>
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -24,16 +22,10 @@
             />
 
             <!-- Email Address -->
-            <flux:input
-                name="username"
-                :label="__('Username')"
-                :value="old('username')"
-                type="text"
-                required
-                autocomplete="username"
-                :placeholder="__('Username')"
-                :description="__('Use this username to sign in. It does not assign roles or business access.')"
-            />
+            <div>
+                <flux:input name="username" :label="__('Username')" :value="old('username')" type="text" required autocomplete="username" :placeholder="__('Username')" />
+                <x-context-help :title="__('Username')" :label="__('Open contextual help')"><p>{{ __('Use this username to sign in. It does not assign roles or business access.') }}</p></x-context-help>
+            </div>
 
             <flux:input
                 name="email"

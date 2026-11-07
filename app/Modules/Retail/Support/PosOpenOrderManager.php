@@ -213,6 +213,12 @@ final class PosOpenOrderManager
         $request->session()->put('pos.tax_applicable', $applicable);
     }
 
+    public function setInvoiceDiscount(Request $request, User $cashier, PosContext $context, ?string $type, string $value): void
+    {
+        $order = $this->active($request, $cashier, $context);
+        $this->updateOpen($order, ['invoice_discount_type' => $type, 'invoice_discount_value' => $type === null ? '0.00' : $value]);
+    }
+
     public function setCustomer(Request $request, User $cashier, PosContext $context, ?Customer $customer): void
     {
         $order = $this->active($request, $cashier, $context);
@@ -278,6 +284,26 @@ final class PosOpenOrderManager
     public function findScoped(User $cashier, PosContext $context, string $uuid): ?PosOpenOrder
     {
         return $this->scope($cashier, $context)->where('uuid', $uuid)->first();
+    }
+
+    public function completedCheckout(User $cashier, PosContext $context, string $uuid, string $token): ?PosOpenOrder
+    {
+        if (! $context->isReady() || $context->store === null || $context->branch === null || $context->drawer === null || $context->shift === null) {
+            return null;
+        }
+
+        return PosOpenOrder::query()
+            ->where('company_id', $context->store->company_id)
+            ->where('branch_id', $context->branch->id)
+            ->where('store_id', $context->store->id)
+            ->where('cash_drawer_id', $context->drawer->id)
+            ->where('shift_id', $context->shift->id)
+            ->where('cashier_id', $cashier->id)
+            ->where('uuid', $uuid)
+            ->where('checkout_token', $token)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_sale_id')
+            ->first();
     }
 
     private function updateOpen(?PosOpenOrder $order, array $attributes): void

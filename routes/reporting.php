@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Assets\Models\RentalAsset;
-use App\Modules\Catalog\Models\Category;
-use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductUnit;
-use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Inventory\Models\StockBalance;
@@ -20,19 +20,24 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Reporting\Actions\CreateExportJobAction;
 use App\Modules\Reporting\Actions\EvaluateAlertsAction;
 use App\Modules\Reporting\Models\Alert;
 use App\Modules\Reporting\Models\ExportJob;
+use App\Modules\Reporting\Queries\PhaseOneReports;
 use App\Modules\Reporting\Queries\ReportSnapshot;
 use App\Modules\Reporting\Queries\InventoryReport;
 use App\Modules\Reporting\Queries\SalesReport;
 use App\Modules\Retail\Models\Sale;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     $salesReportOptions = function (User $user): array {
@@ -69,13 +74,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'product_type', 'product_status', 'brand_id', 'age_label_id', 'character_id', 'colour_id', 'gender_id',
             'search', 'sort', 'direction', 'page',
         ]);
+        if (! $request->has('branch_id') && ! $request->filled('store_id')) {
+            $contextBranchId = app(WorkContext::class)->branchId($user);
+            if ($contextBranchId !== null && $user->canAccessBranch($contextBranchId)) {
+                $filters['branch_id'] = $contextBranchId;
+            }
+        }
         if ($focusedModule !== null) {
             $filters['module'] = $focusedModule;
         }
         $report = $snapshot->execute($user, $filters);
         $branches = Branch::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
-        $users = User::query()->where('status', 'active')->when(! $user->is_super_admin, function (Builder $query) use ($user): void {
+        $users = User::query()->where('status', 'active')->when($user->canBypassApproval(), function (Builder $query) use ($user): void {
+            $query->where(function (Builder $scope) use ($user): void {
+                $scope->whereHas('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active')->whereIn('branch_id', Branch::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id')))
+                    ->orWhereHas('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active')->whereIn('store_id', Store::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id')))
+                    ->orWhere('users.id', $user->id);
+            });
+        })->when(! $user->hasGlobalApplicationAccess() && ! $user->canBypassApproval(), function (Builder $query) use ($user): void {
             $query->where(function (Builder $scope) use ($user): void {
                 $scope->whereHas('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active')->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id')))
                     ->orWhereHas('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active')->whereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id')));
@@ -157,6 +174,52 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.reports.inventory-valuation', ['report' => $reports->valuation($user, $filters), ...$options]);
     })->middleware(['can:dashboard_reports.view', 'can:inventory_stock_card.view', 'can:inventory_stock_card.cost_view'])->name('reports.inventory-valuation');
 
+    foreach (['product-sales' => 'sales', 'current-inventory' => 'inventory', 'daily-branch-sales' => 'daily'] as $path => $type) {
+        Route::get('reports/'.$path, function (Request $request, PhaseOneReports $reports) use ($type) {
+            /** @var User $user */
+            $user = $request->user();
+            Gate::forUser($user)->authorize($type === 'inventory' ? 'inventory_stock_card.view' : 'pos_sales.view');
+            if ($type === 'inventory' || $type === 'sales') {
+                Gate::forUser($user)->authorize('inventory_stock_card.cost_view');
+            }
+            if ($type === 'daily') {
+                Gate::forUser($user)->authorize('pos_sales.payment_view');
+            }
+            if ($type !== 'inventory') {
+                $request->mergeIfMissing(['date_from' => now()->startOfMonth()->toDateString(), 'date_to' => now()->toDateString()]);
+            }
+            $filters = $request->validate([
+                'date_from' => [$type === 'inventory' ? 'nullable' : 'required', 'date'],
+                'date_to' => [$type === 'inventory' ? 'nullable' : 'required', 'date', 'after_or_equal:date_from'],
+                'store_id' => ['nullable', 'integer'],
+                'store_ids' => ['nullable', 'array', 'max:200'], 'store_ids.*' => ['integer'],
+                'supplier_ids' => ['nullable', 'array', 'max:200'], 'supplier_ids.*' => ['integer'],
+                'category_ids' => ['nullable', 'array', 'max:200'], 'category_ids.*' => ['integer'],
+                'branch_id' => ['nullable', 'integer'],
+            ]);
+            if ($type !== 'inventory') {
+                if (Carbon::parse($filters['date_from'])->diffInDays(Carbon::parse($filters['date_to'])) > 366) {
+                    throw ValidationException::withMessages(['date_to' => __('Report date range is limited to one year.')]);
+                }
+            }
+            $stores = Store::query()->visibleTo($user)->where('status', 'active')->with('branch')->orderBy('code')->limit(200)->get();
+            $branches = Branch::query()->visibleTo($user)->where('status', 'active')->whereIn('id', $stores->pluck('branch_id')->filter()->all())->orderBy('code')->get();
+            if ($type === 'daily') {
+                $filters['branch_id'] ??= $branches->first()?->id;
+                abort_if($filters['branch_id'] === null, 403);
+            }
+            $suppliers = Supplier::query()->where('status', 'active')->orderBy('code')->limit(200)->get();
+            $categories = Category::query()->where('status', 'active')->orderBy('code')->limit(200)->get();
+            $report = match ($type) {
+                'sales' => $reports->productSales($user, $filters),
+                'inventory' => $reports->inventory($user, $filters),
+                default => $reports->daily($user, $filters),
+            };
+
+            return view('pages.reports.phase-one', compact('type', 'filters', 'report', 'stores', 'branches', 'suppliers', 'categories'));
+        })->middleware('can:dashboard_reports.view')->name('reports.phase-one.'.$type);
+    }
+
     foreach ([
         'sales' => 'sales',
         'customers' => 'customers',
@@ -218,7 +281,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             return $alert;
         });
 
-        return view('pages.alerts.index', compact('alerts'));
+        $alertProductIds = $alerts->getCollection()->filter(fn (Alert $alert): bool => in_array($alert->source_type, [StockBalance::class, Product::class], true))
+            ->map(fn (Alert $alert): int => (int) ($alert->metadata['product_id'] ?? $alert->source_id))->filter()->unique();
+        $alertProducts = Product::query()->whereIn('id', $alertProductIds)->get(['id', 'item_code', 'name_ar', 'name_en'])->keyBy('id');
+
+        return view('pages.alerts.index', compact('alerts', 'alertProducts'));
     })->middleware('can:dashboard_reports.view')->name('alerts.index');
 
     Route::post('alerts/{alert}/acknowledge', function (Request $request, Alert $alert) {
@@ -256,15 +323,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($job->storage_path !== null && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 404);
         app(RecordAuditEvent::class)->execute('reporting', 'export_downloaded', $job, branchId: $job->branch_id, storeId: $job->store_id, metadata: ['row_count' => $job->row_count, 'filters' => $job->filters, 'expires_at' => $job->expires_at?->toIso8601String()]);
         $extension = $job->format;
-        $mime = match($job->format) { 'pdf'=>'application/pdf','csv'=>'text/csv; charset=UTF-8',default=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+        $mime = match ($job->format) {
+            'pdf' => 'application/pdf','csv' => 'text/csv; charset=UTF-8',default => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        };
 
         return Storage::disk($job->storage_disk ?: 'local')->download($job->storage_path, 'toyjoy-'.$job->report_key.'-'.$job->id.'.'.$extension, ['Content-Type' => $mime]);
     })->name('exports.download');
 
     Route::get('exports/{job}/view', function (Request $request, ExportJob $job) {
-        /** @var User $user */ $user=$request->user();
-        abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id,403);
-        abort_unless($job->status==='ready' && $job->expires_at?->isFuture() && $job->storage_path && Storage::disk($job->storage_disk?:'local')->exists($job->storage_path),410);
-        return Storage::disk($job->storage_disk?:'local')->response($job->storage_path, null, ['Cache-Control'=>'private, no-store','X-Content-Type-Options'=>'nosniff']);
+        /** @var User $user */ $user = $request->user();
+        abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id, 403);
+        abort_unless($job->status === 'ready' && $job->expires_at?->isFuture() && $job->storage_path && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 410);
+
+        return Storage::disk($job->storage_disk ?: 'local')->response($job->storage_path, null, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     })->name('exports.view');
 });

@@ -3,29 +3,51 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Actions\AuthorizeAttachmentAccess;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\ProductSupplier;
-use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction;
+use App\Modules\Purchasing\Actions\PreviewPurchaseOrderWorkbook;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseOrderDocument;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\StockMovement;
 use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
+use App\Support\DataExchange\MasterDataDocument;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 $router = app('router');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router): void {
+    $router->get('purchasing/orders/import-template', function () {
+        Gate::authorize('purchase_orders.create');
+
+        return app(MasterDataDocument::class)->importTemplate(
+            'rajeh-purchase-order-lines.xlsx',
+            'purchase-order-lines-v1',
+            PreviewPurchaseOrderWorkbook::HEADERS,
+            [],
+            [
+                ['ar' => 'أدخل كود المنتج أو الباركود كنص للحفاظ على الأصفار البادئة.', 'en' => 'Enter product code or barcode as text to preserve leading zeros.'],
+                ['ar' => 'الكمية عدد صحيح موجب؛ تكلفة الوحدة غير سالبة. المورد والمخزن في رأس أمر الشراء.', 'en' => 'Quantity is a positive whole number; unit cost is non-negative. Supplier and warehouse belong to the order header.'],
+            ],
+            requiredColumns: [0, 2, 3],
+            formats: [0 => '@'],
+        );
+    })->name('purchasing.orders.import-template');
     $purchaseHistory = static function (Request $request, string $mode) {
         $user = $request->user();
         abort_unless($user !== null && $user->can('purchase_invoices_supplier_returns.view'), 403);
@@ -35,6 +57,16 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $dateFrom = trim((string) $request->string('date_from'));
         $dateTo = trim((string) $request->string('date_to'));
 
+        $purchaseOrders = $mode === 'supplier' && $user->can('purchase_orders.view')
+            ? PurchaseOrder::query()->with(['supplier', 'store'])
+                ->whereIn('status', ['approved', 'partially_received', 'received', 'closed'])->whereIn('store_id', $visibleStoreIds)
+                ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+                ->when($productId, fn ($query) => $query->whereHas('lines', fn ($lines) => $lines->where('product_id', $productId)))
+                ->when($dateFrom !== '', fn ($query) => $query->whereDate('order_date', '>=', $dateFrom))
+                ->when($dateTo !== '', fn ($query) => $query->whereDate('order_date', '<=', $dateTo))
+                ->latest('order_date')->latest('id')->limit(20)->get()
+            : collect();
+
         $approvedInvoices = PurchaseInvoice::query()
             ->where('status', 'approved')->whereIn('store_id', $visibleStoreIds)
             ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
@@ -42,7 +74,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             ->when($dateFrom !== '', fn ($query) => $query->whereDate('invoice_date', '>=', $dateFrom))
             ->when($dateTo !== '', fn ($query) => $query->whereDate('invoice_date', '<=', $dateTo));
 
-        $suppliers = Supplier::query()->whereIn('id', (clone $approvedInvoices)->select('supplier_id'))->orderBy('name_en')->get();
+        $suppliers = Supplier::query()->where(fn ($query) => $query
+            ->whereIn('id', (clone $approvedInvoices)->select('supplier_id'))
+            ->orWhereIn('id', $purchaseOrders->pluck('supplier_id'))
+            ->when($supplierId && $user->can('suppliers.view'), fn ($scope) => $scope->orWhere('id', $supplierId)))
+            ->orderBy('name_en')->get();
         $products = Product::query()->whereIn('id', PurchaseInvoiceLine::query()
             ->whereHas('invoice', fn ($query) => $query->where('status', 'approved')->whereIn('store_id', $visibleStoreIds))
             ->select('product_id'))->orderBy('item_code')->get(['id', 'item_code', 'name_ar', 'name_en']);
@@ -72,7 +108,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
                 ->whereNotNull('last_purchase_price')->latest('last_purchase_date')->limit(50)->get()
             : collect();
 
-        return view('purchasing.history', compact('mode', 'invoices', 'costLines', 'supplierReturns', 'lastPrices', 'suppliers', 'products', 'supplierId', 'productId', 'dateFrom', 'dateTo'));
+        return view('purchasing.history', compact('mode', 'purchaseOrders', 'invoices', 'costLines', 'supplierReturns', 'lastPrices', 'suppliers', 'products', 'supplierId', 'productId', 'dateFrom', 'dateTo'));
     };
 
     $router->livewire('purchasing/orders', 'purchasing::orders')
@@ -90,6 +126,44 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/invoices', 'purchasing::invoices')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices');
+
+    $router->get('purchasing/quantity-differences', function (Request $request) {
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $filters = $request->validate(['search' => 'nullable|string|max:100', 'from' => 'nullable|date', 'to' => 'nullable|date|after_or_equal:from', 'export' => 'nullable|in:csv']);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $like = '%'.addcslashes($search, '%_\\').'%';
+        $query = PurchaseInvoiceLine::query()->withShortage()
+            ->whereHas('invoice', function ($invoices) use ($actor, $filters): void {
+                $invoices->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+                    ->when($filters['from'] ?? null, fn ($q, $date) => $q->whereDate('invoice_date', '>=', $date))
+                    ->when($filters['to'] ?? null, fn ($q, $date) => $q->whereDate('invoice_date', '<=', $date));
+            })
+            ->when($search !== '', fn ($lines) => $lines->where(fn ($q) => $q
+                ->whereHas('product', fn ($products) => $products->where('item_code', 'like', $like)->orWhere('name_ar', 'like', $like)->orWhere('name_en', 'like', $like)->orWhereHas('barcodes', fn ($codes) => $codes->where('barcode', $search)))
+                ->orWhereHas('invoice', fn ($invoices) => $invoices->where('invoice_number', 'like', $like)->orWhere('supplier_reference', 'like', $like)->orWhereHas('supplier', fn ($suppliers) => $suppliers->where('name_ar', 'like', $like)->orWhere('name_en', 'like', $like)->orWhere('code', 'like', $like)))))
+            ->with(['product', 'invoice.supplier', 'invoice.store.branch', 'invoice.approver'])->latest('id');
+        if (($filters['export'] ?? null) === 'csv') {
+            Gate::authorize('purchase_invoices_supplier_returns.export');
+            $lines = $query->limit(5000)->get();
+
+            return response()->streamDownload(function () use ($lines): void {
+                $handle = fopen('php://output', 'wb');
+                if ($handle === false) {
+                    abort(500);
+                }
+                fputcsv($handle, ['invoice_number', 'date', 'supplier', 'branch', 'receiving_store', 'product_code', 'original_quantity', 'accepted_quantity', 'quantity_difference', 'approved_by', 'approved_at']);
+                foreach ($lines as $line) {
+                    $invoice = $line->invoice;
+                    $row = [$invoice->invoice_number, $invoice->invoice_date?->format('Y-m-d'), $invoice->supplier?->code, $invoice->store?->branch?->code, $invoice->store?->code, $line->product?->item_code, $line->original_quantity, $line->quantity_received, $line->shortageQuantity(), $invoice->approver?->name, $invoice->approved_at?->toIso8601String()];
+                    fputcsv($handle, array_map(static fn ($value): string => preg_match('/^[=+\-@]/', ltrim((string) $value)) ? "'".$value : (string) $value, $row));
+                }
+                fclose($handle);
+            }, 'purchase-quantity-differences.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
+        return view('purchasing.quantity-differences', ['lines' => $query->paginate(25)->withQueryString(), 'filters' => $filters]);
+    })->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.quantity-differences');
 
     $router->get('purchasing/supplier-history', fn (Request $request) => $purchaseHistory($request, 'supplier'))
         ->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.history.suppliers');
@@ -124,6 +198,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/returns', 'purchasing::returns')
         ->middleware('can:purchase_returns.view')
         ->name('purchasing.returns');
+    $router->livewire('purchasing/returns/create', 'purchasing::returns')
+        ->middleware('can:purchase_returns.create')
+        ->name('purchasing.returns.create');
 
     $router->livewire('purchasing/returns/settings', 'purchasing::return-settings')
         ->middleware('can:company_settings.view')
@@ -176,10 +253,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->get('purchasing/invoices/{invoice}/destinations/{store}/labels', function (string $invoice, string $store) {
         Gate::authorize('purchase_invoices.print_labels');
-        $actor = Auth::user(); abort_unless($actor instanceof User, 403);
-        $destination = Store::query()->visibleTo($actor)->where('type','selling')->whereKey((int) $store)->firstOrFail();
-        $invoice = PurchaseInvoice::query()->where('status','approved')->with(['distributions'=>fn($q)=>$q->where('destination_store_id',$destination->id)])->findOrFail((int)$invoice);
-        abort_if($invoice->distributions->isEmpty(),404);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $destination = Store::query()->visibleTo($actor)->where('type', 'selling')->whereKey((int) $store)->firstOrFail();
+        $invoice = PurchaseInvoice::query()->where('status', 'approved')->with(['distributions' => fn ($q) => $q->where('destination_store_id', $destination->id)])->findOrFail((int) $invoice);
+        abort_if($invoice->distributions->isEmpty(), 404);
+
         return redirect()->route('pricing.labels', ['invoice' => $invoice->id, 'store' => $destination->id]);
     })->whereNumber('invoice')->whereNumber('store')->name('purchasing.invoices.destination-labels');
 
@@ -200,9 +279,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             if ($handle === false) {
                 abort(500, 'Unable to open the CSV output stream.');
             }
-            fputcsv($handle, ['invoice_number', 'supplier_code', 'supplier_reference', 'store_code', 'status', 'invoice_date', 'subtotal', 'tax_amount', 'discount_amount', 'total_amount']);
+            fputcsv($handle, ['invoice_number', 'supplier_code', 'supplier_reference', 'store_code', 'status', 'invoice_date', 'subtotal', 'discount_amount', 'total_amount']);
             foreach ($invoices as $invoice) {
-                fputcsv($handle, array_map(static fn (mixed $value): string => is_string($value) && preg_match('/^[=+\-@]/', ltrim($value)) === 1 ? "'".$value : (string) $value, [$invoice->invoice_number, $invoice->supplier?->code, $invoice->supplier_reference, $invoice->store?->code, $invoice->status, $invoice->invoice_date?->format('Y-m-d'), $invoice->subtotal, $invoice->tax_amount, $invoice->discount_amount, $invoice->total_amount]));
+                fputcsv($handle, array_map(static fn (mixed $value): string => is_string($value) && preg_match('/^[=+\-@]/', ltrim($value)) === 1 ? "'".$value : (string) $value, [$invoice->invoice_number, $invoice->supplier?->code, $invoice->supplier_reference, $invoice->store?->code, $invoice->status, $invoice->invoice_date?->format('Y-m-d'), $invoice->subtotal, $invoice->discount_amount, $invoice->total_amount]));
             }
             fclose($handle);
         }, 'purchase-invoices.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
@@ -249,7 +328,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         Gate::authorize('purchase_orders.print');
         $user = Auth::user();
         abort_unless(
-            $order->store_id === null || $user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()),
+            $user !== null && ($order->store_id !== null
+                ? Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()
+                : ($order->branch_id !== null && $user->canAccessBranch((int) $order->branch_id))),
             403,
         );
 
@@ -259,18 +340,22 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     })->whereNumber('order')->middleware('can:purchase_orders.print')->name('purchasing.orders.print');
 
     $router->post('purchasing/orders/{order}/pdf', function (PurchaseOrder $order) {
-        app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order, app()->getLocale());
+        app(GeneratePurchaseOrderPdfAction::class)->execute($order, app()->getLocale());
+
         return back()->with('success', __('Purchase-order PDF generated and stored privately.'));
     })->whereNumber('order')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.generate');
 
-    $deliverOrderPdf = function (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document, bool $download = false) {
+    $deliverOrderPdf = function (PurchaseOrder $order, PurchaseOrderDocument $document, bool $download = false) {
         abort_unless((int) $document->purchase_order_id === (int) $order->id, 404);
         $attachment = $document->attachment()->firstOrFail();
         $authorizer = fn (User $user, Attachment $candidate): bool => $user->can('purchase_orders.print') && $candidate->source_type === PurchaseOrder::class && $candidate->source_id === (string) $order->id;
-        if (!$download) return app(DeliverAttachment::class)->execute($attachment, $authorizer);
-        app(\App\Modules\Platform\Actions\AuthorizeAttachmentAccess::class)->execute($attachment, $authorizer);
-        return \Illuminate\Support\Facades\Storage::disk($attachment->storage_disk)->download($attachment->storage_path, $order->po_number.'-v'.$document->version.'-'.$document->locale.'.pdf');
+        if (! $download) {
+            return app(DeliverAttachment::class)->execute($attachment, $authorizer);
+        }
+        app(AuthorizeAttachmentAccess::class)->execute($attachment, $authorizer);
+
+        return Storage::disk($attachment->storage_disk)->download($attachment->storage_path, $order->po_number.'-v'.$document->version.'-'.$document->locale.'.pdf');
     };
-    $router->get('purchasing/orders/{order}/pdf/{document}/view', fn (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.view');
-    $router->get('purchasing/orders/{order}/pdf/{document}/download', fn (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document, true))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.download');
+    $router->get('purchasing/orders/{order}/pdf/{document}/view', fn (PurchaseOrder $order, PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.view');
+    $router->get('purchasing/orders/{order}/pdf/{document}/download', fn (PurchaseOrder $order, PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document, true))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.download');
 });

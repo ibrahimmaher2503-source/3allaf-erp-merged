@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Platform\Http\Controllers;
 
-use App\Modules\Platform\Actions\SaveUiPreferences;
 use App\Modules\Platform\Actions\SaveTutorialProgress;
+use App\Modules\Platform\Actions\SaveUiPreferences;
 use App\Modules\Platform\Data\PageGuideContext;
 use App\Modules\Platform\Support\TutorialModuleRegistry;
 use App\Modules\Platform\Support\TutorialRegistry;
@@ -20,12 +20,12 @@ final class DashboardAssistantController
     public function preferences(Request $request, SaveUiPreferences $action): JsonResponse
     {
         $preference = $action->execute($request->user(), $request->validate([
-            'appearance' => ['sometimes', 'string'], 'accent_color' => ['sometimes', 'string'], 'sidebar_mode' => ['sometimes', 'string'],
+            'appearance' => ['sometimes', 'string'], 'accent_color' => ['sometimes', 'string'], 'sidebar_mode' => ['sometimes', 'string'], 'menu_variant' => ['sometimes', 'string'],
             'navbar_mode' => ['sometimes', 'string'], 'content_width' => ['sometimes', 'string'], 'table_density' => ['sometimes', 'string'],
             'font_scale' => ['sometimes', 'string'], 'reduced_motion' => ['sometimes'],
         ]));
 
-        return response()->json($preference->only(['appearance', 'accent_color', 'sidebar_mode', 'navbar_mode', 'content_width', 'table_density', 'font_scale', 'reduced_motion']));
+        return response()->json($preference->only(['appearance', 'accent_color', 'sidebar_mode', 'menu_variant', 'navbar_mode', 'content_width', 'table_density', 'font_scale', 'reduced_motion']));
     }
 
     public function screen(Request $request, string $screenId): Response

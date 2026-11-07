@@ -1,0 +1,28 @@
+{
+  "before": {
+    "search": {
+      "left": 526.40625,
+      "right": 974.40625,
+      "width": 448
+    },
+    "context": {
+      "left": 461.203125,
+      "right": 637.203125,
+      "width": 176
+    },
+    "overlap": 110.796875
+  },
+  "after": {
+    "search": {
+      "left": 650.796875,
+      "right": 974.40625,
+      "width": 323.609375
+    },
+    "context": {
+      "left": 461.203125,
+      "right": 637.203125,
+      "width": 176
+    },
+    "overlap": -13.59375
+  }
+}

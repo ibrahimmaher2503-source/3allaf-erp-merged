@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
-use App\Modules\Customer\Support\CustomerPolicy;
+use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\StoreAttachment;
 use App\Modules\Platform\Data\AttachmentSourceReference;
+use App\Modules\Platform\Models\City;
+use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\PaymentMethod;
-use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\CompletePosOpenOrderAction;
+use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\GiftCardPosSale;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\PaymentReferenceGuard;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
@@ -20,6 +24,7 @@ use App\Modules\Retail\Support\PosOpenOrderManager;
 use App\Modules\Retail\Support\PosReceiptProfile;
 use App\Support\UserSafeError;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,26 +53,26 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
     $selectedCustomer = $activeOrder?->customer;
     $customerSearchResults = collect();
     $customerQuery = trim((string) $request->query('customer_q', ''));
-    $customerPurposes = [];
-    $customerPolicyError = null;
+    $lookup = in_array($request->query('lookup'), ['products', 'customers', 'invoices'], true)
+        ? $request->query('lookup')
+        : ($customerQuery !== '' ? 'customers' : 'products');
     if ($store !== null && $user->can('customers.view')) {
-        try {
-            $customerPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
-        } catch (InvalidArgumentException $exception) {
-            $customerPolicyError = UserSafeError::message($exception);
-        }
-        if ($customerQuery !== '') {
+        if ($lookup === 'customers' && $customerQuery !== '') {
             $escaped = addcslashes($customerQuery, '%_\\');
             $prefix = $escaped.'%';
             $digits = preg_replace('/[^0-9]+/', '', $customerQuery) ?: '';
+            $customerId = preg_match('/^CUS-(\d{7,})$/i', $customerQuery, $matches) === 1 ? ltrim($matches[1], '0') : null;
             $customerSearchResults = Customer::query()
                 ->visibleFrom($user, (int) $store->branch_id, (int) $store->id)
                 ->where('status', 'active')
-                ->where(function ($query) use ($prefix, $digits): void {
+                ->where(function ($query) use ($prefix, $digits, $customerId): void {
                     $query->where('name_ar', 'like', $prefix)
                         ->orWhere('name_en', 'like', $prefix)
                         ->orWhere('public_id', 'like', $prefix)
                         ->orWhere('email', 'like', $prefix);
+                    if ($customerId !== null && $customerId !== '') {
+                        $query->orWhere('id', $customerId);
+                    }
                     if ($digits !== '') {
                         $query->orWhere('phone_normalized', 'like', $digits.'%')
                             ->orWhere('secondary_phone_normalized', 'like', $digits.'%');
@@ -80,9 +85,22 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         }
     }
 
+    $invoiceQuery = trim((string) $request->query('invoice_q', ''));
+    $invoiceResults = collect();
+    if ($lookup === 'invoices' && $invoiceQuery !== '') {
+        $invoiceResults = Sale::query()->visibleTo($user)->approved()
+            ->where('document_number', 'like', addcslashes($invoiceQuery, '%_\\').'%')
+            ->with(['customer', 'branch', 'store', 'lines.product', 'retailReturns'])
+            ->withCount('retailReturns')
+            ->latest('approved_at')->limit(8)->get();
+    }
+    $governorates = $store && $user->can('customers.create') ? Governorate::query()->active()->orderBy('sort_order')->get(['id', 'name_ar', 'name_en']) : collect();
+    $cities = $store && $user->can('customers.create') ? City::query()->visibleToCompany((int) $store->company_id)->active()->orderBy('sort_order')->get(['id', 'governorate_id', 'name_ar', 'name_en']) : collect();
+    $customerGroups = $store && $user->can('customers.create') ? CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('sort_order')->get(['id', 'name_ar', 'name_en']) : collect();
+
     $completedSale = null;
     if (is_numeric($completedSaleId)) {
-        $completedSale = Sale::query()->visibleTo($user)->whereKey((int) $completedSaleId)->where('status', 'approved')->first();
+        $completedSale = Sale::query()->visibleTo($user)->whereKey((int) $completedSaleId)->whereIn('status', ['approved', 'gift_card_sold'])->first();
     }
 
     return view('pages.pos.index', [
@@ -94,12 +112,49 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         'selectedCustomer' => $selectedCustomer,
         'customerSearchResults' => $customerSearchResults,
         'customerQuery' => $customerQuery,
-        'customerPurposes' => $customerPurposes,
-        'customerPolicyError' => $customerPolicyError,
+        'lookup' => $lookup,
+        'invoiceQuery' => $invoiceQuery,
+        'invoiceResults' => $invoiceResults,
+        'governorates' => $governorates,
+        'cities' => $cities,
+        'customerGroups' => $customerGroups,
         'previewError' => $snapshot['error'] ?? null,
         'completedSale' => $completedSale,
     ]);
 })->middleware('can:pos_sales.view')->name('pos');
+
+Route::get('pos/customers/search', function (Request $request, PosContextResolver $contexts) {
+    /** @var User $user */
+    $user = $request->user();
+    abort_unless($user->can('pos_sales.view') && $user->can('customers.view'), 403);
+    $context = $contexts->resolve($user);
+    abort_unless($context->isReady() && $context->store !== null, 403);
+    $term = trim((string) $request->query('q', ''));
+    if ($term === '') {
+        return response()->json(['data' => []]);
+    }
+    $term = mb_substr($term, 0, 100);
+    $escaped = addcslashes($term, '%_\\');
+    $digits = preg_replace('/[^0-9]+/', '', $term) ?: '';
+    $customerId = preg_match('/^CUS-(\d{7,})$/i', $term, $matches) === 1 ? ltrim($matches[1], '0') : null;
+    $customers = Customer::query()->visibleFrom($user, (int) $context->store->branch_id, (int) $context->store->id)
+        ->where('status', 'active')->where(function ($query) use ($escaped, $digits, $customerId): void {
+            $query->where('name_ar', 'like', '%'.$escaped.'%')->orWhere('name_en', 'like', '%'.$escaped.'%')
+                ->orWhere('public_id', 'like', $escaped.'%')->orWhere('email', 'like', $escaped.'%');
+            if ($customerId !== null && $customerId !== '') {
+                $query->orWhere('id', $customerId);
+            }
+            if ($digits !== '') {
+                $query->orWhere('phone_normalized', 'like', '%'.$digits.'%')
+                    ->orWhere('secondary_phone_normalized', 'like', '%'.$digits.'%');
+            }
+        })->orderBy('name_en')->limit(12)->get(['id', 'name_ar', 'name_en', 'phone_display']);
+
+    return response()->json(['data' => $customers->map(fn (Customer $customer): array => [
+        'id' => $customer->id, 'name' => str_starts_with(app()->getLocale(), 'ar') ? $customer->name_ar : $customer->name_en,
+        'phone' => $customer->phone_display, 'code' => $customer->customer_code,
+    ])->values()]);
+})->middleware(['can:pos_sales.view', 'can:customers.view'])->name('pos.customers.search');
 
 Route::post('pos/orders', function (Request $request, PosContextResolver $contexts, PosOpenOrderManager $orders) {
     $data = $request->validate(['creation_token' => ['required', 'uuid']]);
@@ -112,7 +167,7 @@ Route::post('pos/orders', function (Request $request, PosContextResolver $contex
         $request->session()->forget('pos.completed_sale_id');
 
         return to_route('pos')->with('success', __('A clean order was created and activated.'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['order' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.orders.store');
@@ -126,7 +181,7 @@ Route::post('pos/orders/switch', function (Request $request, PosContextResolver 
         $request->session()->forget('pos.completed_sale_id');
 
         return to_route('pos');
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['order' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.orders.switch');
@@ -139,7 +194,7 @@ Route::post('pos/orders/cancel', function (Request $request, PosContextResolver 
         $orders->cancel($request, $user, $contexts->resolve($user), $data['open_order_uuid'], $data['reason'] ?? null);
 
         return to_route('pos')->with('success', __('The open order was cancelled without posting a sale.'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['order' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.orders.cancel');
@@ -150,7 +205,7 @@ Route::post('pos/cart/add', function (Request $request, PosCartAction $cart) {
         $cart->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
 
         return back()->with('success', __('Product added to the active order.'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.add');
@@ -161,7 +216,7 @@ Route::post('pos/cart/remove', function (Request $request, PosCartAction $cart) 
         $cart->remove($request, $request->user(), (int) $data['product_id']);
 
         return back();
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.remove');
@@ -172,7 +227,7 @@ Route::post('pos/cart/quantity', function (Request $request, PosCartAction $cart
         $cart->quantity($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
 
         return back();
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.quantity');
@@ -182,7 +237,7 @@ Route::post('pos/cart/clear', function (Request $request, PosCartAction $cart) {
         $cart->clear($request, $request->user());
 
         return back();
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.clear');
@@ -201,7 +256,7 @@ Route::post('pos/suspend', function (Request $request, CompletePosOpenOrderActio
         $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
 
         return to_route('pos')->with('success', __('Sale suspended. Resume code: :code', ['code' => $sale->suspendedSale?->resume_code]));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.suspend');
@@ -220,7 +275,7 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
         'payments.*.amount' => ['nullable', 'regex:/^\d+(?:\.\d{1,2})?$/'],
         'payments.*.tendered' => ['nullable', 'regex:/^\d+(?:\.\d{1,2})?$/'],
         'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
-        'payments.*.evidence' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+        'payments.*.evidence' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:'.((int) config('attachments.limits.payment_evidence') / 1024)],
         'payments.*.gift_card_identifier' => ['nullable', 'string', 'max:100'],
     ]);
 
@@ -230,6 +285,18 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
             throw new InvalidArgumentException($context->disabledReason ?? __('The POS context is no longer active.'));
         }
         $order = $orders->findScoped($user, $context, $validated['open_order_uuid']);
+        if ($order === null && ($completedOrder = $orders->completedCheckout($user, $context, $validated['open_order_uuid'], $validated['checkout_token'])) !== null) {
+            $completedSale = Sale::query()->visibleTo($user)->whereIn('status', ['approved', 'gift_card_sold'])
+                ->whereKey($completedOrder->completed_sale_id)
+                ->whereIn('idempotency_key', ['CHECKOUT:'.$user->id.':'.$validated['checkout_token'], 'GIFT-CARD-POS:'.$validated['checkout_token']])
+                ->first();
+            if ($completedSale !== null) {
+                $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id', 'pos.gift_card_sale']);
+                $request->session()->flash('pos.completed_sale_id', $completedSale->id);
+
+                return to_route('pos')->with('success', __('Sale completed successfully'));
+            }
+        }
         if ($order === null || ! hash_equals((string) $order->checkout_token, (string) $validated['checkout_token'])) {
             throw new InvalidArgumentException(__('This checkout draft is stale or belongs to another POS context. Reload the active order.'));
         }
@@ -307,13 +374,41 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
             throw new InvalidArgumentException(__('The selected payment portions do not match the checkout mode.'));
         }
 
-        $sale = $sales->execute($user, $context, $order, $tenders, false, $validated['notes'] ?? null);
+        $pendingCard = $request->session()->get('pos.gift_card_sale');
+        if (is_array($pendingCard)) {
+            if ((string) ($pendingCard['open_order_uuid'] ?? '') !== (string) $order->uuid
+                || (int) ($pendingCard['user_id'] ?? 0) !== (int) $user->id
+                || (int) ($pendingCard['store_id'] ?? 0) !== (int) $context->store->id
+                || (int) ($pendingCard['shift_id'] ?? 0) !== (int) $context->shift?->id
+                || $request->session()->get('pos.cart', []) !== []) {
+                throw new InvalidArgumentException(__('Rescan the unsold Gift Card in the active empty order.'));
+            }
+            $card = GiftCard::query()->visibleTo($user)->where('identifier', (string) ($pendingCard['identifier'] ?? ''))->where('status', 'unsold')->first();
+            if ($card === null) {
+                throw new InvalidArgumentException(__('This Gift Card has already been sold or is unavailable.'));
+            }
+            $sale = $sales->executeGiftCard($user, $context, $order, $card, $tenders);
+        } else {
+            $sale = $sales->execute($user, $context, $order, $tenders, false, $validated['notes'] ?? null);
+        }
 
-        $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
+        try {
+            $delivery = app(InvoiceDeliveryService::class)->deliver($sale);
+            if ($delivery === 'email_failed') {
+                $request->session()->flash('pos.invoice_delivery_warning', __('The sale is complete, but the invoice email could not be delivered. Print the receipt instead.'));
+            }
+        } catch (Throwable $deliveryException) {
+            Log::error('POS invoice delivery failed after completed sale.', [
+                'sale_id' => $sale->id, 'exception' => $deliveryException::class,
+            ]);
+            $request->session()->flash('pos.invoice_delivery_warning', __('The sale is complete, but the invoice email could not be delivered. Print the receipt instead.'));
+        }
+
+        $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id', 'pos.gift_card_sale']);
         $request->session()->flash('pos.completed_sale_id', $sale->id);
 
         return to_route('pos')->with('success', __('Sale completed successfully'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withInput()->withErrors(['payments' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.checkout');
@@ -323,6 +418,9 @@ Route::get('pos/sales/{sale}/receipt', function (Request $request, Sale $sale, P
     $user = $request->user();
     $profile = $profiles->resolve($user, $sale);
     $sale->load(['store.company', 'branch', 'cashier', 'customer', 'lines', 'payments.paymentMethod']);
+    $giftCardSale = $sale->status === 'gift_card_sold'
+        ? GiftCardPosSale::query()->with('giftCard')->where('sale_id', $sale->id)->first()
+        : null;
     app(RecordAuditEvent::class)->execute(
         category: 'retail', event: 'sale_receipt_previewed', source: $sale,
         branchId: (int) $sale->branch_id, storeId: (int) $sale->store_id,
@@ -331,6 +429,7 @@ Route::get('pos/sales/{sale}/receipt', function (Request $request, Sale $sale, P
 
     return view($profile['format'] === 'thermal' ? 'pages.sales.thermal' : 'pages.sales.print', [
         'sale' => $sale,
+        'giftCardSale' => $giftCardSale,
         'receiptProfile' => $profile,
         'receiptPreview' => true,
     ]);

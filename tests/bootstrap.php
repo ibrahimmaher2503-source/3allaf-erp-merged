@@ -1,0 +1,131 @@
+<?php
+
+declare(strict_types=1);
+use App\Models\User;
+use Tests\Support\DisposableMariaDbRuntime;
+
+$root = dirname(__DIR__);
+require_once $root.'/vendor/autoload.php';
+
+$usesDisposableRuntime = getenv('QA_DISPOSABLE_RUNTIME') !== false;
+if ($usesDisposableRuntime) {
+    DisposableMariaDbRuntime::assertSafeEnvironment();
+}
+
+$requiredEnvironment = [
+    'APP_ENV' => 'testing',
+    'APP_KEY' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    'APP_LOCALE' => 'en',
+    'BCRYPT_ROUNDS' => '4',
+    'CACHE_STORE' => 'array',
+    'DB_CONNECTION' => 'mysql',
+    'DB_HOST' => '127.0.0.1',
+    'DB_PORT' => $usesDisposableRuntime ? '1' : '3306',
+    'DB_URL' => '',
+    'DB_SOCKET' => $usesDisposableRuntime ? (string) getenv('DB_SOCKET') : '',
+    'DB_USERNAME' => 'root',
+    'DB_PASSWORD' => '',
+    'FILESYSTEM_DISK' => 'local',
+    'LOG_CHANNEL' => 'stderr',
+    'MAIL_MAILER' => 'array',
+    'QUEUE_CONNECTION' => 'sync',
+    'SESSION_DRIVER' => 'array',
+];
+
+foreach ($requiredEnvironment as $name => $expectedValue) {
+    if (getenv($name) !== $expectedValue) {
+        throw new RuntimeException("Unsafe PHPUnit environment: {$name} must be '{$expectedValue}'.");
+    }
+}
+
+$database = getenv('DB_DATABASE');
+
+if (! $usesDisposableRuntime && (! is_string($database) || preg_match('/\Aqa_rajh_m1_[a-z0-9_]+_20261007\z/', $database) !== 1)) {
+    throw new RuntimeException('Unsafe PHPUnit database: DB_DATABASE must match qa_rajh_m1_<domain>_20261007.');
+}
+
+$setEnvironment = static function (string $name, string $value): void {
+    putenv("{$name}={$value}");
+    $_ENV[$name] = $value;
+    $_SERVER[$name] = $value;
+};
+
+foreach ($requiredEnvironment as $name => $value) {
+    $setEnvironment($name, $value);
+}
+
+$setEnvironment('DB_DATABASE', $database);
+
+$tempPath = realpath(sys_get_temp_dir());
+$storagePath = getenv('QA_STORAGE_PATH');
+
+if (! is_string($storagePath) || $storagePath === '') {
+    $storagePath = $tempPath.DIRECTORY_SEPARATOR.'rajeh-erp-qa'.DIRECTORY_SEPARATOR.$database;
+}
+
+if (basename($storagePath) !== $database && ! str_ends_with(strtolower($storagePath), strtolower(DIRECTORY_SEPARATOR.$database))) {
+    throw new RuntimeException('Unsafe PHPUnit storage: QA_STORAGE_PATH must end with the selected QA database name.');
+}
+
+$normalizedTempPath = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string) $tempPath), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+$normalizedStoragePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storagePath);
+
+if (! str_starts_with(strtolower($normalizedStoragePath.DIRECTORY_SEPARATOR), strtolower($normalizedTempPath))) {
+    throw new RuntimeException('Unsafe PHPUnit storage: QA_STORAGE_PATH must be under the system temporary directory.');
+}
+
+if (! is_dir($storagePath) && ! mkdir($storagePath, 0777, true) && ! is_dir($storagePath)) {
+    throw new RuntimeException('Unable to create the isolated PHPUnit storage directory.');
+}
+
+$resolvedStoragePath = realpath($storagePath);
+$tempPrefix = rtrim((string) $tempPath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+
+if (! is_string($resolvedStoragePath) || $resolvedStoragePath === $tempPath || ! str_starts_with(strtolower($resolvedStoragePath.DIRECTORY_SEPARATOR), strtolower($tempPrefix))) {
+    throw new RuntimeException('Unsafe PHPUnit storage: QA_STORAGE_PATH must be a child of the system temporary directory.');
+}
+
+foreach (['app/private', 'app/public', 'bootstrap/cache', 'framework/cache/data', 'framework/sessions', 'framework/testing', 'framework/views', 'logs'] as $directory) {
+    $path = $resolvedStoragePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $directory);
+
+    if (! is_dir($path) && ! mkdir($path, 0777, true) && ! is_dir($path)) {
+        throw new RuntimeException('Unable to create an isolated PHPUnit storage directory.');
+    }
+}
+
+$setEnvironment('QA_STORAGE_PATH', $resolvedStoragePath);
+$setEnvironment('LARAVEL_STORAGE_PATH', $resolvedStoragePath);
+
+$cachePath = $resolvedStoragePath.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache';
+
+if (DIRECTORY_SEPARATOR === '\\') {
+    $worktreeRoot = realpath($root);
+    $worktreeDrive = is_string($worktreeRoot) ? substr($worktreeRoot, 0, 3) : '';
+    $storageDrive = substr($resolvedStoragePath, 0, 3);
+
+    if ($worktreeDrive === '' || strcasecmp($worktreeDrive, $storageDrive) !== 0) {
+        throw new RuntimeException('Unsafe PHPUnit cache paths: the worktree and QA storage must be on the same drive.');
+    }
+
+    $cachePath = DIRECTORY_SEPARATOR.substr($cachePath, 3);
+}
+
+foreach ([
+    'APP_CONFIG_CACHE' => 'config.php',
+    'APP_ROUTES_CACHE' => 'routes-v7.php',
+    'APP_EVENTS_CACHE' => 'events.php',
+    'APP_SERVICES_CACHE' => 'services.php',
+    'APP_PACKAGES_CACHE' => 'packages.php',
+] as $environmentVariable => $filename) {
+    $setEnvironment($environmentVariable, $cachePath.DIRECTORY_SEPARATOR.$filename);
+}
+
+$userClassPath = realpath((new ReflectionClass(User::class))->getFileName());
+$worktreeAppPath = realpath($root.'/app');
+$worktreePrefix = rtrim((string) $worktreeAppPath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+
+if (! is_string($userClassPath) || ! str_starts_with(strtolower($userClassPath), strtolower($worktreePrefix))) {
+    throw new RuntimeException('Composer autoload does not resolve App classes from this worktree.');
+}
+
+require_once $root.'/tests/Feature/QA/bootstrap.php';

@@ -9,12 +9,17 @@ use App\Modules\Inventory\Actions\ReverseOpeningInventoryAction;
 use App\Modules\Inventory\Actions\SaveOpeningInventoryDraftAction;
 use App\Modules\Inventory\Models\OpeningInventoryDocument;
 use App\Modules\Inventory\Models\OpeningInventoryZeroDecision;
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Support\DataExchange\ImportTemplateFactory;
 use App\Support\DataExchange\MasterDataDocument;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 $router = app('router');
 $router->middleware(['auth', 'verified'])->group(function () use ($router): void {
@@ -65,8 +70,25 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $actor = Auth::user(); abort_unless($actor instanceof User, 403);
         $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
         $validated = request()->validate(['reason' => ['nullable', 'string', 'max:1000']]);
-        $decision = OpeningInventoryZeroDecision::query()->updateOrCreate(['company_id' => $company->id], ['decided_by' => Auth::id(), 'reason' => $validated['reason'] ?? null, 'decided_at' => now()]);
-        app(RecordAuditEvent::class)->execute('inventory', 'start_without_opening_inventory', $decision, after: $decision->only(['company_id', 'decided_by', 'decided_at']));
+        $decision = DB::transaction(function () use ($actor, $company, $validated): OpeningInventoryZeroDecision {
+            $storeIds = Store::query()->where('company_id', $company->id)->lockForUpdate()->pluck('id');
+            if (! Store::query()->visibleTo($actor)->where('company_id', $company->id)->where('status', 'active')->whereIn('type', ['warehouse', 'selling'])->exists()) {
+                throw ValidationException::withMessages(['company_id' => __('Create an authorized active inventory location before completing zero-opening initialization.')]);
+            }
+            $approvedOpeningExists = OpeningInventoryDocument::query()->where('company_id', $company->id)->where('status', 'approved')->whereNull('reversal_of_id')->select('id')->lockForUpdate()->first() !== null;
+            $movementExists = StockMovement::query()->whereIn('store_id', $storeIds)->select('id')->lockForUpdate()->first() !== null;
+            $balances = StockBalance::query()->whereIn('store_id', $storeIds)->lockForUpdate()->get(['id', 'on_hand', 'total_value']);
+            $nonZeroBalanceExists = $balances->contains(fn (StockBalance $balance): bool => bccomp((string) $balance->on_hand, '0', 6) !== 0 || bccomp((string) $balance->total_value, '0', 4) !== 0);
+            if ($approvedOpeningExists || $movementExists || $nonZeroBalanceExists) {
+                throw ValidationException::withMessages(['company_id' => __('Zero-opening initialization is allowed only before any approved opening document, stock movement, or nonzero stock balance exists for this company.')]);
+            }
+            $decision = OpeningInventoryZeroDecision::query()->where('company_id', $company->id)->lockForUpdate()->first();
+            $before = $decision?->only(['company_id', 'decided_by', 'reason', 'decided_at']);
+            $decision ??= new OpeningInventoryZeroDecision(['company_id' => $company->id]);
+            $decision->fill(['decided_by' => Auth::id(), 'reason' => $validated['reason'] ?? null, 'decided_at' => now()])->save();
+            app(RecordAuditEvent::class)->execute('inventory', 'start_without_opening_inventory', $decision, before: $before, after: $decision->only(['company_id', 'decided_by', 'reason', 'decided_at']), metadata: ['checked_store_ids' => $storeIds->all(), 'balance_rows_checked' => $balances->count(), 'stock_movements_created' => 0]);
+            return $decision;
+        });
         return back()->with('success', __('The audited decision to start without opening inventory was recorded.'));
     })->middleware('can:inventory_stock_card.approve')->name('inventory.opening.zero');
 });

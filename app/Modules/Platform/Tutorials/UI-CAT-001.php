@@ -86,14 +86,14 @@ return [
             ],
             2 => [
                 'key' => 'step-3',
-                'selector' => '[data-guide="products-filters"]',
+                'selector' => '[data-guide="products-search"]',
                 'title' => [
-                    'ar' => 'بطاقة التصفية والبحث المتقدم',
-                    'en' => 'Catalog Search & Filter Controls',
+                    'ar' => 'بحث المنتجات',
+                    'en' => 'Product search',
                 ],
                 'body' => [
-                    'ar' => 'البحث بالرمز أو الباركود وتصفية المنتجات حسب التصنيف، العلامة، أو النوع.',
-                    'en' => 'Filter product catalog by code, barcode, category, brand, type, or gender.',
+                    'ar' => 'ابحث بالرمز أو الباركود أو اسم المنتج.',
+                    'en' => 'Search by item code, barcode, or product name.',
                 ],
             ],
             3 => [
@@ -110,7 +110,7 @@ return [
             ],
             4 => [
                 'key' => 'step-5',
-                'selector' => '[data-guide="products-pagination"], [data-guide="products-filters"]',
+                'selector' => '[data-guide="products-pagination"], [data-guide="products-search"]',
                 'title' => [
                     'ar' => 'تصفح قائمة المنتجات',
                     'en' => 'Product Catalog Pagination',
@@ -205,14 +205,14 @@ return [
         ],
         2 => [
             'key' => 'step-3',
-            'selector' => '[data-guide="products-filters"]',
+            'selector' => '[data-guide="products-search"]',
             'title' => [
-                'ar' => 'بطاقة التصفية والبحث المتقدم',
-                'en' => 'Catalog Search & Filter Controls',
+                'ar' => 'بحث المنتجات',
+                'en' => 'Product search',
             ],
             'body' => [
-                'ar' => 'البحث بالرمز أو الباركود وتصفية المنتجات حسب التصنيف، العلامة، أو النوع.',
-                'en' => 'Filter product catalog by code, barcode, category, brand, type, or gender.',
+                'ar' => 'ابحث بالرمز أو الباركود أو اسم المنتج.',
+                'en' => 'Search by item code, barcode, or product name.',
             ],
         ],
         3 => [
@@ -229,7 +229,7 @@ return [
         ],
         4 => [
             'key' => 'step-5',
-            'selector' => '[data-guide="products-pagination"], [data-guide="products-filters"]',
+            'selector' => '[data-guide="products-pagination"], [data-guide="products-search"]',
             'title' => [
                 'ar' => 'تصفح قائمة المنتجات',
                 'en' => 'Product Catalog Pagination',

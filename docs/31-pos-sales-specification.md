@@ -359,3 +359,11 @@ Verify:
 - RTL/LTR, desktop/mobile/tablet, console/network, print preview.
 
 No automated tests are created or executed.
+
+## 2026-11-05 launch POS stabilization amendment
+
+An unsold Gift Card scan creates a face-value Gift Card cart line. The existing atomic POS Gift Card sale action captures normal tenders and activates only after successful checkout, retaining sale/branch/store/shift/cashier links and duplicate-sale protection. A later active-card scan enters the existing redemption/payment route, including split tender. Gift Card sale uses an empty product cart to preserve the existing separate Gift Card sale accounting path. Open Price unit selling price is editable only for products flagged Open Price and authorized cashiers; product cost remains separate, and existing cart calculation drives subtotal, discount, tax, total, and receipt. Fixed-price products retain normal price rules.
+
+### 2026-11-05 pre-deployment acceptance correction — K
+
+The unsold Gift Card cart line now contributes its face value to the normal POS cart total and opens the same POS checkout dialog and `pos.checkout` endpoint as product sales. The standalone `pos.gift-cards.sell` form and route were removed. The open order UUID, cashier, store, and shift bind the pending card; the checkout token is the sale idempotency key. The existing Gift Card action posts canonical Sale and SalePayment rows inside the open-order completion transaction, then activates the card and records its audit/ledger link only after full payment. This remains a card-only order because Gift Card issue is a nonstock financial sale. The normal POS receipt and sale detail show the linked card identifier and face value. Later scans retain the existing redemption/payment and split-tender path. No migration is introduced by this correction; the Gift Card cart candidate remains scoped to the active cashier session and open order until checkout or removal.

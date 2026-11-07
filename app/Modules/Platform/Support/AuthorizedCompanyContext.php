@@ -16,8 +16,12 @@ final class AuthorizedCompanyContext
     public function companies(User $actor): Collection
     {
         return Company::query()
-            ->whereIn('id', Store::query()->visibleTo($actor)->where('status', 'active')->select('company_id'))
-            ->where('status', 'active')->orderBy('code')->get();
+            ->when($actor->canBypassApproval(), fn ($query) => $query->whereIn('id', $actor->operationalCompanyIds()))
+            ->when(! $actor->hasGlobalApplicationAccess(), fn ($query) => $query
+                ->whereIn('id', Store::query()->visibleTo($actor)->where('status', 'active')->select('company_id')))
+            ->where('status', 'active')
+            ->orderBy('code')
+            ->get();
     }
 
     public function resolve(User $actor, mixed $requested = null): Company

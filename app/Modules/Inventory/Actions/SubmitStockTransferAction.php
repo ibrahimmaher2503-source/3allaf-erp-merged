@@ -22,8 +22,7 @@ final class SubmitStockTransferAction
 
         return DB::transaction(function () use ($id): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
-            $this->scope->transfer($transfer);
-            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
+            $this->scope->transfer($transfer, source: true, destination: false);
             if ($transfer->status !== 'draft') {
                 throw new InvalidArgumentException(__('Only draft transfers can be submitted.'));
             }
@@ -38,16 +37,16 @@ final class SubmitStockTransferAction
                     throw new InvalidArgumentException(__('Transfer quantities must be greater than zero.'));
                 }
                 $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $transfer->source_store_id)->lockForUpdate()->first();
-                if ($balance === null || bccomp((string) $balance->on_hand, (string) $line->quantity_requested, 6) < 0) {
+                $available = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);
+                if (bccomp($available, (string) $line->quantity_requested, 6) < 0) {
                     throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
                 }
             }
             $before = $transfer->only(['status', 'requested_by', 'lock_version']);
-            $transfer->mutateApprovedDocument(['status' => 'submitted', 'requested_by' => Auth::id(), 'lock_version' => $transfer->lock_version + 1]);
+            $transfer->mutateApprovedDocument(['status' => 'approved', 'requested_by' => Auth::id(), 'lock_version' => $transfer->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('inventory', 'submit_stock_transfer', $transfer, $before, $transfer->only(['status', 'requested_by', 'lock_version']), storeId: $transfer->source_store_id, metadata: ['destination_store_id' => $transfer->destination_store_id, 'line_count' => $transfer->lines->count()]);
-            app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
 
-            return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
+            return app(DispatchStockTransferAction::class)->dispatchApproved($transfer->id);
         });
     }
 }

@@ -1,0 +1,15 @@
+# Three pre-existing touched-product diagnostics, compared before/after Phase 2.
+parameters:
+    ignoreErrors:
+        -
+            rawMessage: "Offset 'sort_order' on non-empty-array<string, mixed> on left side of ?? always exists and is not nullable."
+            count: 1
+            path: app/Modules/Catalog/Actions/SaveProductAction.php
+        -
+            rawMessage: "Method App\\Modules\\Catalog\\Actions\\SaveProductAction::nullableNumeric() never returns int so it can be removed from the return type."
+            count: 1
+            path: app/Modules/Catalog/Actions/SaveProductAction.php
+        -
+            rawMessage: "Access to an undefined property Illuminate\\Database\\Eloquent\\Model::$status."
+            count: 1
+            path: app/Modules/Catalog/Actions/SaveProductAction.php

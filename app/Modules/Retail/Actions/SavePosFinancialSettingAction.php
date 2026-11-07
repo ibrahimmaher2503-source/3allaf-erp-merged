@@ -24,7 +24,19 @@ final class SavePosFinancialSettingAction
         }
 
         $value = $value === null ? null : trim($value);
+        if ($key === PosFinancialSettingRegistry::CASH_ROUNDING_ENABLED) {
+            if (! in_array($value, ['0', '1'], true)) {
+                throw ValidationException::withMessages(['value' => __('Choose Yes or No for cash rounding.')]);
+            }
+
+            return $this->saveVersion($key, $value, $notes);
+        }
+
         if ($value !== null && $value !== '') {
+            if ($key === PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION
+                && preg_match('/^\d+(?:\.\d{1,2})?$/', $value) !== 1) {
+                throw ValidationException::withMessages(['value' => __('Enter a positive cash rounding denomination in whole units or cents.')]);
+            }
             try {
                 $value = DecimalMoney::normalize($value, 4);
             } catch (\InvalidArgumentException) {
@@ -34,14 +46,15 @@ final class SavePosFinancialSettingAction
             if (bccomp($value, '0', 4) <= 0) {
                 throw ValidationException::withMessages(['value' => __('The configured value must be greater than zero.')]);
             }
-            if ($key === PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION
-                && bccomp($value, DecimalMoney::round($value, 2), 4) !== 0) {
-                throw ValidationException::withMessages(['value' => __('The cash rounding denomination cannot use more than two decimal places.')]);
-            }
         } else {
             $value = null;
         }
 
+        return $this->saveVersion($key, $value, $notes);
+    }
+
+    private function saveVersion(string $key, ?string $value, ?string $notes): PosFinancialSettingVersion
+    {
         return DB::transaction(function () use ($key, $value, $notes): PosFinancialSettingVersion {
             $latest = PosFinancialSettingVersion::query()->where('key', $key)->lockForUpdate()->orderByDesc('version')->first();
             $nextVersion = ((int) ($latest?->getAttribute('version') ?? 0)) + 1;
@@ -49,6 +62,7 @@ final class SavePosFinancialSettingAction
             $setting = PosFinancialSettingVersion::query()->create([
                 'key' => $key,
                 'value' => $value,
+                'value_type' => $key === PosFinancialSettingRegistry::CASH_ROUNDING_ENABLED ? 'boolean' : 'decimal',
                 'version' => $nextVersion,
                 'notes' => filled($notes) ? trim((string) $notes) : null,
                 'created_by' => auth()->id(),

@@ -28,6 +28,9 @@ final class SubmitInventoryAdjustmentAction
             if ($adjustment->status !== 'draft') {
                 throw new InvalidArgumentException(__('Only draft adjustments can be submitted.'));
             }
+            if (in_array($adjustment->adjustment_type, ['entry', 'exit'], true)) {
+                throw new InvalidArgumentException(__('Approve this inventory document directly to post its stock movement.'));
+            }
             if (trim($adjustment->reason_code) === '') {
                 throw new InvalidArgumentException(__('An adjustment reason is required.'));
             }

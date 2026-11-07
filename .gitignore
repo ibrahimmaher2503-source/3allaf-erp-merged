@@ -88,3 +88,7 @@ testsprite_tests/tmp/config.json
 /.npm/
 /.yarn/cache/
 /.vite/
+
+/.codegraph/
+
+/scripts/qa/__pycache__/

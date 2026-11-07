@@ -9,10 +9,12 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductUnit;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
+use App\Support\ProductQuantity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -50,6 +52,8 @@ final class SavePurchaseInvoiceAction
                     ->lockForUpdate()
                     ->findOrFail($id);
 
+            $existingLines = $invoice?->lines()->lockForUpdate()->get()->keyBy('product_id') ?? collect();
+
             if ($invoice !== null) {
                 if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                     throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload before saving.'));
@@ -65,8 +69,15 @@ final class SavePurchaseInvoiceAction
                 ->lockForUpdate()
                 ->findOrFail((int) ($data['store_id'] ?? 0));
             $operationalCompanyId = $store->company_id ?? $store->branch?->company_id;
+            if ($operationalCompanyId === null) {
+                throw new InvalidArgumentException(__('The selected receiving store has no company ownership.'));
+            }
             if ($store->company_id !== null && $store->branch?->company_id !== null && (int) $store->company_id !== (int) $store->branch->company_id) {
                 throw new InvalidArgumentException(__('The selected receiving store has inconsistent company ownership.'));
+            }
+            $baseCurrency = strtoupper(trim((string) Company::query()->whereKey($operationalCompanyId)->value('currency_code')));
+            if ($baseCurrency === '') {
+                throw new InvalidArgumentException(__('The receiving store company has no base currency configured.'));
             }
 
             $supplier = Supplier::query()->with('supplierGroup:id,company_id')->lockForUpdate()->findOrFail((int) ($data['supplier_id'] ?? 0));
@@ -132,7 +143,7 @@ final class SavePurchaseInvoiceAction
 
             $normalizedLines = [];
             foreach ($lines as $index => $line) {
-                $product = Product::query()->sellable()->with('baseProductUnit.unit')->findOrFail((int) ($line['product_id'] ?? 0));
+                $product = Product::query()->sellable()->availableToCompany((int) $operationalCompanyId)->with('baseProductUnit.unit')->findOrFail((int) ($line['product_id'] ?? 0));
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be invoiced.', ['name' => $product->name_en ?: $product->name_ar]));
                 }
@@ -146,6 +157,19 @@ final class SavePurchaseInvoiceAction
                     : $product->baseProductUnit;
                 if (filled($line['product_unit_id'] ?? null) && ! $productUnit instanceof ProductUnit) {
                     throw new InvalidArgumentException(__('The selected unit does not belong to the product.'));
+                }
+                // [merge rajeh] Invoice lines linked to a purchase order inherit the approved order's price, discount and tax terms.
+                // Remaining-quantity validation stays after unit conversion (see calculated-lines loop below).
+                if ($purchaseOrderLine !== null) {
+                    $line['unit_cost'] = (string) ($purchaseOrderLine->entered_unit_price ?? $purchaseOrderLine->unit_cost);
+                    $line['discount_type'] = $purchaseOrderLine->discount_type;
+                    $orderedEntered = (string) ($purchaseOrderLine->entered_quantity ?? $purchaseOrderLine->quantity_ordered);
+                    $line['discount_value'] = $purchaseOrderLine->discount_type === 'amount' && bccomp($orderedEntered, '0', 6) > 0
+                        ? bcdiv(bcmul((string) $purchaseOrderLine->discount_amount, (string) ($line['quantity'] ?? '0'), 10), $orderedEntered, 4)
+                        : (string) $purchaseOrderLine->discount_value;
+                    $line['tax_rate'] = '0';
+                    $line['tax_code'] = null;
+                    $line['tax_inclusive'] = false;
                 }
                 if ($productUnit?->unit?->status !== null && $productUnit->unit->status !== 'active') {
                     throw new InvalidArgumentException(__('The selected product unit is inactive.'));
@@ -182,7 +206,7 @@ final class SavePurchaseInvoiceAction
                 'store_id' => $store->id,
                 'supplier_reference' => ! empty($data['supplier_reference']) ? trim((string) $data['supplier_reference']) : null,
                 'invoice_date' => $data['invoice_date'] ?? now()->toDateString(),
-                'currency_code' => ! empty($data['currency_code']) ? strtoupper(trim((string) $data['currency_code'])) : null,
+                'currency_code' => $baseCurrency,
                 'status' => 'draft',
                 'subtotal' => $totals['subtotal'],
                 'tax_amount' => $totals['taxAmount'],
@@ -203,19 +227,31 @@ final class SavePurchaseInvoiceAction
                 $before = $invoice->only(['supplier_id', 'store_id', 'status', 'subtotal', 'tax_amount', 'discount_amount', 'total_amount', 'lock_version']);
                 $invoice->update([...$attributes, 'lock_version' => $invoice->lock_version + 1]);
                 $event = 'update_purchase_invoice';
-                $invoice->lines()->delete();
             }
 
             foreach ($totals['calculated'] as $index => $line) {
                 $product = Product::query()->findOrFail($normalizedLines[$index]['product_id']);
-                $invoice->lines()->create([
+                $lineAttributes = [
                     ...$line,
                     'product_id' => $normalizedLines[$index]['product_id'],
                     'purchase_order_line_id' => $normalizedLines[$index]['purchase_order_line_id'],
                     'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
+                    'original_quantity' => $line['quantity'],
                     'quantity_received' => 0,
-                ]);
-                app(SyncSupplierProductAssociation::class)->associate($supplier->id, $product->id, (int) $userId);
+                ];
+                $existingLine = $existingLines->get($product->id);
+                if ($existingLine === null) {
+                    $invoice->lines()->create($lineAttributes);
+                } else {
+                    $existingLine->update($lineAttributes);
+                }
+            }
+            $submittedProductIds = array_map('intval', array_column($normalizedLines, 'product_id'));
+            $removedLineIds = $existingLines
+                ->filter(fn ($existingLine): bool => ! in_array((int) $existingLine->product_id, $submittedProductIds, true))
+                ->pluck('id');
+            if ($removedLineIds->isNotEmpty()) {
+                $invoice->lines()->whereKey($removedLineIds)->delete();
             }
             $invoice = app(SavePurchaseInvoiceChargesAction::class)->execute($invoice->id, $chargeInputs);
 

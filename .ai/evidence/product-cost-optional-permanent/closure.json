@@ -1,0 +1,23 @@
+{
+  "completed_at_utc": "2026-10-05T18:00:02.369507+00:00",
+  "result": "DEPLOYED",
+  "application_commit": "1d27f7b33b1536c10ddc7083a5eac452ce1b9c06",
+  "release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-cost-optional-1d27f7b",
+  "version": "0.1.22-cost-optional",
+  "rollback_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5",
+  "scenarios": {
+    "A": "PASS isolated backend/browser/accounting",
+    "B": "PASS isolated backend/browser/accounting",
+    "C": "PASS isolated backend/browser/accounting",
+    "D": "PASS isolated backend/browser/accounting",
+    "E": "PASS isolated backend/browser/accounting",
+    "F": "PASS isolated backend/browser/accounting"
+  },
+  "compact_production_smoke": "PASS",
+  "production_business_qa_writes": false,
+  "migrations_run": false,
+  "full_audit_or_gate_rerun": false,
+  "private_qa_runtime_removed": true,
+  "first_activation": "Automatic rollback before smoke due helper mode; chmod 0644 and unchanged artifact/caches reused; completed smoke once",
+  "journal": "/var/lib/toyjoy/product-cost-optional-1d27f7b"
+}

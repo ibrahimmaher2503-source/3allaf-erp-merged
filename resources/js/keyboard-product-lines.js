@@ -111,7 +111,13 @@ class ProductLookup {
         if (this.root.dataset.supplierId) params.set('supplier_id', this.root.dataset.supplierId);
         if (this.root.dataset.supplierOnly) params.set('supplier_only', this.root.dataset.supplierOnly);
         if (this.root.dataset.currencyCode) params.set('currency_code', this.root.dataset.currencyCode);
+        if (this.root.dataset.companyId) params.set('company_id', this.root.dataset.companyId);
         if (this.root.dataset.purchaseInvoiceId) params.set('purchase_invoice_id', this.root.dataset.purchaseInvoiceId);
+        if (this.root.dataset.sourceStoreSelector) {
+            const sourceStore = document.querySelector(this.root.dataset.sourceStoreSelector)?.value;
+            if (!sourceStore) return this.renderMessage(this.root.dataset.messageSourceRequired);
+            params.set('source_store_id', sourceStore);
+        }
         const requestKey = params.toString();
         if (requestKey === this.pendingKey && this.pendingRequest) return this.pendingRequest;
 
@@ -171,6 +177,12 @@ class ProductLookup {
                 const secondaryName = document.documentElement.lang === 'ar' ? english : arabic;
                 const secondaryDirection = document.documentElement.lang === 'ar' ? 'ltr' : 'rtl';
                 const names = `<strong class="block">${escapeHtml(primaryName)}</strong>${secondaryName && secondaryName !== primaryName ? `<span class="mt-0.5 block text-xs text-zinc-600 dark:text-zinc-300" dir="${secondaryDirection}">${escapeHtml(secondaryName)}</span>` : ''}`;
+                const identifiers = [item.barcodes?.[0], item.model_number || item.item_code]
+                    .map((value) => String(value || '').trim())
+                    .filter((value, position, values) => value && values.indexOf(value) === position);
+                if (this.root.dataset.resultPresentation === 'name-code' || this.root.dataset.context === 'catalog') {
+                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30"><strong class="block">${escapeHtml(primaryName)}</strong>${identifiers.length ? `<small class="mt-1 block font-mono text-zinc-500" dir="ltr">${identifiers.map(escapeHtml).join(' / ')}</small>` : ''}</button>`;
+                }
                 const identity = `${names}<small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small>`;
                 if (this.root.dataset.context !== 'purchasing') {
                     return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}</button>`;
@@ -247,7 +259,30 @@ class ProductLookup {
         this.close();
         this.closeCamera();
         this.root.dispatchEvent(new CustomEvent('product-selected', { bubbles: true, detail: item }));
+        const line = this.root.closest('[data-product-line]');
+        if (this.root.dataset.context === 'transfer' && line) {
+            const values = {
+                '[data-line-available]': formatTransferQuantity(item.available_quantity),
+                '[data-line-cost]': formatTransferMoney(item.source_unit_cost),
+                '[data-line-selling-price]': formatTransferMoney(item.source_selling_price),
+            };
+            Object.entries(values).forEach(([selector, value]) => {
+                const output = line.querySelector(selector);
+                if (output) output.textContent = value ?? '—';
+            });
+            syncTransferQuantityLimit(line, item.available_quantity);
+        }
         requestAnimationFrame(() => this.root.closest('[data-product-line]')?.querySelector('[data-line-quantity]')?.focus());
+    }
+
+    resetSelection(focus = false) {
+        this.hidden.value = '';
+        this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        this.input.value = '';
+        delete this.input.dataset.selected;
+        this.lastResolvedTerm = null;
+        this.close();
+        if (focus) this.input.focus();
     }
 
     close() {
@@ -346,8 +381,30 @@ class ProductLookup {
 const lineIsBlank = (line) => !(line.querySelector('[data-product-id]')?.value || line.querySelector('[data-product-search]')?.value.trim());
 
 const initializeEditor = (editor) => {
-    if (editor.dataset.productLineEditorReady) return;
+    // Livewire can morph the line controls and outputs while retaining the
+    // editor element. Forms with server-authoritative previews already arrive
+    // with recalculated line and document totals; other editors still need a
+    // client-side initialization pass for newly morphed children.
+    if (!editor.hasAttribute('data-authoritative-financial-preview')) {
+        editor.querySelectorAll('[data-product-line]').forEach(updateTotal);
+    } else {
+        updateEditorTotal(editor);
+    }
+    if (editor.dataset.productLineEditorReady) {
+        focusBlank(editor);
+        return;
+    }
     editor.dataset.productLineEditorReady = 'true';
+    if (editor.hasAttribute('data-transfer-allocation-editor')) {
+        editor.querySelectorAll('[data-product-line]').forEach((line) => {
+            if (line.querySelector('[data-product-id]')?.value) {
+                syncTransferQuantityLimit(line, line.querySelector('[data-line-available]')?.textContent);
+            }
+        });
+    }
+    editor.addEventListener('purchase-invoice-loaded', (event) => {
+        importTransferInvoiceLines(editor, event.detail?.lines ?? []);
+    });
     editor.addEventListener('product-selected', (event) => {
         const line = event.target.closest('[data-product-line]');
         if (!line) return;
@@ -402,6 +459,7 @@ const initializeEditor = (editor) => {
         if (remove) {
             remove.closest('[data-product-line]')?.remove();
             renumberStaticLines(editor);
+            editor.dispatchEvent(new CustomEvent('transfer-lines-changed', { bubbles: true }));
             return;
         }
         const add = event.target.closest?.('[data-add-line]');
@@ -417,7 +475,6 @@ const initializeEditor = (editor) => {
         boot();
         focusBlank(editor);
     });
-    editor.querySelectorAll('[data-product-line]').forEach(updateTotal);
     focusBlank(editor);
 };
 
@@ -430,27 +487,112 @@ const renumberStaticLines = (editor) => {
     editor.dataset.nextIndex = String(editor.querySelectorAll('[data-product-line]').length);
 };
 
+const formatTransferQuantity = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+    return number.toFixed(2).replace(/\.?(0+)$/, '');
+};
+
+const formatTransferMoney = (value) => {
+    if (value === null || value === undefined || String(value).trim() === '') return '—';
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toFixed(2) : '—';
+};
+
+const syncTransferQuantityLimit = (line, availableValue) => {
+    const quantity = line.querySelector('[data-line-quantity]');
+    if (!quantity) return;
+    quantity.min = '1';
+    quantity.removeAttribute('max');
+};
+
+const appendTransferLine = (editor) => {
+    const template = editor.querySelector('template[data-line-template]');
+    if (!template) return null;
+    const index = Number(editor.dataset.nextIndex || editor.querySelectorAll('[data-product-line]').length);
+    const holder = document.createElement('template');
+    holder.innerHTML = template.innerHTML.replaceAll('__INDEX__', String(index));
+    const line = holder.content.firstElementChild;
+    template.before(holder.content);
+    editor.dataset.nextIndex = String(index + 1);
+    boot();
+
+    return line;
+};
+
+const hydrateTransferLine = (line, product) => {
+    const productId = line.querySelector('[data-product-id]');
+    const search = line.querySelector('[data-product-search]');
+    const available = Number(product.available);
+    const requested = 1;
+    const quantity = line.querySelector('[data-line-quantity]');
+
+    if (productId) {
+        productId.value = String(product.product_id);
+        productId.dispatchEvent(new Event('input', { bubbles: true }));
+        productId.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (search) {
+        search.value = product.product;
+        search.dataset.selected = 'true';
+    }
+    line.querySelector('[data-line-available]').textContent = formatTransferQuantity(product.available);
+    line.querySelector('[data-line-cost]').textContent = formatTransferMoney(product.source_unit_cost);
+    line.querySelector('[data-line-selling-price]').textContent = formatTransferMoney(product.source_selling_price);
+    if (quantity) {
+        quantity.value = formatTransferQuantity(requested);
+        syncTransferQuantityLimit(line, product.available);
+    }
+};
+
+const importTransferInvoiceLines = (editor, products) => {
+    const existing = new Set([...editor.querySelectorAll('[data-product-id]')]
+        .map((input) => Number(input.value))
+        .filter((productId) => Number.isInteger(productId) && productId > 0));
+    let blank = [...editor.querySelectorAll('[data-product-line]')].find(lineIsBlank);
+    let imported = 0;
+
+    products.forEach((product) => {
+        const productId = Number(product.product_id);
+        if (!Number.isInteger(productId) || productId < 1 || existing.has(productId)) return;
+        blank ??= appendTransferLine(editor);
+        if (!blank) return;
+        hydrateTransferLine(blank, product);
+        existing.add(productId);
+        imported++;
+        blank = [...editor.querySelectorAll('[data-product-line]')].find(lineIsBlank);
+    });
+
+    editor.dispatchEvent(new CustomEvent('transfer-lines-changed', { bubbles: true, detail: { imported } }));
+};
+
 const updateTotal = (line) => {
     const quantity = Number(line.querySelector('[data-line-quantity]')?.value || 0);
     const price = Number(line.querySelector('[data-line-price]')?.value || 0);
     const discountType = line.querySelector('[data-line-discount-type]')?.value || '';
     const discountValue = Number(line.querySelector('[data-line-discount]')?.value || 0);
     const taxRate = Number(line.querySelector('[data-line-tax]')?.value || 0);
+    const taxInclusive = line.querySelector('[data-line-tax-inclusive]')?.value === '1';
     const total = line.querySelector('[data-line-total]');
     const gross = quantity * price;
     const discount = discountType === 'percentage' ? gross * discountValue / 100 : (discountType === 'amount' ? discountValue : 0);
     const taxable = Math.max(0, gross - discount);
-    const result = taxable + (taxable * taxRate / 100);
-    if (total) total.textContent = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+    const result = taxInclusive ? taxable : taxable + (taxable * taxRate / 100);
+    if (total) {
+        total.dataset.rawTotal = Number.isFinite(result) ? String(result) : '0';
+        const formatted = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+        if (total.textContent !== formatted) total.textContent = formatted;
+    }
     updateEditorTotal(line.closest('[data-product-line-editor]'));
 };
 
 const updateEditorTotal = (editor) => {
     if (!editor) return;
     const total = [...editor.querySelectorAll('[data-line-total]')]
-        .reduce((sum, output) => sum + Number(output.textContent || 0), 0);
+        .reduce((sum, output) => sum + Number(output.dataset.rawTotal ?? output.textContent ?? 0), 0);
     editor.querySelectorAll('[data-editor-total]').forEach((output) => {
-        output.textContent = Number.isFinite(total) ? total.toFixed(2) : '0.00';
+        const formatted = Number.isFinite(total) ? total.toFixed(2) : '0.00';
+        if (output.textContent !== formatted) output.textContent = formatted;
     });
 };
 
@@ -533,9 +675,28 @@ const initializeCompactFilterRow = (row) => {
 
 const boot = (scope = document) => {
     matchingElements(scope, '[data-product-lookup]').forEach((root) => new ProductLookup(root));
-    matchingElements(scope, '[data-product-line-editor]').forEach(initializeEditor);
-    matchingElements(scope, '[data-product-line-editor]').forEach(focusBlank);
+    const editors = [...new Set([
+        scope.closest?.('[data-product-line-editor]'),
+        ...matchingElements(scope, '[data-product-line-editor]'),
+    ].filter(Boolean))];
+    editors.forEach(initializeEditor);
+    editors.forEach(focusBlank);
     matchingElements(scope, '[data-compact-filter-row]').forEach(initializeCompactFilterRow);
+    matchingElements(scope, '[data-transfer-source]').forEach((source) => {
+        if (source.dataset.transferSourceReady) return;
+        source.dataset.transferSourceReady = 'true';
+        source.addEventListener('change', () => {
+            source.closest('form')?.querySelectorAll('[data-product-lookup][data-context="transfer"]').forEach((root) => {
+                root._productLookup?.destroy();
+                const hidden = root.querySelector('[data-product-id]');
+                const input = root.querySelector('[data-product-search]');
+                if (hidden) { hidden.value = ''; hidden.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (input) { input.value = ''; delete input.dataset.selected; }
+                root.closest('[data-product-line]')?.querySelectorAll('[data-line-available], [data-line-cost], [data-line-selling-price]').forEach((output) => { output.textContent = '—'; });
+                new ProductLookup(root);
+            });
+        });
+    });
 };
 
 const bindLivewireHooks = () => {
@@ -571,6 +732,9 @@ if (typeof document !== 'undefined') {
     document.addEventListener('keydown', posKeyboardNavigation);
     window.addEventListener('pos-product-search-focus', () => requestAnimationFrame(() => document.getElementById('live-pos-product-search')?.focus()));
     window.addEventListener('purchasing-product-focus', () => requestAnimationFrame(() => document.querySelector('[data-product-lookup][data-context="purchasing"] [data-product-search]:not(:disabled)')?.focus()));
+    window.addEventListener('supplier-return-product-added', (event) => requestAnimationFrame(() => {
+        document.querySelector('[data-supplier-return-search]')?._productLookup?.resetSelection(Boolean(event.detail?.focusSearch));
+    }));
     window.addEventListener('pagehide', () => document.querySelectorAll('[data-product-lookup]').forEach((root) => root._productLookup?.closeCamera()));
     document.addEventListener('livewire:navigating', () => document.querySelectorAll('[data-product-lookup]').forEach((root) => root._productLookup?.closeCamera()));
     boot();

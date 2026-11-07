@@ -1,0 +1,19 @@
+{
+  "application_commit": "3821af553daca932e36c8a49ab78f911e1cf2379",
+  "tree": "756badffe9b5dfc6e903383044b48281717b083f",
+  "version": "0.1.22-qa-phase2",
+  "baseline_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final5-ff75916",
+  "runtime_source_files_verified": 1018,
+  "runtime_changes": [
+    "app/Modules/Retail/Services/PosCalculationService.php",
+    "app/Modules/Catalog/Actions/SaveProductAction.php",
+    "app/Support/ApplicationVersion.php"
+  ],
+  "file_count": 14415,
+  "archive": "/tmp/rajeh-qa-phase2-3821af5.tar.gz",
+  "manifest": "/tmp/rajeh-qa-phase2-3821af5.manifest.json",
+  "archive_sha256": "90c0d828b45595033aacec244973f622fd4d1ebb9e96138b224e92aac8d1dd71",
+  "manifest_sha256": "03cdd9c7ff194ca0eb923878d58a8755936746dc8ac9fba9f82291404e44ccc9",
+  "frontend_build": "reused baseline; no source change",
+  "dependencies": "reused authenticated production vendor; no install"
+}

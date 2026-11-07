@@ -18,7 +18,7 @@ class PrintTemplate extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
         return $query->whereIn('company_id', Store::visibleTo($user)->select('company_id'));

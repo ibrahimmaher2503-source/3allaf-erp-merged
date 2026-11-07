@@ -15,6 +15,7 @@ final class SaveUiPreferences
         'appearance' => ['light', 'dark', 'system'],
         'accent_color' => ['teal', 'indigo', 'amber', 'rose'],
         'sidebar_mode' => ['expanded', 'collapsed'],
+        'menu_variant' => ['a', 'b'],
         'navbar_mode' => ['sticky', 'static'],
         'content_width' => ['compact', 'wide'],
         'table_density' => ['comfortable', 'compact'],
@@ -38,6 +39,7 @@ final class SaveUiPreferences
 
         return $user->uiPreference()->updateOrCreate([], [
             ...UserUiPreference::defaults(),
+            ...($user->uiPreference?->only(array_keys(UserUiPreference::defaults())) ?? []),
             ...$values,
         ]);
     }

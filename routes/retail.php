@@ -31,6 +31,7 @@ use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Pricing\Services\OpenPricePolicy;
@@ -42,12 +43,14 @@ use App\Modules\Retail\Actions\RecordCashMovementAction;
 use App\Modules\Retail\Actions\ResolveOfflineConflictAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
+use App\Modules\Retail\Actions\SaveSalesInvoiceDraftAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Actions\SyncOfflineTransactionsAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\GiftCardPosSale;
 use App\Modules\Retail\Models\OfflineConflict;
 use App\Modules\Retail\Models\OfflineDevice;
 use App\Modules\Retail\Models\OfflineTransaction;
@@ -83,16 +86,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             && $product->images()->where('attachment_id', $attachment->id)->exists();
         abort_unless($authorized, 403);
 
-        $disk = Storage::disk($attachment->storage_disk);
-        abort_unless($disk->exists($attachment->storage_path), 404);
-        $source = $disk->path($attachment->storage_path);
-        $cacheDirectory = storage_path('framework/cache/private-product-thumbnails');
-        $cachePath = $cacheDirectory.DIRECTORY_SEPARATOR.$attachment->sha256.'-320.webp';
+        $placeholder = static fn () => response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="8" fill="#f4f4f5"/><path d="m40 20 20 10v20L40 60 20 50V30Zm0 0v40M20 30l20 10 20-10" fill="none" stroke="#a1a1aa" stroke-width="3" stroke-linejoin="round"/></svg>', 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'private, max-age=120', 'X-Content-Type-Options' => 'nosniff']);
+        try {
+            $disk = Storage::disk($attachment->storage_disk);
+            if (! $disk->exists($attachment->storage_path)) {
+                return $placeholder();
+            }
+            $bytes = $disk->get($attachment->storage_path);
+            $imageInfo = is_string($bytes) ? @getimagesizefromstring($bytes) : false;
+            if ($imageInfo === false || ! in_array($imageInfo['mime'], ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                return $placeholder();
+            }
+            $cacheDirectory = storage_path('framework/cache/private-product-thumbnails');
+            $cachePath = $cacheDirectory.DIRECTORY_SEPARATOR.$attachment->sha256.'-320.webp';
 
-        if (! is_file($cachePath) && function_exists('imagecreatefromstring') && function_exists('imagewebp')) {
-            $bytes = file_get_contents($source);
-            $image = is_string($bytes) ? @imagecreatefromstring($bytes) : false;
-            if ($image !== false) {
+            if (! is_file($cachePath) && function_exists('imagecreatefromstring') && function_exists('imagewebp')) {
+                $image = @imagecreatefromstring($bytes);
+                if ($image === false) {
+                    return $placeholder();
+                }
                 $width = imagesx($image);
                 $height = imagesy($image);
                 $scale = min(320 / max(1, $width), 320 / max(1, $height), 1);
@@ -111,13 +123,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 imagedestroy($thumb);
                 imagedestroy($image);
             }
+
+            $cached = is_file($cachePath);
+            $content = $cached ? @file_get_contents($cachePath) : $bytes;
+            if (! is_string($content) || $content === '') {
+                return $placeholder();
+            }
+            $response = response($content, 200, ['Content-Type' => $cached ? 'image/webp' : $imageInfo['mime']]);
+
+            return $response->header('Cache-Control', 'private, max-age=86400, immutable')->header('X-Content-Type-Options', 'nosniff');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $placeholder();
         }
-
-        $response = is_file($cachePath)
-            ? response()->file($cachePath, ['Content-Type' => 'image/webp'])
-            : response()->file($source, ['Content-Type' => $attachment->detected_mime_type ?: $attachment->mime_type]);
-
-        return $response->header('Cache-Control', 'private, max-age=86400, immutable')->header('X-Content-Type-Options', 'nosniff');
     })->whereNumber('product')->middleware('can:pos_sales.view')->name('pos.products.thumbnail');
 
     Route::get('pos/returns-readiness', function (Request $request) {
@@ -521,7 +540,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('product_wallet.export'), 403);
         $rows = ProductWalletLedger::query()->visibleTo($user)->latestFirst()->limit(500)->get();
-        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'product_wallet_exported', metadata: ['wallet' => 'product', 'row_count' => $rows->count(), 'scope_limited' => ! $user->is_super_admin]);
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'product_wallet_exported', metadata: ['wallet' => 'product', 'row_count' => $rows->count(), 'scope_limited' => ! $user->hasGlobalApplicationAccess()]);
 
         return response()->streamDownload(static function () use ($rows): void {
             $handle = fopen('php://output', 'wb');
@@ -538,7 +557,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('party_wallet.export'), 403);
         $rows = PartyWalletLedger::query()->visibleTo($user)->latestFirst()->limit(500)->get();
-        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'party_wallet_exported', metadata: ['wallet' => 'party', 'row_count' => $rows->count(), 'scope_limited' => ! $user->is_super_admin]);
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'party_wallet_exported', metadata: ['wallet' => 'party', 'row_count' => $rows->count(), 'scope_limited' => ! $user->hasGlobalApplicationAccess()]);
 
         return response()->streamDownload(static function () use ($rows): void {
             $handle = fopen('php://output', 'wb');
@@ -745,10 +764,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         app(PosOpenOrderManager::class)->persistSession($request, $user, $context);
         $taxApplicable = (bool) $request->session()->get('pos.tax_applicable', false);
         $effectiveTaxes = TaxSetting::query()
+            ->where('company_id', $store->company_id)
             ->where('status', 'active')
+            ->where('is_default', true)
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->get();
+            ->limit(2)->get();
         $taxSetting = $effectiveTaxes->count() === 1 && filled($effectiveTaxes->first()?->rate) ? $effectiveTaxes->first() : null;
         $previewError = null;
         try {
@@ -774,61 +795,112 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $request->session()->put('pos.checkout_token', $checkoutToken);
         }
 
-        $cashRoundingConfigurationError = null;
-        try {
-            $cashDenomination = app(PosCalculationService::class)->cashRoundingDenomination();
-        } catch (PosFinancialConfigurationException $exception) {
-            $cashDenomination = null;
-            $cashRoundingConfigurationError = UserSafeError::message($exception);
-        }
         $openPriceApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
         $discountApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
 
         return view('pages.pos.index', compact(
             'context', 'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
             'paymentMethods', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
-            'cashDenomination', 'cashRoundingConfigurationError', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
+            'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
             'productQuery', 'categoryId', 'availableCategories', 'otherStoreAvailability', 'stockByProduct',
         ));
     })->middleware('can:pos_sales.view')->name('pos.legacy');
 
     // TSK-025 - real shift/cash workflow (DEC-066, docs/32). Replaces the
     // previous read-only readiness boundary.
+    Route::get('pos/shift/{shift}/receipts', function (Request $request, PosShift $shift) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('shifts_cash_movements.view') && $user->can('pos_sales.view'), 403);
+        $shift = PosShift::query()->visibleTo($user)->with(['branch', 'store', 'cashDrawer'])->findOrFail($shift->id);
+        $sales = DB::table('sales')->leftJoin('customers', 'customers.id', '=', 'sales.customer_id')
+            ->leftJoin('users', 'users.id', '=', 'sales.cashier_id')
+            ->where('sales.shift_id', $shift->id)->where('sales.branch_id', $shift->branch_id)
+            ->where('sales.store_id', $shift->store_id)->where('sales.cash_drawer_id', $shift->cash_drawer_id)
+            ->whereIn('sales.status', ['approved', 'cancelled', 'reversed'])
+            ->selectRaw("sales.id, 'sale' as kind, sales.document_number as reference, sales.status, sales.approved_at as occurred_at, customers.name_ar as customer_ar, customers.name_en as customer_en, users.name as cashier_name, sales.total as amount, NULL as original_reference");
+        $returns = DB::table('retail_returns')->leftJoin('sales as original_sales', 'original_sales.id', '=', 'retail_returns.source_sale_id')
+            ->leftJoin('exchanges', 'exchanges.retail_return_id', '=', 'retail_returns.id')
+            ->leftJoin('customers', 'customers.id', '=', 'retail_returns.customer_id')
+            ->leftJoin('users', 'users.id', '=', 'retail_returns.cashier_id')
+            ->where(fn ($query) => $query->where('retail_returns.shift_id', $shift->id)
+                ->orWhere(fn ($legacy) => $legacy->whereNull('retail_returns.shift_id')->where('original_sales.shift_id', $shift->id)))
+            ->where('retail_returns.branch_id', $shift->branch_id)
+            ->where('retail_returns.store_id', $shift->store_id)->where('retail_returns.cash_drawer_id', $shift->cash_drawer_id)
+            ->where('retail_returns.status', 'completed')
+            ->selectRaw("retail_returns.id, 'return' as kind, CASE WHEN retail_returns.settlement_type = 'exchange' THEN COALESCE(exchanges.exchange_number, retail_returns.return_number) ELSE retail_returns.return_number END as reference, retail_returns.settlement_type as status, retail_returns.completed_at as occurred_at, customers.name_ar as customer_ar, customers.name_en as customer_en, users.name as cashier_name, retail_returns.settlement_value as amount, original_sales.document_number as original_reference");
+        $receipts = DB::query()->fromSub($sales->unionAll($returns), 'shift_transactions')
+            ->orderByDesc('occurred_at')->orderByDesc('id')->paginate(20);
+
+        return view('pages.pos.shift-receipts', compact('shift', 'receipts'));
+    })->middleware('can:shifts_cash_movements.view')->name('pos.shift.receipts');
+
     Route::get('pos/shift', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('shifts_cash_movements.view'), 403);
 
-        $shift = PosShift::query()->visibleTo($user)->active()
+        $shift = PosShift::query()->open()
             ->where('cashier_id', $user->id)
-            ->with(['cashDrawer', 'cashMovements'])
+            ->with(['branch', 'store', 'cashDrawer', 'cashier'])
             ->latest('opened_at')
             ->first();
 
+        $drawers = CashDrawer::query()->visibleTo($user)->operationallyConsistent()
+            ->where('status', 'active')
+            ->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))
+            ->with(['branch', 'store', 'eligibleCashiers:id'])->orderBy('code')->get()
+            ->filter(fn (CashDrawer $drawer): bool => $drawer->eligibleCashiers->contains('id', $user->id)
+                || (int) $drawer->assigned_user_id === (int) $user->id
+                || ($drawer->eligibleCashiers->isEmpty() && $drawer->assigned_user_id === null));
+        $blockingShifts = PosShift::query()->open()
+            ->where('cashier_id', '!=', $user->id)
+            ->whereIn('cash_drawer_id', $drawers->pluck('id'))
+            ->with(['branch', 'store', 'cashDrawer', 'cashier'])
+            ->latest('opened_at')->paginate(20);
+        $occupiedDrawerIds = PosShift::query()->open()->whereIn('cash_drawer_id', $drawers->pluck('id'))
+            ->pluck('cash_drawer_id');
+        $availableDrawers = $drawers->whereNotIn('id', $occupiedDrawerIds);
+        $selectedWorkStore = app(WorkContext::class)->selected($user);
+        if ($selectedWorkStore !== null) {
+            $availableDrawers = $availableDrawers->filter(fn (CashDrawer $drawer): bool => (int) $drawer->company_id === (int) $selectedWorkStore->company_id
+                && (int) $drawer->branch_id === (int) $selectedWorkStore->branch_id
+                && ($selectedWorkStore->type !== 'selling' || (int) $drawer->store_id === (int) $selectedWorkStore->id));
+        }
+        $contextBranchId = app(WorkContext::class)->branchId($user);
+        $defaultDrawers = $contextBranchId === null ? $availableDrawers : $availableDrawers->filter(fn (CashDrawer $drawer): bool => (int) $drawer->branch_id === $contextBranchId);
+        $preselectedDrawerId = $defaultDrawers->count() === 1 ? $defaultDrawers->first()->id : null;
+        $canManageOwnShift = $shift !== null && PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists();
+
         $closedShifts = PosShift::query()->visibleTo($user)
-            ->where('cashier_id', $user->id)
+            ->when(! $user->hasGlobalApplicationAccess(), fn ($query) => $query->where('cashier_id', $user->id))
             ->where('status', ShiftState::Closed->value)
             ->with(['cashDrawer'])
             ->latest('closed_at')
             ->limit(10)
             ->get();
 
+        $pendingShifts = PosShift::query()->visibleTo($user)
+            ->where('cashier_id', $user->id)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+            ->with(['cashDrawer', 'closingSubmissions'])
+            ->latest('submitted_at')
+            ->limit(10)
+            ->get();
+        $pendingCloseCount = PosShift::query()
+            ->where('cashier_id', $user->id)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+            ->count();
+
         $openToken = (string) $request->session()->get('pos.shift.open_token', '');
         if ($openToken === '') {
             $openToken = (string) Str::uuid();
             $request->session()->put('pos.shift.open_token', $openToken);
         }
-        $movementToken = null;
         $closeToken = null;
         if ($shift !== null) {
-            $movementTokenKey = 'pos.shift.movement_token.'.$shift->getKey();
             $closeTokenKey = 'pos.shift.close_token.'.$shift->getKey().'.'.$shift->getAttribute('recount_count');
-            $movementToken = (string) $request->session()->get($movementTokenKey, '');
             $closeToken = (string) $request->session()->get($closeTokenKey, '');
-            if ($movementToken === '') {
-                $movementToken = (string) Str::uuid();
-                $request->session()->put($movementTokenKey, $movementToken);
-            }
             if ($closeToken === '') {
                 $closeToken = (string) Str::uuid();
                 $request->session()->put($closeTokenKey, $closeToken);
@@ -839,15 +911,39 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         // before submission, so this view is given no expected figures at all.
         return view('pages.pos.shift', [
             'shift' => $shift,
+            'canManageOwnShift' => $canManageOwnShift,
+            'blockingShifts' => $blockingShifts,
             'closedShifts' => $closedShifts,
-            'drawers' => CashDrawer::query()->visibleTo($user)->operationallyConsistent()->where('status', 'active')->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))->with(['branch', 'store'])->orderBy('code')->get(),
-            'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
-            'movementTypes' => CashMovement::TYPES,
+            'pendingShifts' => $pendingShifts,
+            'pendingCloseCount' => $pendingCloseCount,
+            'drawers' => $availableDrawers,
+            'selectedWorkStore' => $selectedWorkStore,
+            'preselectedDrawerId' => $preselectedDrawerId,
             'openToken' => $openToken,
-            'movementToken' => $movementToken,
             'closeToken' => $closeToken,
         ]);
     })->middleware('can:shifts_cash_movements.view')->name('pos.shift');
+
+    Route::get('pos/shift/{shift}/cash-movement', function (Request $request, PosShift $shift) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless(PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists(), 403);
+        abort_unless($shift->status->acceptsActivity(), 404);
+        abort_unless((int) $shift->cashier_id === $user->id || $user->can('shifts_cash_movements.approve') || $user->is_super_admin, 403);
+
+        $movementTokenKey = 'pos.shift.movement_token.'.$shift->getKey();
+        $movementToken = (string) $request->session()->get($movementTokenKey, '');
+        if ($movementToken === '') {
+            $movementToken = (string) Str::uuid();
+            $request->session()->put($movementTokenKey, $movementToken);
+        }
+
+        return view('pages.pos.cash-movement', [
+            'shift' => $shift->load(['store', 'cashDrawer', 'cashMovements.creator']),
+            'movementTypes' => CashMovement::TYPES,
+            'movementToken' => $movementToken,
+        ]);
+    })->middleware(['can:shifts_cash_movements.view', 'can:shifts_cash_movements.create'])->name('pos.shift.cash-movement.form');
 
     Route::get('pos/shift/open', fn () => to_route('pos.shift'))
         ->middleware([
@@ -866,12 +962,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'opening_float' => ['required', 'numeric', 'gte:0'],
             'idempotency_key' => ['required', 'uuid'],
             'confirm_outlet' => ['accepted'],
-        ]);
+        ], ['confirm_outlet.accepted' => __('Confirm the sales outlet before opening a shift.')]);
 
         try {
             $drawer = CashDrawer::query()->find((int) $validated['cash_drawer_id']);
             if ($drawer === null) {
                 throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+            }
+            $selectedWorkStore = app(WorkContext::class)->selected($user);
+            if ($selectedWorkStore !== null && (
+                (int) $drawer->company_id !== (int) $selectedWorkStore->company_id
+                || (int) $drawer->branch_id !== (int) $selectedWorkStore->branch_id
+                || ($selectedWorkStore->type === 'selling' && (int) $drawer->store_id !== (int) $selectedWorkStore->id)
+            )) {
+                throw new InvalidArgumentException(__('The selected cash drawer is outside the active work location.'));
             }
 
             $action->execute(
@@ -919,38 +1023,32 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $request->session()->forget('pos.shift.movement_token.'.$shift->getKey());
 
-        return redirect()->route('pos.shift')->with('success', __('Cash movement recorded.'));
+        return redirect()->route('pos.shift.cash-movement.form', $shift)->with('success', __('Cash movement recorded.'));
     })->middleware('can:shifts_cash_movements.create')->name('pos.shift.cash-movement');
 
     Route::post('pos/shift/{shift}/blind-close', function (Request $request, PosShift $shift, SubmitBlindShiftCloseAction $action) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('shifts_cash_movements.submit'), 403);
-        abort_unless(PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists(), 403);
+        abort_unless(
+            PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists()
+            && ((int) $shift->cashier_id === $user->id
+                || ($user->hasGlobalApplicationAccess() && $user->can('shifts_cash_movements.approve'))),
+            403,
+        );
 
         $validated = $request->validate([
             'actual_cash' => ['required', 'numeric', 'gte:0'],
-            'actual_by_method' => ['nullable', 'array'],
-            'actual_by_method.*' => ['nullable', 'numeric', 'gte:0'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'notes' => [Rule::requiredIf((int) $shift->cashier_id !== $user->id), 'nullable', 'string', 'max:1000'],
             'idempotency_key' => ['required', 'uuid'],
         ]);
-
-        /** @var array<string, mixed> $submitted */
-        $submitted = $validated['actual_by_method'] ?? [];
-        $actualByMethod = [];
-        foreach ($submitted as $code => $value) {
-            if ($value !== null && $value !== '') {
-                $actualByMethod[(string) $code] = (string) $value;
-            }
-        }
 
         try {
             $action->execute(
                 $user,
                 $shift,
                 (string) $validated['actual_cash'],
-                $actualByMethod,
+                [],
                 'SHIFT-CLOSE:'.$validated['idempotency_key'],
                 $validated['notes'] ?? null,
             );
@@ -962,7 +1060,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         // or variance figure (docs/32 §15 redaction).
         $request->session()->forget('pos.shift.close_token.'.$shift->getKey().'.'.$shift->getAttribute('recount_count'));
 
-        return redirect()->route('pos.shift')->with('success', __('Count submitted for review.'));
+        return redirect()->route('pos.shift')->with('success', __('Count submitted for review.'))->with('shift_close_print_shift_id', $shift->getKey());
     })->middleware('can:shifts_cash_movements.submit')->name('pos.shift.blind-close');
 
     Route::get('pos/shift-variance', function (Request $request) {
@@ -1005,13 +1103,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $shift = PosShift::query()
             ->visibleTo($user)
             ->whereKey($routeShift->getKey())
-            ->where('status', ShiftState::Closed->value)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value, ShiftState::Closed->value])
             ->with([
                 'branch',
                 'store.company',
                 'cashDrawer',
                 'cashier',
-                'closingSubmissions',
+                'closingSubmissions.submitter',
+                'varianceApprover',
                 'cashMovements',
                 'sales' => static fn ($query) => $query->approved()->with('payments.paymentMethod'),
             ])
@@ -1021,6 +1120,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($submission !== null, 409, __('This closed shift has no immutable closing submission.'));
 
         $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve');
+        abort_unless($viewerCanSeeExpected || (int) $shift->getAttribute('cashier_id') === $user->id, 403);
+        $pendingApproval = ! $shift->status->isTerminal();
         $event = $format === 'thermal' ? 'shift_thermal_printed' : 'shift_a4_printed';
         $alreadyPrinted = AuditLog::query()
             ->where('event', $event)
@@ -1052,6 +1153,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         )));
         sort($methodCodes);
 
+        $expectedTotal = (string) $submission->expected_cash;
+        $recordedTotal = (string) $submission->actual_cash;
+        foreach ($methodCodes as $methodCode) {
+            $expectedTotal = bcadd($expectedTotal, (string) ($expectedByMethod[$methodCode] ?? '0.00'), 2);
+            $recordedTotal = bcadd($recordedTotal, (string) ($actualByMethod[$methodCode] ?? '0.00'), 2);
+        }
+
         $salesTotal = $shift->sales->reduce(
             static fn (string $total, Sale $sale): string => bcadd($total, (string) $sale->payable_total, 2),
             '0.00',
@@ -1061,6 +1169,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'shift' => $shift,
             'submission' => $submission,
             'canViewExpected' => $viewerCanSeeExpected,
+            'pendingApproval' => $pendingApproval,
+            'statusLabel' => $pendingApproval ? __('Pending approval') : __('Approved'),
+            'expectedTotal' => $expectedTotal,
+            'recordedTotal' => $recordedTotal,
             'methodRows' => collect($methodCodes)->map(static fn (string $code): array => [
                 'code' => $code,
                 'expected' => $expectedByMethod[$code] ?? '0.00',
@@ -1184,9 +1296,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->hasPermission('offline_queue_conflicts.approve'), 403);
         $query = OfflineTransaction::query()->where('offline_transactions.state', 'conflict');
-        if (! $user->is_super_admin) {
-            $branchIds = $user->branchScopes()->where('status', 'active')->pluck('branch_id')->all();
-            $storeIds = $user->storeScopes()->where('status', 'active')->pluck('store_id')->all();
+        if (! $user->hasGlobalApplicationAccess() || $user->canBypassApproval()) {
+            $branchIds = $user->canBypassApproval()
+                ? Branch::query()->whereIn('company_id', $user->operationalCompanyIds())->pluck('id')->all()
+                : $user->branchScopes()->where('status', 'active')->pluck('branch_id')->all();
+            $storeIds = $user->canBypassApproval()
+                ? Store::query()->whereIn('company_id', $user->operationalCompanyIds())->pluck('id')->all()
+                : $user->storeScopes()->where('status', 'active')->pluck('store_id')->all();
             $query->where(function ($scope) use ($branchIds, $storeIds): void {
                 $scope->whereIn('offline_transactions.branch_id', $branchIds)->orWhereIn('offline_transactions.store_id', $storeIds);
             });
@@ -1345,10 +1461,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->get()
             ->groupBy('key')
             ->map(fn ($versions) => $versions->first());
+        $company = app(AuthorizedCompanyContext::class)->resolve($user, $request->input('company_id'));
 
         return view('pages.pos.financial-readiness', [
             'activePaymentMethods' => PaymentMethod::query()->where('status', 'active')->count(),
-            'activeTaxSettings' => TaxSetting::query()->where('status', 'active')->count(),
+            'activeTaxSettings' => TaxSetting::query()->forCompany((int) $company->id)->where('status', 'active')->count(),
             'definitions' => PosFinancialSettingRegistry::all(),
             'latestSettings' => $latest,
         ]);
@@ -1560,7 +1677,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $resolver = app(EffectivePriceResolver::class);
         $customerId = $request->session()->get('pos.customer_id');
         $price = $resolver->resolve((int) $line['product_id'], $store->id, productUnitId: filled($line['product_unit_id'] ?? null) ? (int) $line['product_unit_id'] : null, customerId: $customerId ? (int) $customerId : null);
-        abort_if($price === null || ! $price->open_price_allowed, 422, __('Open price is not enabled for this product.'));
+        abort_if($price === null || ! $price->open_price_allowed || ! Product::query()->whereKey((int) $line['product_id'])->where('open_price', true)->exists(), 422, __('Open price is not enabled for this product.'));
         $reference = DecimalMoney::normalize((string) ($price->reference_amount ?? $price->amount), 4);
         $policy->validateOrThrow(
             referenceAmount: $reference,
@@ -1653,12 +1770,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $setting = null;
         if ($applicable) {
             $effective = TaxSetting::query()
+                ->where('company_id', $store->company_id)
                 ->where('status', 'active')
+                ->where('is_default', true)
                 ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
                 ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-                ->get();
+                ->limit(2)->get();
             if ($effective->count() !== 1 || blank($effective->first()?->rate)) {
-                return back()->withErrors(['tax' => __('Tax cannot be enabled until exactly one effective policy with a configured rate exists.')]);
+                return back()->withErrors(['tax' => __('Tax cannot be enabled until exactly one effective company default tax rule with a configured rate exists.')]);
             }
             $setting = $effective->first();
         }
@@ -1778,7 +1897,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->where('branch_id', $store->branch_id)
                     ->where('store_id', $store->id)
                     ->whereIn('status', ['active', 'partially_used'])
-                    ->firstOrFail();
+                    ->first();
+                if ($giftCard === null || bccomp((string) $giftCard->balance, '0.00', 2) <= 0
+                    || ($giftCard->valid_until !== null && $giftCard->valid_until->isPast())) {
+                    return back()->withInput()->withErrors(['payments.'.$index.'.gift_card_identifier' => __('This Gift Card is unavailable, expired, or has no balance.')]);
+                }
             }
 
             $tenders[] = [
@@ -1817,13 +1940,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return redirect()->route('sales.show', $sale)->with('success', __('Sale completed successfully.'));
     })->middleware('can:pos_sales.create')->name('pos.checkout.legacy');
 
-    Route::get('pos/suspended', function (Request $request) {
+    Route::get('pos/suspended', function (Request $request, PosContextResolver $contexts) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('suspended_sales.view'), 403);
+        $context = $contexts->resolve($user);
+        $store = $context->store;
+        $shift = $context->shift;
         $sales = Sale::query()->visibleTo($user)->with(['lines', 'suspendedSale', 'store'])->where('status', 'suspended')->latest()->paginate(20);
 
-        return view('pages.pos.suspended', compact('sales'));
+        return view('pages.pos.suspended', compact('sales', 'context', 'store', 'shift'));
     })->middleware('can:suspended_sales.view')->name('pos.suspended');
 
     Route::get('pos/suspended/{sale}/resume', function (Request $request, Sale $sale, RetailSaleAction $action) {
@@ -1849,13 +1975,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
         $cashRoundingConfigurationError = null;
         try {
-            $cashDenomination = app(PosCalculationService::class)->cashRoundingDenomination();
+            app(PosCalculationService::class)->cashRoundingAdjustment((string) $preview['totals']['total']);
         } catch (PosFinancialConfigurationException $exception) {
-            $cashDenomination = null;
             $cashRoundingConfigurationError = UserSafeError::message($exception);
         }
 
-        return view('pages.pos.resume', compact('sale', 'preview', 'cashMethod', 'electronicMethods', 'resumeToken', 'cashDenomination', 'cashRoundingConfigurationError'));
+        return view('pages.pos.resume', compact('sale', 'preview', 'cashMethod', 'electronicMethods', 'resumeToken', 'cashRoundingConfigurationError'));
     })->middleware('can:pos_sales.create')->name('pos.suspended.resume');
 
     Route::post('pos/suspended/{sale}/resume', function (Request $request, Sale $sale, RetailSaleAction $action) {
@@ -1910,7 +2035,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->where('branch_id', $sale->branch_id)
                     ->where('store_id', $sale->store_id)
                     ->whereIn('status', ['active', 'partially_used'])
-                    ->firstOrFail();
+                    ->first();
+                if ($giftCard === null || bccomp((string) $giftCard->balance, '0.00', 2) <= 0
+                    || ($giftCard->valid_until !== null && $giftCard->valid_until->isPast())) {
+                    return back()->withInput()->withErrors(['payments.'.$index.'.gift_card_identifier' => __('This Gift Card is unavailable, expired, or has no balance.')]);
+                }
             }
 
             $tenders[] = [
@@ -2002,6 +2131,64 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.sales.index', compact('sales', 'stores', 'dashboard', 'sort', 'direction'));
     })->middleware('can:pos_sales.view')->name('sales.index');
 
+    Route::get('sales/invoices/create', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        $stores = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->orderBy('code')->get();
+
+        $contextBranchId = app(WorkContext::class)->branchId($user);
+        $branchStores = $contextBranchId === null ? collect() : $stores->where('branch_id', $contextBranchId);
+
+        return view('pages.sales.invoices-create', ['stores' => $stores, 'defaultStoreId' => $branchStores->count() === 1 ? $branchStores->first()->id : null, 'creationToken' => (string) Str::uuid()]);
+    })->middleware('can:sales_invoices.create')->name('sales.invoices.create');
+
+    Route::post('sales/invoices/drafts', function (Request $request, SaveSalesInvoiceDraftAction $drafts) {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validate([
+            'store_id' => ['required', 'integer'],
+            'creation_token' => ['required', 'uuid'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'lines' => ['required', 'array', 'min:1', 'max:100'],
+            'lines.*.identifier' => ['required', 'string', 'max:190'],
+            'lines.*.quantity' => ['required', 'integer', 'min:1', 'max:999999'],
+        ]);
+        $store = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->findOrFail((int) $data['store_id']);
+        $lines = [];
+        foreach ($data['lines'] as $line) {
+            $identifier = trim($line['identifier']);
+            $product = Product::query()->sellable()
+                ->availableToCompany((int) $store->company_id, (int) $store->branch_id, (int) $store->id)
+                ->where(function ($query) use ($identifier): void {
+                    $query->where('item_code', $identifier)
+                        ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $identifier));
+                })->first();
+            if ($product === null) {
+                return back()->withInput()->withErrors(['lines' => __('A product code or barcode was not found in the selected store scope.')]);
+            }
+            $lines[] = ['product_id' => (int) $product->id, 'quantity' => (string) $line['quantity']];
+        }
+
+        try {
+            $draft = $drafts->execute($user, $store, $lines, $data['creation_token'], $data['notes'] ?? null);
+
+            return to_route('sales.invoices.drafts.show', $draft)->with('success', __('Sales invoice draft saved. No stock or payment was posted.'));
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['lines' => $exception->getMessage()]);
+        }
+    })->middleware('can:sales_invoices.create')->name('sales.invoices.drafts.store');
+
+    Route::get('sales/invoices/drafts/{sale}', function (Request $request, Sale $sale) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($sale->status === 'draft' && $sale->shift_id === null, 404);
+        abort_unless((int) $sale->cashier_id === (int) $user->id || $user->canBypassApproval(), 403);
+        abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
+        $sale->load(['store', 'lines.product']);
+
+        return view('pages.sales.invoices-draft', ['sale' => $sale]);
+    })->middleware('can:sales_invoices.create')->name('sales.invoices.drafts.show');
+
     Route::get('sales/invoices', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
@@ -2010,15 +2197,23 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $request->merge(['store_id' => $contextStoreId]);
         }
         $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
-        $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier'])->withCount('payments');
+        $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier', 'customer'])->withCount('payments');
+        if (! $request->filled('store_id') && ($contextBranchId = app(WorkContext::class)->branchId($user)) !== null) {
+            $query->where('branch_id', $contextBranchId);
+        }
         $query->when($request->filled('q'), fn ($query) => $query->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%'));
         $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
+        $query->when($request->filled('customer_id'), fn ($query) => $query->where('customer_id', $request->integer('customer_id')));
+        $query->when($request->filled('customer_phone'), fn ($query) => $query->whereHas('customer', fn ($customer) => $customer->where('phone_normalized', 'like', '%'.preg_replace('/[^0-9]+/', '', (string) $request->string('customer_phone')).'%')));
+        $query->when($request->filled('cashier_id'), fn ($query) => $query->where('cashier_id', $request->integer('cashier_id')));
         $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('approved_at', '>=', $request->string('date_from')));
         $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('approved_at', '<=', $request->string('date_to')));
         $sales = $query->latest('approved_at')->latest('id')->paginate($perPage)->withQueryString();
         $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
+        $customers = Customer::query()->visibleTo($user)->orderBy('name_en')->limit(500)->get(['id', 'name_ar', 'name_en', 'phone_display']);
+        $cashiers = User::query()->whereHas('roles', fn ($roles) => $roles->where('name', 'cashier'))->orderBy('name')->get(['id', 'name']);
 
-        return view('pages.sales.invoices', compact('sales', 'stores'));
+        return view('pages.sales.invoices', compact('sales', 'stores', 'customers', 'cashiers'));
     })->middleware('can:pos_sales.view')->name('sales.invoices');
 
     Route::get('payments', function (Request $request) {
@@ -2083,8 +2278,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('pos_sales.view'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
         $sale->load(['store', 'cashier', 'lines.product', 'shift.cashDrawer', 'payments.paymentMethod', 'payments.evidenceAttachment']);
+        $giftCardSale = $sale->status === 'gift_card_sold'
+            ? GiftCardPosSale::query()->with('giftCard')->where('sale_id', $sale->id)->first()
+            : null;
 
-        return view('pages.sales.show', compact('sale'));
+        return view('pages.sales.show', compact('sale', 'giftCardSale'));
     })->middleware('can:pos_sales.view')->name('sales.show');
 
     Route::get('sales/{sale}/print', function (Request $request, Sale $sale) {

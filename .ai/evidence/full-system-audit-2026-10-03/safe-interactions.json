@@ -1,0 +1,206 @@
+[
+  {
+    "name": "administrator search opens",
+    "pass": true
+  },
+  {
+    "name": "administrator scoped search empty state",
+    "pass": true
+  },
+  {
+    "name": "administrator search closes",
+    "pass": true
+  },
+  {
+    "name": "observer-loop screen interactive",
+    "pass": true
+  },
+  {
+    "name": "quantity preview returns to event loop",
+    "pass": true
+  },
+  {
+    "name": "context help opens",
+    "pass": true
+  },
+  {
+    "name": "context help closes with focus restored",
+    "pass": true
+  },
+  {
+    "name": "empty adjustment native validation blocks submission",
+    "pass": true
+  },
+  {
+    "name": "native validation fields",
+    "valid": false,
+    "invalid": [
+      "reason_code",
+      ""
+    ]
+  },
+  {
+    "name": "administrator no business write requests",
+    "pass": true
+  },
+  {
+    "name": "administrator no page errors",
+    "pass": true
+  },
+  {
+    "name": "administrator Arabic mobile /admin",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/admin",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "administrator Arabic mobile /admin/authorization-baseline",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/admin/authorization-baseline",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "administrator Arabic mobile /catalog/products",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/catalog/products",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "administrator Arabic mobile /catalog/products/4/edit",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/catalog/products/4/edit",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "administrator Arabic mobile /purchasing/orders/create",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/purchasing/orders/create",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "administrator Arabic mobile /inventory/transfers/create",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/inventory/transfers/create",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "administrator Arabic mobile /reports",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "administrator",
+    "path": "/reports",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "normal-user missing shift explicit",
+    "pass": true
+  },
+  {
+    "name": "normal user disabled controls",
+    "controls": 5
+  },
+  {
+    "name": "normal-user no business write requests",
+    "pass": true
+  },
+  {
+    "name": "normal-user no page errors",
+    "pass": true
+  },
+  {
+    "name": "normal-user Arabic mobile /pos",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "normal-user",
+    "path": "/pos",
+    "status": 200,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "normal-user Arabic mobile /admin",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "normal-user",
+    "path": "/admin",
+    "status": 403,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  },
+  {
+    "name": "normal-user Arabic mobile /pos/shift",
+    "pass": true
+  },
+  {
+    "name": "Arabic mobile render",
+    "actor": "normal-user",
+    "path": "/pos/shift",
+    "status": 403,
+    "lang": "ar",
+    "dir": "rtl",
+    "width": 390,
+    "viewport": 390
+  }
+]

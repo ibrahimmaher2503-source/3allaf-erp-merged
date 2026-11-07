@@ -1,0 +1,50 @@
+[
+  {
+    "path": "/login",
+    "status": 200,
+    "errors": [],
+    "title": "تسجيل الدخول - TOY & JOY",
+    "lang": "ar",
+    "dir": "rtl",
+    "viewport": 1440,
+    "width": 1440,
+    "text": "اللغة\nالعربية\nEnglish\nالعربية المصرية\nTOY & JOY\nتسجيل الدخول إلى حسابك\n!\nتسجيل الدخول بمفتاح مرور\nOR CONTINUE WITH EMAIL\nاسم المستخدم\nكلمة المرور\nنسيت كلمة المرور؟\nتذكرني\nتسجيل الدخول\nلا تملك حساباً؟ إنشاء حساب\n\nنظام راجح بإصدار v0.1.22-hotfix51 — برمجة وتنفيذ إنتلجنت سوليوشنز",
+    "headings": [
+      "تسجيل الدخول إلى حسابك"
+    ],
+    "controls": 7,
+    "images": 0
+  },
+  {
+    "path": "/login",
+    "status": 200,
+    "errors": [],
+    "title": "Log in - TOY & JOY",
+    "lang": "en",
+    "dir": "ltr",
+    "viewport": 1440,
+    "width": 1440,
+    "text": "Language\nالعربية\nEnglish\nالعربية المصرية\nTOY & JOY\nLog in to your account\n!\nSign in with a passkey\nOR CONTINUE WITH EMAIL\nUsername\nPassword\nForgot your password?\nRemember me\nLog in\nDon't have an account? Sign up\n\nRajeh System v0.1.22-hotfix51 — Developed and implemented by Intelligent Solutions",
+    "headings": [
+      "Log in to your account"
+    ],
+    "controls": 7,
+    "images": 0
+  },
+  {
+    "path": "/login",
+    "status": 200,
+    "errors": [],
+    "title": "تسجيل الدخول - TOY & JOY",
+    "lang": "ar",
+    "dir": "rtl",
+    "viewport": 390,
+    "width": 390,
+    "text": "اللغة\nالعربية\nEnglish\nالعربية المصرية\nTOY & JOY\nتسجيل الدخول إلى حسابك\n!\nتسجيل الدخول بمفتاح مرور\nOR CONTINUE WITH EMAIL\nاسم المستخدم\nكلمة المرور\nنسيت كلمة المرور؟\nتذكرني\nتسجيل الدخول\nلا تملك حساباً؟ إنشاء حساب\n\nنظام راجح بإصدار v0.1.22-hotfix51 — برمجة وتنفيذ إنتلجنت سوليوشنز",
+    "headings": [
+      "تسجيل الدخول إلى حسابك"
+    ],
+    "controls": 7,
+    "images": 0
+  }
+]

@@ -8,13 +8,22 @@ use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
+use Database\Factories\PurchaseOrderFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrder extends Model implements ImmutableSourceContract
 {
+    protected static function newFactory(): Factory
+    {
+        return PurchaseOrderFactory::new();
+    }
+
     use GuardsApprovedDocument;
+    use HasFactory;
 
     protected $fillable = [
         'po_number',
@@ -174,6 +183,26 @@ class PurchaseOrder extends Model implements ImmutableSourceContract
             $this->status === 'submitted' => 'Submitted for Review',
             $this->isApproved() => 'Procurement Manager Approved',
             default => ucfirst(str_replace('_', ' ', $this->status)),
+        };
+    }
+
+    public function responsiblePermission(): ?string
+    {
+        return match (true) {
+            $this->status === 'draft' => 'purchase_orders.edit',
+            $this->status === 'submitted' => 'purchase_orders.approve',
+            $this->isApproved() && $this->receivingState() !== 'fully_received' => 'purchase_invoices_supplier_returns.create',
+            default => null,
+        };
+    }
+
+    public function responsibleRoleLabel(): string
+    {
+        return match ($this->responsiblePermission()) {
+            'purchase_orders.edit' => 'Purchase order editor',
+            'purchase_orders.approve' => 'Procurement manager',
+            'purchase_invoices_supplier_returns.create' => 'Purchasing and receiving team',
+            default => 'No further action required',
         };
     }
 }

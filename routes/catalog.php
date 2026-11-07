@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\TransactionProductSearchController;
+use App\Http\Middleware\AuthorizeProductImport;
 use App\Modules\Catalog\Actions\DownloadProductImportErrorsAction;
-use App\Modules\Catalog\Actions\StageCatalogReferenceImportAction;
 use App\Modules\Catalog\Actions\StageSupplierImportAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
@@ -25,7 +25,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->name('catalog.products');
 
     $router->livewire('catalog/products/import', 'catalog::product-import')
-        ->middleware('can:products_categories_brands.create')
+        ->middleware(AuthorizeProductImport::class)
         ->name('catalog.products.import');
 
     $router->livewire('catalog/product-options', 'catalog::product-options')

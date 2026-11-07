@@ -135,16 +135,14 @@ new #[Title('Supplier Return Settings')] class extends Component
         <flux:button href="{{ route('purchasing.returns') }}" variant="subtle" icon="arrow-left">{{ __('Supplier returns') }}</flux:button>
     </x-slot:actions>
 
-    <flux:callout variant="info" icon="information-circle">
-        <flux:heading size="sm">{{ __('What this page controls') }}</flux:heading>
-        <flux:text>{{ __('Add the reasons shown when creating a supplier return, then submit print text or an approval limit for review.') }}</flux:text>
-    </flux:callout>
-
     @can('company_settings.edit')
         <section aria-labelledby="supplier-return-reasons" class="space-y-4">
-            <div>
+            <div class="flex flex-wrap items-center gap-2">
                 <flux:heading id="supplier-return-reasons" size="lg">{{ __('Supplier return reasons') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('These bilingual reasons help the team choose a clear cause when returning goods to a supplier.') }}</flux:text>
+                <x-context-help :title="__('Supplier return reasons')" :label="__('Open contextual help')">
+                    <p>{{ __('Add the reasons shown when creating a supplier return, then submit print text or an approval limit for review.') }}</p>
+                    <p>{{ __('These bilingual reasons help the team choose a clear cause when returning goods to a supplier.') }}</p>
+                </x-context-help>
             </div>
             <flux:card class="space-y-5">
                 <flux:heading size="base">{{ __('Add a return reason') }}</flux:heading>
@@ -162,9 +160,9 @@ new #[Title('Supplier Return Settings')] class extends Component
 
         <section aria-labelledby="supplier-return-financial-settings" class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
+                <div class="flex flex-wrap items-center gap-2">
                     <flux:heading id="supplier-return-financial-settings" size="lg">{{ __('Print and approval settings') }}</flux:heading>
-                    <flux:text class="mt-1">{{ __('Document numbers are managed from the central document-numbering settings. This page only controls supplier-return print text and approval limit.') }}</flux:text>
+                    <x-context-help :title="__('Print and approval settings')" :label="__('Open contextual help')"><p>{{ __('Document numbers are managed from the central document-numbering settings. This page only controls supplier-return print text and approval limit.') }}</p></x-context-help>
                 </div>
                 <flux:button size="sm" variant="subtle" icon="numbered-list" :href="route('admin.settings', ['tab' => 'sequences'])" wire:navigate>{{ __('Open document numbering') }}</flux:button>
             </div>
@@ -199,9 +197,9 @@ new #[Title('Supplier Return Settings')] class extends Component
     @endcan
 
     <section aria-labelledby="supplier-return-reason-catalog" class="space-y-4">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading id="supplier-return-reason-catalog" size="lg">{{ __('Saved return reasons') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('Only active reasons can be selected on a new supplier return.') }}</flux:text>
+            <x-context-help :title="__('Saved return reasons')" :label="__('Open contextual help')"><p>{{ __('Only active reasons can be selected on a new supplier return.') }}</p></x-context-help>
         </div>
         <flux:card class="p-0">
             <div class="overflow-x-auto rounded-xl">
@@ -238,9 +236,9 @@ new #[Title('Supplier Return Settings')] class extends Component
     </section>
 
     <section aria-labelledby="supplier-return-setting-history" class="space-y-4">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading id="supplier-return-setting-history" size="lg">{{ __('Setting review history') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('Submitted values appear here with their version and approval status.') }}</flux:text>
+            <x-context-help :title="__('Setting review history')" :label="__('Open contextual help')"><p>{{ __('Submitted values appear here with their version and approval status.') }}</p></x-context-help>
         </div>
         @php
             $settingLabels = [

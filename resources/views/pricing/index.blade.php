@@ -3,6 +3,8 @@
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\UiLabel;
+use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Platform\Support\DefaultOperatingContext;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
@@ -13,11 +15,13 @@ use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Pricing\Queries\PricingDashboard;
-use App\Modules\Platform\Support\UiLabel;
+use App\Support\UserSafeError;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -95,9 +99,21 @@ new #[Title('Pricing Workspace')] class extends Component
         $this->resetPage();
     }
 
-    public function updatedStoreFilter(): void { $this->resetPage(); $this->resetPage('unpriced_page'); }
-    public function updatedEffectiveFrom(): void { $this->resetPage(); }
-    public function updatedEffectiveTo(): void { $this->resetPage(); }
+    public function updatedStoreFilter(): void
+    {
+        $this->resetPage();
+        $this->resetPage('unpriced_page');
+    }
+
+    public function updatedEffectiveFrom(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEffectiveTo(): void
+    {
+        $this->resetPage();
+    }
 
     public function sortBy(string $column): void
     {
@@ -221,17 +237,44 @@ new #[Title('Pricing Workspace')] class extends Component
 
     public function approveProposal(int $versionId): void
     {
-        app(ApprovePriceProposalAction::class)->execute($this->scopedVersion($versionId));
-        session()->flash('status', __('Price version approved and effective where its date allows.'));
+        $this->resetErrorBag('approval');
+        session()->forget('status');
+
+        try {
+            app(ApprovePriceProposalAction::class)->execute($this->scopedVersion($versionId));
+            session()->flash('status', __('Price version approved and effective where its date allows.'));
+        } catch (AuthorizationException) {
+            $this->addError('approval', __('Unable to complete the request. Please review the data and try again.'));
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first();
+            $this->addError('approval', (string) ($message ?? __('Unable to complete the request. Please review the data and try again.')));
+        } catch (Throwable $exception) {
+            $this->addError('approval', UserSafeError::message($exception));
+        }
     }
 
     public function rejectProposal(int $versionId): void
     {
-        Gate::authorize('pricing_labels.approve');
-        $this->validate(['rejectionReason' => ['required', 'string', 'max:1000']]);
-        app(RejectPriceProposalAction::class)->execute($this->scopedVersion($versionId), $this->rejectionReason);
-        $this->rejectionReason = '';
-        session()->flash('status', __('Price proposal rejected with an audit reason.'));
+        $this->resetErrorBag('approval');
+        $this->resetErrorBag('rejectionReason');
+        session()->forget('status');
+
+        try {
+            Gate::authorize('pricing_labels.approve');
+            $this->validate(['rejectionReason' => ['required', 'string', 'max:1000']]);
+            app(RejectPriceProposalAction::class)->execute($this->scopedVersion($versionId), $this->rejectionReason);
+            $this->rejectionReason = '';
+            session()->flash('status', __('Price proposal rejected with an audit reason.'));
+        } catch (AuthorizationException) {
+            $this->addError('approval', __('Unable to complete the request. Please review the data and try again.'));
+        } catch (ValidationException $exception) {
+            $errors = $exception->errors();
+            $message = collect($errors)->flatten()->first();
+            $field = isset($errors['rejectionReason']) ? 'rejectionReason' : 'approval';
+            $this->addError($field, (string) ($message ?? __('Unable to complete the request. Please review the data and try again.')));
+        } catch (Throwable $exception) {
+            $this->addError('approval', UserSafeError::message($exception));
+        }
     }
 
     private function actor(): User
@@ -310,7 +353,7 @@ new #[Title('Pricing Workspace')] class extends Component
             ? app(PricingDashboard::class)->for($user, $selectedStoreId, $unpricedProducts->total())
             : [];
 
-        return view('pricing.index', compact('versions', 'products', 'stores', 'unpricedProducts', 'diffVersion', 'diffPrevious', 'dashboard'));
+        return view('pricing.index', compact('user', 'versions', 'products', 'stores', 'unpricedProducts', 'diffVersion', 'diffPrevious', 'dashboard'));
     }
 };
 ?>
@@ -340,6 +383,9 @@ new #[Title('Pricing Workspace')] class extends Component
     @if (session('status'))
         <flux:callout variant="success" icon="check-circle">{{ session('status') }}</flux:callout>
     @endif
+    @error('approval')
+        <flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>
+    @enderror
 
     <nav class="flex flex-wrap gap-2" aria-label="{{ __('Pricing views') }}">
         @foreach($modeTitles as $modeKey => $modeTitle)
@@ -398,9 +444,18 @@ new #[Title('Pricing Workspace')] class extends Component
                             <td data-label="{{ $pt('فترة سريان السعر', 'Price validity') }}"><div>{{ $pt('من', 'From') }}: <span dir="ltr">{{ $version->effective_from?->format('Y-m-d H:i') ?: $pt('فور الاعتماد', 'On approval') }}</span></div><div class="mt-1 text-xs text-text-muted">{{ $pt('حتى', 'Until') }}: <span dir="ltr">{{ $version->effective_to?->format('Y-m-d H:i') ?: $pt('بدون تاريخ انتهاء', 'No end date') }}</span></div></td>
                             <td data-label="{{ __('State') }}"><x-status.badge :status="$version->state->value" /><div class="mt-1 text-xs text-text-muted">{{ $version->approvalRecord ? __('Approval') . ': ' . UiLabel::status($version->approvalRecord->approval_state->value) : __('No approval yet') }}</div><p class="mt-2 max-w-xs text-xs text-text-muted">{{ $priceStateHelp[$version->state->value] ?? '' }}</p></td>
                             <td data-label="{{ __('Actions') }}" class="space-y-2">
-                                @can('pricing_labels.view')<x-actions.button semantic="history" :label="$pt('مقارنة الإصدارات', 'Compare versions')" wire:click="openDiff({{ $version->id }})">{{ $pt('مقارنة الإصدارات', 'Compare versions') }}</x-actions.button>@endcan
-                                @can('pricing_labels.submit') @if ($version->state === PriceVersionState::Draft)<flux:button size="sm" wire:loading.attr="disabled" wire:target="submitProposal" wire:click="submitProposal({{ $version->id }})">{{ $pt('إرسال السعر للمراجعة', 'Submit price for review') }}</flux:button>@endif @endcan
-                                @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)<x-actions.button semantic="approve" :label="$pt('اعتماد هذا السعر', 'Approve this price')" wire:click="approveProposal({{ $version->id }})">{{ $pt('اعتماد هذا السعر', 'Approve this price') }}</x-actions.button><details class="rounded-lg border border-border p-2"><summary class="cursor-pointer text-xs font-semibold">{{ $pt('رفض تغيير السعر مع ذكر السبب', 'Reject the price change with a reason') }}</summary><div class="mt-2 space-y-2"><flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" /><x-actions.button semantic="reject" :label="__('Reject')" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</x-actions.button></div></details>@endif @endcan
+                                @can('pricing_labels.view')<x-actions.button semantic="history" :label="__('Compare history')" wire:click="openDiff({{ $version->id }})">{{ __('Compare history') }}</x-actions.button>@endcan
+                                @can('pricing_labels.submit') @if ($version->state === PriceVersionState::Draft)<flux:button size="sm" wire:click="submitProposal({{ $version->id }})">{{ __('Submit') }}</flux:button>@endif @endcan
+                                @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)
+                                    @if ($version->approvalRecord?->requester_id === $user->id && ! $user->canBypassApproval())
+                                        <flux:callout variant="warning" class="text-xs">{{ __('The proposer cannot approve the same price version.') }} {{ __('A requester cannot reject their own request.') }}</flux:callout>
+                                    @else
+                                        <x-actions.button semantic="approve" :label="__('Approve')" wire:click="approveProposal({{ $version->id }})">{{ __('Approve') }}</x-actions.button>
+                                        <flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" />
+                                        @error('rejectionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                                        <x-actions.button semantic="reject" :label="__('Reject')" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</x-actions.button>
+                                    @endif
+                                @endif @endcan
                             </td>
                         </tr>
                     @empty
@@ -415,10 +470,8 @@ new #[Title('Pricing Workspace')] class extends Component
     @if ($showImportForm)
         <flux:modal wire:model="showImportForm" name="price-import" class="md:w-[48rem]">
             <div class="space-y-5">
-                <flux:heading size="lg">{{ __('Import price proposals') }}</flux:heading>
-                <flux:callout variant="info">{{ __('Each imported row starts as a draft and requires approval before it affects selling prices.') }}</flux:callout>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Import price proposals') }}</flux:heading><x-context-help :title="__('Import price proposals')" :label="__('Open contextual help')"><p>{{ __('Each imported row starts as a draft and requires approval before it affects selling prices.') }}</p><p>{{ __('Columns: item_code, store_code, amount, effective_from, source_reference. Header optional; maximum 200 rows.') }}</p></x-context-help></div>
                 <flux:textarea wire:model="importCsv" label="{{ __('CSV rows') }}" rows="10" />
-                <flux:text class="text-xs">{{ __('Columns: item_code, store_code, amount, effective_from, source_reference. Header optional; maximum 200 rows.') }}</flux:text>
                 <div class="flex justify-end gap-2"><flux:button wire:click="$set('showImportForm', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" wire:click="importProposals">{{ __('Import as Draft') }}</flux:button></div>
             </div>
         </flux:modal>

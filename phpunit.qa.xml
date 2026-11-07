@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/bootstrap.php" colors="false" cacheDirectory=".qa-runtime/phpunit" failOnWarning="true" failOnRisky="true">
+    <testsuites><testsuite name="Rajeh critical QA"><directory>tests/Feature/QA</directory><exclude>tests/Feature/QA/FinancialMatrixTest.php</exclude><exclude>tests/Feature/QA/FinancialBoundaryTest.php</exclude><exclude>tests/Feature/QA/FinancialPrecisionClosureTest.php</exclude></testsuite></testsuites>
+    <source><include>
+        <file>app/Modules/Retail/Services/PosCalculationService.php</file>
+        <file>app/Modules/Retail/Support/DecimalMoney.php</file>
+        <file>app/Modules/Purchasing/Services/PurchaseInvoiceCalculator.php</file>
+        <file>app/Modules/Catalog/Support/ProductPricingContract.php</file>
+        <file>app/Support/ProductQuantity.php</file>
+    </include></source>
+</phpunit>

@@ -11,6 +11,7 @@ use App\Modules\Pricing\Models\CustomerProductPrice;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\ProductPriceOverride;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 

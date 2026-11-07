@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Support;
 
 use App\Models\User;
+use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Models\PosShift;
 
@@ -25,6 +26,16 @@ final class PosContextResolver
             ->first();
 
         if ($shift === null) {
+            $openShift = PosShift::query()->open()->where('cashier_id', $cashier->id)->first();
+            if ($openShift !== null) {
+                return new PosContext(null, null, null, null, __('Your active shift needs administrator review before POS can be used. Open shift management to see it.'));
+            }
+
+            $drawerIds = CashDrawer::query()->visibleTo($cashier)->pluck('id');
+            if (PosShift::query()->open()->whereIn('cash_drawer_id', $drawerIds)->exists()) {
+                return new PosContext(null, null, null, null, __('A cash drawer in your sales outlet is assigned to another cashier. Open shift management to see the blocking shift.'));
+            }
+
             return new PosContext(null, null, null, null, __('POS is disabled until you open an assigned cashier shift.'));
         }
 

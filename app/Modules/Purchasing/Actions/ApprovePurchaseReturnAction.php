@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Platform\Actions\ApprovalRecordTransition;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Enums\ApprovalState;
@@ -53,6 +54,9 @@ final class ApprovePurchaseReturnAction
             if ($return->reason === null || ! $return->reason->is_active) {
                 throw new InvalidArgumentException(__('An active supplier return reason is required.'));
             }
+            if (! Store::query()->visibleTo($actor)->where('status', 'active')->whereKey($return->store_id)->exists()) {
+                throw new InvalidArgumentException('مخزن الإرجاع غير نشط أو خارج نطاق صلاحيتك.');
+            }
             $approval = ApprovalRecord::query()
                 ->where('source_type', 'purchase_returns')
                 ->where('source_id', (string) $return->id)
@@ -80,13 +84,15 @@ final class ApprovePurchaseReturnAction
             }
             Gate::forUser($actor)->authorize('decide', $approval);
 
-            $invoice = PurchaseInvoice::query()
-                ->where('store_id', $return->store_id)
+            $invoice = $return->purchase_invoice_id === null ? null : PurchaseInvoice::query()
                 ->where('supplier_id', $return->supplier_id)
                 ->lockForUpdate()
                 ->findOrFail($return->purchase_invoice_id);
-            if ($invoice->status !== 'approved') {
+            if ($invoice !== null && $invoice->status !== 'approved') {
                 throw new InvalidArgumentException(__('The source purchase invoice is no longer eligible for this supplier return.'));
+            }
+            if ($invoice !== null && (int) $invoice->store->company_id !== (int) $return->store->company_id) {
+                throw new InvalidArgumentException('مخزن الإرجاع لا ينتمي إلى شركة فاتورة الشراء.');
             }
 
             $returnLines = $return->lines
@@ -97,48 +103,51 @@ final class ApprovePurchaseReturnAction
                 if ($returnLine->purchase_return_id !== $return->id) {
                     throw new InvalidArgumentException(__('Every supplier return line must belong to the selected supplier return.'));
                 }
-                if (isset($sourceLineIds[$returnLine->purchase_invoice_line_id])) {
+                $lineIdentity = $invoice === null ? 'product:'.$returnLine->product_id : 'invoice-line:'.$returnLine->purchase_invoice_line_id;
+                if (isset($sourceLineIds[$lineIdentity])) {
                     throw new InvalidArgumentException(__('A source invoice line can appear only once.'));
                 }
-                $sourceLineIds[$returnLine->purchase_invoice_line_id] = true;
+                $sourceLineIds[$lineIdentity] = true;
             }
-            $sourceLines = PurchaseInvoiceLine::query()
+            $sourceLines = $invoice === null ? collect() : PurchaseInvoiceLine::query()
                 ->where('purchase_invoice_id', $invoice->id)
-                ->whereIn('id', array_keys($sourceLineIds))
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
+                ->whereIn('id', $returnLines->pluck('purchase_invoice_line_id'))
+                ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
 
             $linePlans = [];
             $movementKeys = [];
             $requiredQuantities = [];
+            $plannedTotal = '0';
             foreach ($returnLines as $returnLine) {
                 $sourceLine = $sourceLines->get($returnLine->purchase_invoice_line_id);
-                if ($sourceLine === null || $sourceLine->purchase_invoice_id !== $invoice->id) {
-                    throw new InvalidArgumentException(__('Every supplier return line must reference a line from the source invoice.'));
-                }
-                if ($returnLine->product_id !== $sourceLine->product_id) {
-                    throw new InvalidArgumentException(__('Supplier return products must match their source invoice lines.'));
-                }
                 $quantity = $this->decimal($returnLine->quantity);
                 if ($this->compare($quantity, '0') <= 0) {
                     throw new InvalidArgumentException(__('Return quantity must be greater than zero.'));
                 }
-                if ($this->compare($returnLine->unit_cost, $sourceLine->unit_cost) !== 0) {
-                    throw new InvalidArgumentException(__('Supplier return cost must equal the original purchase invoice line cost.'));
-                }
-                $alreadyReturned = $this->decimal((string) PurchaseReturnLine::query()
-                    ->where('purchase_invoice_line_id', $sourceLine->id)
-                    ->where('id', '!=', $returnLine->id)
-                    ->whereHas('purchaseReturn', static fn ($query) => $query->whereNotIn('status', ['rejected', 'cancelled', 'reversed']))
-                    ->sum('quantity'));
-                $received = $this->decimal($sourceLine->quantity_received);
-                $remaining = bcsub($received, $alreadyReturned, 6);
-                if ($this->compare($quantity, $received) > 0 || $this->compare($quantity, $remaining) > 0) {
-                    throw new InvalidArgumentException(__('Return quantity exceeds the remaining quantity from the original invoice line.'));
+                if ($invoice !== null) {
+                    if ($sourceLine === null || $sourceLine->purchase_invoice_id !== $invoice->id || $returnLine->product_id !== $sourceLine->product_id) {
+                        throw new InvalidArgumentException(__('Every supplier return line must reference a line from the source invoice.'));
+                    }
+                    if ($this->compare($returnLine->unit_cost, $sourceLine->unit_cost) !== 0) {
+                        throw new InvalidArgumentException(__('Supplier return cost must equal the original purchase invoice line cost.'));
+                    }
+                    $alreadyReturned = $this->decimal((string) PurchaseReturnLine::query()
+                        ->where('purchase_invoice_line_id', $sourceLine->id)->where('id', '!=', $returnLine->id)
+                        ->whereHas('purchaseReturn', static fn ($query) => $query->whereNotIn('status', ['rejected', 'cancelled', 'reversed']))->sum('quantity'));
+                    $remaining = bcsub($this->decimal($sourceLine->quantity_received), $alreadyReturned, 6);
+                    if ($this->compare($quantity, $remaining) > 0) {
+                        throw new InvalidArgumentException(__('Return quantity exceeds the remaining quantity from the original invoice line.'));
+                    }
+                } elseif ($returnLine->purchase_invoice_line_id !== null || $returnLine->cost_source !== 'product_current_cost'
+                    || ! ProductSupplier::query()->where('supplier_id', $return->supplier_id)->where('product_id', $returnLine->product_id)->exists()) {
+                    throw new InvalidArgumentException('الصنف غير مرتبط بالمورد المحدد أو مصدر التكلفة غير صحيح.');
                 }
                 $totalCost = $this->decimal($returnLine->total_cost);
+                if ($this->compare($returnLine->unit_cost, '0') <= 0
+                    || bccomp($totalCost, bcmul($quantity, (string) $returnLine->unit_cost, 4), 4) !== 0) {
+                    throw new InvalidArgumentException('قيمة سطر المرتجع لا تطابق الكمية وتكلفة الوحدة المحفوظة.');
+                }
+                $plannedTotal = bcadd($plannedTotal, $totalCost, 4);
                 $movementKey = 'purchase-return:'.$return->id.':line:'.$returnLine->id;
                 $movementKeys[$movementKey] = true;
                 $linePlans[$returnLine->id] = [
@@ -148,6 +157,9 @@ final class ApprovePurchaseReturnAction
                     'total_cost' => $totalCost,
                     'movement_key' => $movementKey,
                 ];
+            }
+            if ($linePlans === [] || bccomp($plannedTotal, (string) $return->total_amount, 4) !== 0) {
+                throw new InvalidArgumentException('إجمالي المرتجع لا يطابق السطور المحفوظة.');
             }
 
             $existingMovements = StockMovement::query()
@@ -190,7 +202,7 @@ final class ApprovePurchaseReturnAction
                 ->keyBy('product_id');
             foreach ($requiredQuantities as $productId => $requiredQuantity) {
                 $balance = $balances->get($productId);
-                if ($balance === null || $this->compare($balance->on_hand, $requiredQuantity) < 0) {
+                if ($balance === null || $this->compare(bcsub((string) $balance->on_hand, (string) $balance->reserved, 6), $requiredQuantity) < 0) {
                     throw new InvalidArgumentException(__('Cannot approve the supplier return because current on-hand stock is insufficient.'));
                 }
             }
@@ -261,13 +273,14 @@ final class ApprovePurchaseReturnAction
             );
             $before = $return->only(['return_number', 'status', 'total_amount', 'lock_version']);
             $return->update([
-                'return_number' => $return->return_number ?: app(AllocatePurchaseReturnNumberAction::class)->execute((int) $return->store->branch_id),
+                'return_number' => $return->return_number ?: app(AllocatePurchaseReturnNumberAction::class)->execute($return->store),
                 'status' => 'approved',
                 'approved_at' => now(),
                 'approved_by' => $actorId,
                 'updated_by' => $actorId,
                 'lock_version' => $return->lock_version + 1,
             ]);
+            app(PostSupplierPayableEntryAction::class)->execute($return->supplier_id, $return->store_id, 'supplier_return', $return->id, bcsub('0', (string) $return->total_amount, 4), $actorId);
             app(RecordAuditEvent::class)->execute(
                 category: 'procurement',
                 event: 'approve_supplier_return',
@@ -281,7 +294,7 @@ final class ApprovePurchaseReturnAction
                     'movement_ids' => $movementIds,
                     'approval_record_id' => $approval->id,
                     'approval_limit' => $configuredLimit,
-                    'cost_source' => 'original_purchase_invoice_line_unit_cost',
+                    'cost_source' => $invoice === null ? 'product_current_cost' : 'original_purchase_invoice_line_unit_cost',
                     'wac_recalculated' => true,
                 ],
             );

@@ -26,24 +26,37 @@ final class CreateQuotationAction
         if ($idempotencyKey !== '') {
             $existing = Quotation::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                abort_unless($user->is_super_admin || $user->canAccessBranch($existing->branch_id) || $user->canAccessStore($existing->store_id), 403);
+                abort_unless($user->canAccessBranch($existing->branch_id) || $user->canAccessStore($existing->store_id), 403);
+
                 return $existing->fresh('lines');
             }
         }
         $activity = (string) ($data['activity_type'] ?? '');
-        if (! in_array($activity, ['retail', 'party'], true)) throw ValidationException::withMessages(['activity_type' => __('Choose retail or party activity.')]);
+        if ($activity !== 'retail') {
+            throw ValidationException::withMessages(['activity_type' => __('Only product sales quotations are supported.')]);
+        }
         $store = Store::query()->findOrFail((int) $data['store_id']);
+        abort_unless($store->status === 'active' && $store->type === 'selling', 404);
         abort_unless((int) $store->branch_id === (int) $data['branch_id'], 422);
-        abort_unless($user->is_super_admin || $user->canAccessBranch($store->branch_id) || $user->canAccessStore($store->id), 403);
-        if ($data['customer_id'] ?? null) abort_unless(Customer::query()->whereKey($data['customer_id'])->where(function ($q) use ($store): void { $q->whereHas('scopes', fn ($s) => $s->where('branch_id', $store->branch_id)->orWhere('store_id', $store->id)); })->exists(), 404);
+        abort_unless($user->canAccessBranch($store->branch_id) || $user->canAccessStore($store->id), 403);
+        if (empty($data['customer_id'])) {
+            throw ValidationException::withMessages(['customer_id' => __('Customer is required.')]);
+        }
+        if ($data['customer_id'] ?? null) {
+            abort_unless(Customer::query()->whereKey($data['customer_id'])->where('status', 'active')->where(function ($q) use ($store): void {
+                $q->whereHas('scopes', fn ($s) => $s->where('branch_id', $store->branch_id)->orWhere('store_id', $store->id));
+            })->exists(), 404);
+        }
         $lines = $this->validateLines($activity, (array) ($data['lines'] ?? []));
-        if ($lines === []) throw ValidationException::withMessages(['lines' => __('At least one compatible quotation line is required.')]);
+        if ($lines === []) {
+            throw ValidationException::withMessages(['lines' => __('At least one compatible quotation line is required.')]);
+        }
 
         return DB::transaction(function () use ($user, $data, $store, $activity, $lines, $idempotencyKey): Quotation {
             $quotation = Quotation::create([
                 'public_id' => (string) Str::uuid(), 'quotation_number' => app(AllocateDocumentNumber::class)->executeForBranch('quotation', (int) $store->branch_id),
                 'activity_type' => $activity, 'customer_id' => $data['customer_id'] ?? null, 'branch_id' => $store->branch_id, 'store_id' => $store->id,
-                'valid_until' => $data['valid_until'], 'status' => 'draft', 'currency_code' => $data['currency_code'] ?? 'EGP',
+                'quotation_date' => $data['quotation_date'] ?? now()->toDateString(), 'valid_until' => $data['valid_until'], 'status' => 'issued', 'currency_code' => $data['currency_code'] ?? 'EGP',
                 'terms' => $data['terms'] ?? null, 'notes' => $data['notes'] ?? null, 'subtotal' => 0, 'total' => 0,
                 'source_type' => $data['source_type'] ?? null, 'source_id' => $data['source_id'] ?? null, 'source_reference' => $data['source_reference'] ?? null,
                 'created_by' => $user->id, 'idempotency_key' => $idempotencyKey,
@@ -54,8 +67,9 @@ final class CreateQuotationAction
                 $subtotal += $lineTotal;
                 $quotation->lines()->create([...$line, 'line_number' => $index + 1, 'line_total' => $lineTotal]);
             }
-            $quotation->mutate(['subtotal' => $subtotal, 'total' => $subtotal]);
+            $quotation->mutate(app(CalculateQuotationTotals::class)->execute($subtotal, $data));
             app(RecordAuditEvent::class)->execute('quotations', 'quotation_created', $quotation, after: ['quotation_number' => $quotation->quotation_number, 'activity_type' => $quotation->activity_type, 'customer_id' => $quotation->customer_id, 'subtotal' => $quotation->subtotal, 'total' => $quotation->total, 'posting_effect' => false], branchId: $quotation->branch_id, storeId: $quotation->store_id, metadata: ['line_count' => count($lines), 'non_posting' => true]);
+
             return $quotation->fresh('lines');
         }, 5);
     }
@@ -66,14 +80,26 @@ final class CreateQuotationAction
         $result = [];
         foreach ($lines as $line) {
             $lineType = (string) ($line['line_type'] ?? '');
-            if ($activity === 'retail' && $lineType !== 'product') throw ValidationException::withMessages(['lines' => __('Retail quotations accept product lines only.')]);
-            if ($activity === 'party' && ! in_array($lineType, ['service', 'asset'], true)) throw ValidationException::withMessages(['lines' => __('Party quotations accept service or party-asset lines only.')]);
-            if ($activity === 'retail' && ! filled($line['product_id'] ?? null)) throw ValidationException::withMessages(['lines' => __('Each retail quotation line must reference a product.')]);
-            if ($activity === 'retail' && ! Product::query()->sellable()->whereKey((int) $line['product_id'])->exists()) throw ValidationException::withMessages(['lines' => __('Each retail quotation product must be an active sellable SKU.')]);
-            $quantity = (float) ($line['quantity'] ?? 0); $price = (float) ($line['unit_price'] ?? -1);
-            if ($quantity <= 0 || $price < 0) throw ValidationException::withMessages(['lines' => __('Quotation quantities and prices must be valid.')]);
+            if (! in_array($lineType, ['product', 'manual'], true)) {
+                throw ValidationException::withMessages(['lines' => __('Only product or manual quotation lines are supported.')]);
+            }
+            if ($lineType === 'product' && (! filled($line['product_id'] ?? null) || ! Product::query()->sellable()->whereKey((int) $line['product_id'])->exists())) {
+                throw ValidationException::withMessages(['lines' => __('Select an active sellable product.')]);
+            }
+            if ($lineType === 'manual' && filled($line['product_id'] ?? null)) {
+                throw ValidationException::withMessages(['lines' => __('Manual items cannot reference a catalog product.')]);
+            }
+            if (blank($line['description_ar'] ?? null) || blank($line['description_en'] ?? null)) {
+                throw ValidationException::withMessages(['lines' => __('Quotation item names are required.')]);
+            }
+            $quantity = (float) ($line['quantity'] ?? 0);
+            $price = (float) ($line['unit_price'] ?? -1);
+            if ($quantity <= 0 || $price < 0) {
+                throw ValidationException::withMessages(['lines' => __('Quotation quantities and prices must be valid.')]);
+            }
             $result[] = ['line_type' => $lineType, 'product_id' => $line['product_id'] ?? null, 'description_ar' => trim((string) ($line['description_ar'] ?? '')), 'description_en' => trim((string) ($line['description_en'] ?? '')), 'quantity' => $quantity, 'unit_price' => $price, 'source_reference' => $line['source_reference'] ?? null];
         }
+
         return $result;
     }
 }

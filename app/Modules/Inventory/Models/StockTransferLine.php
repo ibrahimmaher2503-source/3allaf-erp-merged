@@ -8,6 +8,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class StockTransferLine extends Model
 {
@@ -27,6 +28,12 @@ final class StockTransferLine extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /** @return HasMany<StockTransferAllocation, $this> */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(StockTransferAllocation::class, 'stock_transfer_line_id');
     }
 
     protected function approvedParent(): ?Model

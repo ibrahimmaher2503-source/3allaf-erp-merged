@@ -14,6 +14,7 @@ final class M53PriceListsTest extends TestCase
     public function test_decimal_formula_and_upward_five_egp_rounding(): void
     {
         $resolver = new PriceListResolver;
+        self::assertSame(['pre_round' => '11.000', 'rounded' => '15.000'], $resolver->calculate('11', '0'));
         self::assertSame('115.000', $resolver->calculate('111', '0')['rounded']);
         self::assertSame('115.000', $resolver->calculate('113', '0')['rounded']);
         self::assertSame('115.000', $resolver->calculate('115', '0')['rounded']);

@@ -1,0 +1,20 @@
+{
+    "ar": {
+        "movement_options": 25,
+        "selection": "retail_sale",
+        "audit_labels": "localized",
+        "store_and_setup_copy": "localized"
+    },
+    "ar-EG": {
+        "movement_options": 25,
+        "selection": "retail_sale",
+        "audit_labels": "localized",
+        "store_and_setup_copy": "localized"
+    },
+    "en": {
+        "movement_options": 25,
+        "selection": "retail_sale",
+        "audit_labels": "localized",
+        "store_and_setup_copy": "localized"
+    }
+}

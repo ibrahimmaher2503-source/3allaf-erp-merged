@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Support;
 
 use App\Models\User;
-use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\GiftReceipt;
 use App\Modules\Retail\Models\RetailReturnLine;
@@ -20,7 +19,7 @@ final class RetailRefundCalculator
     private const RESERVED_STATUSES = ['draft', 'inspection', 'submitted', 'approved', 'completed'];
 
     /**
-     * @param array<int, array<string, mixed>> $requested
+     * @param  array<int, array<string, mixed>>  $requested
      * @return array{lines: array<int, array<string, mixed>>, totals: array<string, string>}
      */
     public function prepare(User $actor, Sale $sale, array $requested, ?GiftReceipt $receipt = null, ?int $excludingReturnId = null): array
@@ -50,22 +49,24 @@ final class RetailRefundCalculator
                 throw ValidationException::withMessages(['lines.'.$index.'.quantity' => __('The refund quantity exceeds the remaining refundable quantity.')]);
             }
 
-            $condition = (string) ($input['condition'] ?? 'sellable');
-            $disposition = (string) ($input['disposition'] ?? ($condition === 'sellable' ? 'restock' : 'quarantine'));
-            if (! in_array($condition, ['sellable', 'non_sellable', 'damaged', 'manager_review'], true)
+            $condition = (string) ($input['condition'] ?? '');
+            $disposition = (string) ($input['disposition'] ?? 'restock');
+            if (! in_array($condition, ['uninspected', 'sellable', 'non_sellable', 'damaged', 'manager_review'], true)
                 || ! in_array($disposition, ['restock', 'quarantine'], true)) {
-                throw ValidationException::withMessages(['lines.'.$index => __('The item condition or inventory disposition is invalid.')]);
+                throw ValidationException::withMessages(['lines.'.$index.'.condition' => __('The item condition or inventory disposition is invalid.')]);
             }
-            $requiresDamaged = $disposition === 'quarantine' || in_array($condition, ['non_sellable', 'damaged'], true);
-            $storeId = isset($input['return_store_id']) && (int) $input['return_store_id'] > 0
-                ? (int) $input['return_store_id']
-                : ($requiresDamaged
-                    ? (int) ($this->returnStores($actor, $sale)->firstWhere('type', 'damaged')?->id ?? 0)
-                    : (int) $sale->store_id);
+            if ($disposition !== 'restock') {
+                throw ValidationException::withMessages(['lines.'.$index.'.disposition' => __('Confirmed returns currently restock to the original selling location.')]);
+            }
+            $storeId = isset($input['return_store_id']) && (int) $input['return_store_id'] > 0 ? (int) $input['return_store_id'] : (int) $sale->store_id;
+            if ($storeId !== (int) $sale->store_id) {
+                throw ValidationException::withMessages(['lines.'.$index.'.return_store_id' => __('The return location must match the original sale location.')]);
+            }
             $returnStore = $this->returnStore($actor, $sale, $storeId, $condition, $disposition, $index);
 
             $gross = $this->portion((string) $saleLine->gross_amount, $quantity, (string) $saleLine->quantity, bccomp($quantity, $remaining, 6) === 0 ? $this->remainingLineValue($saleLine, 'gross_value', (string) $saleLine->gross_amount, $excludingReturnId) : null);
-            $discount = $this->portion((string) $saleLine->discount_amount, $quantity, (string) $saleLine->quantity, bccomp($quantity, $remaining, 6) === 0 ? $this->remainingLineValue($saleLine, 'discount_value', (string) $saleLine->discount_amount, $excludingReturnId) : null);
+            $originalDiscount = bcadd((string) $saleLine->discount_amount, (string) $saleLine->allocated_invoice_discount, 2);
+            $discount = $this->portion($originalDiscount, $quantity, (string) $saleLine->quantity, bccomp($quantity, $remaining, 6) === 0 ? $this->remainingLineValue($saleLine, 'discount_value', $originalDiscount, $excludingReturnId) : null);
             $net = bcsub($gross, $discount, 2);
             $lineTaxEntitlement = $this->lineTaxEntitlement($sale, $saleLine);
             $taxRemaining = $this->remainingLineValue($saleLine, 'tax_value', $lineTaxEntitlement, $excludingReturnId);
@@ -134,6 +135,13 @@ final class RetailRefundCalculator
         return bcsub((string) $line->quantity, (string) $reserved, 6);
     }
 
+    public function originalTaxForLine(Sale $sale, SaleLine $line): string
+    {
+        $sale->loadMissing('lines');
+
+        return $this->lineTaxEntitlement($sale, $line);
+    }
+
     /** @return array<int, array{original_payment_id: int, method_id: int, amount: string, safe_reference: string}> */
     public function defaultAllocations(Sale $sale, string $amount): array
     {
@@ -194,9 +202,6 @@ final class RetailRefundCalculator
             ->first();
         if ($store === null) {
             throw ValidationException::withMessages(['lines.'.$index.'.return_store_id' => __('The selected inventory return location is not authorized for this sale.')]);
-        }
-        if (($disposition === 'quarantine' || in_array($condition, ['non_sellable', 'damaged'], true)) && $store->type !== 'damaged') {
-            throw ValidationException::withMessages(['lines.'.$index.'.return_store_id' => __('Damaged or non-saleable items must use an active damaged inventory location.')]);
         }
 
         return $store;

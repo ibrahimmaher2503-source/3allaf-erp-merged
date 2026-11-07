@@ -19,15 +19,53 @@ use PHPUnit\Framework\TestCase;
 final class M52ProductCardsOpeningInventoryTest extends TestCase
 {
     private ?Container $previous = null;
-    protected function setUp(): void { parent::setUp(); $this->previous = Container::getInstance(); $app = new Application(dirname(__DIR__, 2)); $app->instance('translator', new Translator(new FileLoader(new Filesystem, [dirname(__DIR__, 2).'/vendor/laravel/framework/src/Illuminate/Translation/lang', dirname(__DIR__, 2).'/lang']), 'en')); Container::setInstance($app); }
-    protected function tearDown(): void { Container::setInstance($this->previous); parent::tearDown(); }
-    private function source(string $path): string { return file_get_contents(dirname(__DIR__, 2).'/'.$path); }
 
-    public function test_international_gtin_preserves_leading_zero_and_validates_check_digit(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->previous = Container::getInstance();
+        $app = new Application(dirname(__DIR__, 2));
+        $app->instance('translator', new Translator(new FileLoader(new Filesystem, [dirname(__DIR__, 2).'/vendor/laravel/framework/src/Illuminate/Translation/lang', dirname(__DIR__, 2).'/lang']), 'en'));
+        Container::setInstance($app);
+    }
+
+    protected function tearDown(): void
+    {
+        Container::setInstance($this->previous);
+        parent::tearDown();
+    }
+
+    private function source(string $path): string
+    {
+        return file_get_contents(dirname(__DIR__, 2).'/'.$path);
+    }
+
+    public function test_international_barcode_accepts_arbitrary_numeric_strings_and_preserves_leading_zeros(): void
     {
         $policy = new ProductBarcodePolicy;
-        self::assertSame('01234565', $policy->international('01234565'));
-        $this->expectException(InvalidArgumentException::class); $policy->international('01234564');
+        foreach (['123', '9434556010', '000123456789', '98765432101234567890', '01234564'] as $value) {
+            self::assertSame($value, $policy->international($value));
+        }
+    }
+
+    public function test_international_barcode_rejects_letters_in_english_and_arabic(): void
+    {
+        $policy = new ProductBarcodePolicy;
+        foreach (['ABC123', '12A3'] as $invalid) {
+            try {
+                $policy->international($invalid);
+                self::fail('Non-numeric barcode was accepted.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertSame('International barcode must contain digits only.', $exception->getMessage());
+            }
+        }
+        app('translator')->setLocale('ar');
+        try {
+            $policy->international('12A3');
+            self::fail('Non-numeric barcode was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('يجب أن يحتوي الباركود الدولي على أرقام فقط.', $exception->getMessage());
+        }
     }
 
     public function test_local_barcode_uses_first_four_supplier_digits_and_six_digit_sequence(): void
@@ -40,7 +78,8 @@ final class M52ProductCardsOpeningInventoryTest extends TestCase
 
     public function test_local_supplier_code_without_four_digits_is_rejected(): void
     {
-        $this->expectException(InvalidArgumentException::class); (new ProductBarcodePolicy)->supplierDigits('SUP-12');
+        $this->expectException(InvalidArgumentException::class);
+        (new ProductBarcodePolicy)->supplierDigits('SUP-12');
     }
 
     public function test_barcode_allocator_has_lock_unique_and_idempotency_guards(): void
@@ -103,7 +142,8 @@ final class M52ProductCardsOpeningInventoryTest extends TestCase
 
     public function test_routes_preserve_existing_permissions_for_create_approval_reversal_and_exports(): void
     {
-        $opening = $this->source('routes/opening-inventory.php'); $catalog = $this->source('routes/catalog-data-exchange.php');
+        $opening = $this->source('routes/opening-inventory.php');
+        $catalog = $this->source('routes/catalog-data-exchange.php');
         self::assertStringContainsString('can:inventory_stock_card.create', $opening);
         self::assertStringContainsString('can:inventory_stock_card.approve', $opening);
         self::assertStringContainsString('can:inventory_stock_card.reverse', $opening);
