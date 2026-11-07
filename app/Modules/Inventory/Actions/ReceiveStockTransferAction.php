@@ -46,9 +46,10 @@ final class ReceiveStockTransferAction
             if ($rows === []) {
                 throw new InvalidArgumentException(__('The receipt contains a line outside this destination allocation.'));
             }
-            foreach ($rows as [, , $key, $sent]) {
+            foreach ($rows as [$line, $allocation, $key, $sent]) {
                 $received = (string) ($draft->received_quantities[$key] ?? '');
-                if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $received) || bccomp($received, $sent, 6) > 0) {
+                $previouslyReceived = (string) ($allocation?->quantity_received ?? $line->quantity_received ?? '0');
+                if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $received) || bccomp($received, $sent, 6) > 0 || bccomp($received, $previouslyReceived, 6) < 0) {
                     throw new InvalidArgumentException(__('Received quantity must be between zero and the allocated quantity.'));
                 }
                 $difference = $difference || bccomp($received, $sent, 6) < 0;
@@ -58,14 +59,17 @@ final class ReceiveStockTransferAction
             }
             foreach ($rows as [$line, $allocation, $key, $sent]) {
                 $received = (string) $draft->received_quantities[$key];
-                if (bccomp($received, '0', 6) > 0) {
+                $previouslyReceived = (string) ($allocation?->quantity_received ?? $line->quantity_received ?? '0');
+                $additionalReceived = bcsub($received, $previouslyReceived, 6);
+                $remainingTransit = bcsub($sent, $previouslyReceived, 6);
+                if (bccomp($additionalReceived, '0', 6) > 0) {
                     app(PostInventoryMovement::class)->execute(
-                        $line->product_id, $destinationStoreId, $received, 'transfer_receipt',
+                        $line->product_id, $destinationStoreId, $additionalReceived, 'transfer_receipt',
                         (string) $line->unit_cost, 'TRANSFER-RECEIPT-FINAL:'.$draft->id.':'.$key,
                         StockTransfer::class, $transfer->id, $line->id,
                     );
                 }
-                app(PostInventoryMovement::class)->adjustInTransit($line->product_id, $destinationStoreId, '-'.$sent);
+                app(PostInventoryMovement::class)->adjustInTransit($line->product_id, $destinationStoreId, '-'.$remainingTransit);
                 if ($allocation !== null) {
                     $allocation->update(['quantity_received' => $received]);
                 }
