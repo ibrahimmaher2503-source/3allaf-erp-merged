@@ -107,9 +107,6 @@ final class CapturePaymentAction
             }
 
             if ($isCash) {
-                // POSF-02: this check applies to every cash tender, including an
-                // amount that happens to have no rounding delta.
-                $this->calculator->cashRoundingDenomination();
                 $creditCustomer = $sale->customer_id !== null && Customer::query()
                     ->whereKey($sale->customer_id)->where('status', 'active')
                     ->whereIn('customer_type', ['credit', 'both'])->exists();

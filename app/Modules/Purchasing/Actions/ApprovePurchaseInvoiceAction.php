@@ -253,8 +253,17 @@ final class ApprovePurchaseInvoiceAction
                 : $total,
             '0.0000',
         );
+        // [merge rajeh] Receiving may accept zero of a line; only accepted lines carry landed cost.
+        $acceptedLines = $invoice->lines->filter(fn (PurchaseInvoiceLine $line): bool => $this->compare($line->quantity, '0') > 0);
+        if ($acceptedLines->isEmpty()) {
+            if ($this->compare($charges, '0') > 0) {
+                throw new InvalidArgumentException(__('Landed cost requires purchase lines with a positive goods subtotal.'));
+            }
+
+            return;
+        }
         $allocations = app(PurchaseInvoiceCalculator::class)->allocateLandedCost(
-            $invoice->lines->map(fn (PurchaseInvoiceLine $line): array => [
+            $acceptedLines->values()->map(fn (PurchaseInvoiceLine $line): array => [
                 'id' => (int) $line->id,
                 'subtotal' => (string) $line->subtotal,
                 'quantity' => (string) $line->quantity,

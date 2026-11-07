@@ -33,7 +33,9 @@
         <flux:input type="date" wire:model="orderForm.expected_delivery_date" :label="__('Expected Delivery Date')" />
     </div>
     @if(filled($orderForm['branch_id']))
-        @php($creatingBranch = $branches->firstWhere('id', (int) $orderForm['branch_id']))
+        @php
+            $creatingBranch = $branches->firstWhere('id', (int) $orderForm['branch_id']);
+        @endphp
         <div class="flex items-center gap-2 text-xs text-text-muted">
             <p>
             @if($editingOrderId && filled($editingOrderNumber))

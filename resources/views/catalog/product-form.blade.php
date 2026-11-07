@@ -699,7 +699,7 @@ new #[Title('Product Card')] class extends Component
             @endif
             <div class="space-y-3 rounded-xl border border-border p-3">
                 <div class="flex items-center justify-between gap-3"><flux:heading size="sm">{{ __('Product units and conversion factors') }}</flux:heading><flux:button type="button" size="sm" variant="subtle" wire:click="addProductUnit">{{ __('Add unit') }}</flux:button></div>
-                @foreach ($productForm['product_units'] as $index => $row)
+                @foreach (($productForm['product_units'] ?? []) as $index => $row)
                     <div class="grid gap-3 md:grid-cols-6" wire:key="product-unit-{{ $index }}">
                         <flux:select wire:model="productForm.product_units.{{ $index }}.unit_id" :label="__('Unit')" class="md:col-span-2">
                             <flux:select.option value="">{{ __('Select unit') }}</flux:select.option>

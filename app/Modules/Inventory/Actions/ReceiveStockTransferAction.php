@@ -122,7 +122,6 @@ final class ReceiveStockTransferAction
             }
             // [merge rajeh] Multi-destination (allocation) transfers keep rajeh's per-allocation receiving path.
             if ($this->isAllocationReceipt($transfer, $receivedQuantities)) {
-                app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
                 if ($transfer->status !== 'in_transit') {
                     throw new InvalidArgumentException(__('Only in-transit transfers can be received.'));
                 }
@@ -139,7 +138,6 @@ final class ReceiveStockTransferAction
                 return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
             }
 
-            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
             if ($transfer->status !== 'in_transit') {
                 throw new InvalidArgumentException(__('Only in-transit transfers can be received.'));
             }

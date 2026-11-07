@@ -17,7 +17,7 @@
                         <flux:button href="{{ route('gift.receipts.index', ['sale_id' => $sale->id]) }}" variant="subtle" icon="gift">{{ __('Issue Gift Receipt') }}</flux:button>
                     @endcan
                 @endif
-                @if($giftCardSale)@can('pos_sales.print')<flux:button href="{{ route('pos.receipt.preview', $sale) }}" target="_blank" variant="subtle" icon="printer">{{ __('Print receipt') }}</flux:button>@endcan@endif
+                @if($giftCardSale)@can('pos_sales.print')<flux:button href="{{ route('pos.receipt.preview', $sale) }}" target="_blank" variant="subtle" icon="printer">{{ __('Print receipt') }}</flux:button>@endcan @endif
                 <flux:button href="{{ route('sales.index') }}" variant="subtle">{{ __('Back') }}</flux:button>
             </div>
         </div>

@@ -213,4 +213,23 @@ class SavePurchaseOrderAction
             throw new InvalidArgumentException(__('You are not authorized for the selected purchase-order store.'));
         }
     }
+
+    /**
+     * [merge 3allaf] Entered unit price validation used by the unit-aware line builder.
+     *
+     * @return numeric-string
+     */
+    private function decimal(mixed $value, int $scale, string $label, bool $allowZero): string
+    {
+        $value = trim((string) $value);
+        $pattern = $scale === 0 ? '/^\d+$/D' : '/^\d+(?:\.\d{1,'.$scale.'})?$/D';
+        if ($value === '' || preg_match($pattern, $value) !== 1) {
+            throw new InvalidArgumentException(__(':label must be a valid non-negative number.', ['label' => __($label)]));
+        }
+        if (! $allowZero && bccomp($value, '0', $scale) <= 0) {
+            throw new InvalidArgumentException(__(':label must be greater than zero.', ['label' => __($label)]));
+        }
+
+        return bcadd($value, '0', $scale);
+    }
 }

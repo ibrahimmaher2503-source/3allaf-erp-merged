@@ -50,9 +50,31 @@ final class SavePurchaseReceivingAction
                     throw ValidationException::withMessages(['receivedQuantities.'.$line->id => __('Distribution cannot exceed the accepted quantity.')]);
                 }
                 $original = $line->original_quantity ?? $line->quantity;
-                $values = $quantity === 0
-                    ? ['quantity' => 0, 'discount_amount' => 0, 'tax_amount' => 0, 'subtotal' => 0, 'line_total' => 0]
-                    : app(PurchaseInvoiceCalculator::class)->calculateLine([...$line->getAttributes(), 'quantity' => $quantity]);
+                // [merge 3allaf] Accepted quantity is in base units; recalculate in base units and keep the
+                // line's purchase-unit snapshot (unit, factor, entered price) with a derived entered quantity.
+                $factor = (string) ($line->conversion_factor_snapshot ?? '1');
+                if (bccomp($factor, '0', 6) <= 0) {
+                    $factor = '1';
+                }
+                if (bccomp((string) $quantity, '0', 6) === 0) {
+                    $values = ['quantity' => 0, 'entered_quantity' => 0, 'discount_amount' => 0, 'tax_amount' => 0, 'subtotal' => 0, 'line_total' => 0];
+                } else {
+                    $values = app(PurchaseInvoiceCalculator::class)->calculateLine([
+                        ...$line->getAttributes(),
+                        'product' => null,
+                        'product_unit' => null,
+                        'quantity' => (string) $quantity,
+                        'entered_quantity' => (string) $quantity,
+                        'entered_unit_price' => (string) $line->unit_cost,
+                    ]);
+                    $values = [
+                        ...$values,
+                        'product_unit_id' => $line->product_unit_id,
+                        'conversion_factor_snapshot' => $line->conversion_factor_snapshot ?? $values['conversion_factor_snapshot'],
+                        'entered_unit_price' => $line->entered_unit_price ?? $values['entered_unit_price'],
+                        'entered_quantity' => bcdiv((string) $quantity, $factor, 6),
+                    ];
+                }
                 $line->update([...$values, 'original_quantity' => $original]);
             }
             $totals = ['subtotal' => '0', 'tax_amount' => '0', 'discount_amount' => '0', 'total_amount' => '0'];
