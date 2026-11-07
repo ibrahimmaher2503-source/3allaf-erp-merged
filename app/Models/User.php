@@ -57,6 +57,9 @@ class User extends Authenticatable implements PasskeyUser
 
     private ?bool $companyOwnerRole = null;
 
+    /** @var array<int, int>|null */
+    private ?array $operationalCompanyIdsCache = null;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -95,8 +98,21 @@ class User extends Authenticatable implements PasskeyUser
                 ->exists();
     }
 
+    public function refresh(): static
+    {
+        $this->operationalCompanyIdsCache = null;
+
+        return parent::refresh();
+    }
+
     /** @return array<int, int> */
     public function operationalCompanyIds(): array
+    {
+        return $this->operationalCompanyIdsCache ??= $this->resolveOperationalCompanyIds();
+    }
+
+    /** @return array<int, int> */
+    private function resolveOperationalCompanyIds(): array
     {
         if (! $this->canBypassApproval()) {
             return [];
