@@ -16,6 +16,7 @@
             @php($family = $product->family())
             @php($image = $product->effectiveMainImage())
             @php($computed = $preview['lines'][$index] ?? null)
+            @php($up = bcadd($line['quantity'], '1', 6))
             @php($down = bcsub($line['quantity'], '1', 6))
             @php($display = \App\Support\ProductQuantity::format($line['quantity']))
             <div class="flex items-center justify-between px-1 text-[10px] font-semibold text-cyan-700"><span>{{ __($line['price']->price_label) }}</span>@if($line['price']->minimum_selling_price !== null)<span dir="ltr">{{ __('الحد الأدنى') }} {{ $line['price']->minimum_selling_price }} {{ __('ج.م') }}</span>@endif</div>
