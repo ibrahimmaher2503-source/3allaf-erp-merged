@@ -17,8 +17,9 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use InvalidArgumentException;
+use Tests\TestCase;
 
-final class MergeTransferReceivingRegressionTest extends \Tests\TestCase
+final class MergeTransferReceivingRegressionTest extends TestCase
 {
     use DatabaseTransactions;
 
@@ -52,6 +53,25 @@ final class MergeTransferReceivingRegressionTest extends \Tests\TestCase
             self::assertSame('1.000000', $this->balance($product, $destination)->on_hand);
             self::assertSame('1.500000', $this->balance($product, $destination)->in_transit);
         }
+    }
+
+    public function test_two_destinations_each_receive_two_and_a_half(): void
+    {
+        [$transfer, $source, $destination, $product] = $this->approvedTransfer('5');
+        $other = Store::factory()->create(['company_id' => $source->company_id, 'branch_id' => $source->branch_id]);
+        $line = $transfer->lines->first();
+        foreach ([$destination, $other] as $store) {
+            $line->allocations()->create(['destination_store_id' => $store->id, 'quantity' => '2.5', 'quantity_received' => '0']);
+        }
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        foreach ([$destination, $other] as $store) {
+            $allocation = $line->allocations()->where('destination_store_id', $store->id)->firstOrFail();
+            app(SaveStockTransferReceivingDraftAction::class)->execute($transfer->id, $store->id, [$line->id.'.'.$allocation->id => '2.5'], null, null);
+            app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, $store->id);
+            self::assertSame('2.500000', $this->balance($product, $store)->on_hand);
+            self::assertSame('0.000000', $this->balance($product, $store)->in_transit);
+        }
+        self::assertSame('received', $transfer->fresh()->status);
     }
 
     /** @return array{StockTransfer, Store, Store, Product} */

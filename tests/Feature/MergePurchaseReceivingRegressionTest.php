@@ -7,8 +7,11 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Unit;
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseReceivingAction;
+use App\Modules\Purchasing\Actions\SubmitPurchaseInvoiceAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -48,6 +51,26 @@ final class MergePurchaseReceivingRegressionTest extends TestCase
         $invoice->charges()->create(['charge_type' => 'freight', 'amount' => '30', 'accounting_treatment' => 'landed_cost']);
         $result = app(SavePurchaseReceivingAction::class)->execute($invoice->id, [$invoice->lines->first()->id => '5'], $invoice->lock_version);
         self::assertSame('130.0000', $result->total_amount);
+    }
+
+    public function test_partial_receipt_with_zero_line_allocates_freight_only_to_received_stock(): void
+    {
+        $invoice = $this->invoice();
+        $first = $invoice->lines->first();
+        $first->update(['base_consumer_price' => '30']);
+        $other = Product::factory()->fractional()->create();
+        $zero = $invoice->lines()->create(['product_id' => $other->id, 'quantity' => '10', 'entered_quantity' => '10', 'conversion_factor_snapshot' => '1', 'entered_unit_price' => '20', 'unit_cost' => '20', 'base_consumer_price' => '30', 'subtotal' => '200', 'line_total' => '200']);
+        $invoice->charges()->create(['charge_type' => 'freight', 'amount' => '30', 'accounting_treatment' => 'landed_cost']);
+        $invoice->update(['status' => 'draft']);
+        $invoice = app(SubmitPurchaseInvoiceAction::class)->execute($invoice->id, $invoice->lock_version);
+        app(SavePurchaseReceivingAction::class)->execute($invoice->id, [$first->id => '2.5', $zero->id => '0'], $invoice->lock_version);
+        $result = app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+        self::assertSame('80.0000', $result->total_amount);
+        self::assertSame('30.0000', $first->fresh()->allocated_charge_amount);
+        self::assertSame('32.000000', $first->fresh()->inventory_unit_cost);
+        $balance = StockBalance::query()->where('store_id', $invoice->store_id)->where('product_id', $first->product_id)->firstOrFail();
+        self::assertSame('2.500000', $balance->on_hand);
+        self::assertSame('80.0000', $balance->total_value);
     }
 
     public function test_order_bag_price_and_discount_are_converted_for_a_base_unit_invoice(): void
