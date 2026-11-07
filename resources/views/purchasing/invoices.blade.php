@@ -930,8 +930,27 @@ new #[Title('Purchase Invoices')] class extends Component
         $discount = '0.0000';
         $total = '0.0000';
 
+        $previewProducts = Product::query()
+            ->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('id');
+        $previewProductUnits = \App\Modules\Catalog\Models\ProductUnit::query()
+            ->with('unit')
+            ->whereIn('id', collect($this->lineItems)->pluck('product_unit_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('id');
+
         foreach ($this->lineItems as $index => $line) {
             try {
+                // Same context the save action passes, so fractional (kg) quantities are not rejected in the preview.
+                $previewProduct = $previewProducts->get((int) ($line['product_id'] ?? 0));
+                $previewUnit = $previewProductUnits->get((int) ($line['product_unit_id'] ?? 0));
+                if ($previewProduct !== null && $previewUnit !== null && (int) $previewUnit->product_id === (int) $previewProduct->id) {
+                    $line['product'] = $previewProduct;
+                    $line['product_unit'] = $previewUnit;
+                } elseif ($previewProduct !== null) {
+                    $line['product'] = $previewProduct;
+                }
                 $calculated = $calculator->calculateLine($line);
                 $lines[$index] = $calculated['line_total'];
                 $subtotal = bcadd($subtotal, $calculated['subtotal'], 4);
