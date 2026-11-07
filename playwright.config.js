@@ -11,6 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  * point at a developer's real local database or any staging/production URL.
  */
 export default defineConfig({
+    timeout: 120_000,
     testDir: './tests/Browser',
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
@@ -31,8 +32,8 @@ export default defineConfig({
         video: 'retain-on-failure',
         // WebKit on the local PHP built-in server can take longer on the
         // first authenticated navigation after a fresh disposable schema.
-        actionTimeout: 30_000,
-        navigationTimeout: 30_000,
+        actionTimeout: 60_000,
+        navigationTimeout: 60_000,
     },
     projects: [
         {
