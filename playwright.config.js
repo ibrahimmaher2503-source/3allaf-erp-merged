@@ -11,13 +11,13 @@ import { defineConfig, devices } from '@playwright/test';
  * point at a developer's real local database or any staging/production URL.
  */
 export default defineConfig({
-    testDir: './testing/e2e',
+    testDir: './tests/Browser',
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: 0,
     workers: 1,
-    reporter: [['html', { open: 'never', outputFolder: 'testing/e2e/report' }], ['list']],
-    outputDir: 'testing/e2e/results',
+    reporter: [['html', { open: 'never', outputFolder: 'work/ui-acceptance/report' }], ['list']],
+    outputDir: 'work/ui-acceptance/results',
     webServer: process.env.PLAYWRIGHT_START_SERVER === '1' ? {
         command: `php artisan serve --host=127.0.0.1 --port=${process.env.PLAYWRIGHT_SERVER_PORT || '8820'}`,
         url: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8820',
@@ -25,10 +25,10 @@ export default defineConfig({
         timeout: 120_000,
     } : undefined,
     use: {
-        baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8791',
+        baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000',
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
-        video: 'off',
+        video: 'retain-on-failure',
         // WebKit on the local PHP built-in server can take longer on the
         // first authenticated navigation after a fresh disposable schema.
         actionTimeout: 30_000,
@@ -36,16 +36,20 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            name: 'ar-desktop',
+            use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 }, locale: 'ar-EG' },
         },
         {
-            name: 'firefox',
-            use: { ...devices['Desktop Firefox'] },
+            name: 'en-desktop',
+            use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 }, locale: 'en-US' },
         },
         {
-            name: 'webkit',
-            use: { ...devices['Desktop Safari'] },
+            name: 'ar-mobile',
+            use: { ...devices['iPhone 13'], locale: 'ar-EG' },
+        },
+        {
+            name: 'pos-keyboard',
+            use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 }, locale: 'ar-EG' },
         },
     ],
 });

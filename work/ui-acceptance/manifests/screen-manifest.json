@@ -1,0 +1,1054 @@
+[
+  {
+    "id": "dashboard.blade.php",
+    "path": "resources/views/dashboard.blade.php"
+  },
+  {
+    "id": "welcome.blade.php",
+    "path": "resources/views/welcome.blade.php"
+  },
+  {
+    "id": "catalog/brands.blade.php",
+    "path": "resources/views/catalog/brands.blade.php"
+  },
+  {
+    "id": "catalog/categories.blade.php",
+    "path": "resources/views/catalog/categories.blade.php"
+  },
+  {
+    "id": "catalog/lookups.blade.php",
+    "path": "resources/views/catalog/lookups.blade.php"
+  },
+  {
+    "id": "catalog/product-detail.blade.php",
+    "path": "resources/views/catalog/product-detail.blade.php"
+  },
+  {
+    "id": "catalog/product-form.blade.php",
+    "path": "resources/views/catalog/product-form.blade.php"
+  },
+  {
+    "id": "catalog/product-import.blade.php",
+    "path": "resources/views/catalog/product-import.blade.php"
+  },
+  {
+    "id": "catalog/product-options.blade.php",
+    "path": "resources/views/catalog/product-options.blade.php"
+  },
+  {
+    "id": "catalog/product-variations.blade.php",
+    "path": "resources/views/catalog/product-variations.blade.php"
+  },
+  {
+    "id": "catalog/products.blade.php",
+    "path": "resources/views/catalog/products.blade.php"
+  },
+  {
+    "id": "catalog/reference-import.blade.php",
+    "path": "resources/views/catalog/reference-import.blade.php"
+  },
+  {
+    "id": "catalog/supplier-import.blade.php",
+    "path": "resources/views/catalog/supplier-import.blade.php"
+  },
+  {
+    "id": "catalog/suppliers.blade.php",
+    "path": "resources/views/catalog/suppliers.blade.php"
+  },
+  {
+    "id": "components/app-footer.blade.php",
+    "path": "resources/views/components/app-footer.blade.php"
+  },
+  {
+    "id": "components/app-logo-icon.blade.php",
+    "path": "resources/views/components/app-logo-icon.blade.php"
+  },
+  {
+    "id": "components/app-logo.blade.php",
+    "path": "resources/views/components/app-logo.blade.php"
+  },
+  {
+    "id": "components/app-navigation.blade.php",
+    "path": "resources/views/components/app-navigation.blade.php"
+  },
+  {
+    "id": "components/audit-panel.blade.php",
+    "path": "resources/views/components/audit-panel.blade.php"
+  },
+  {
+    "id": "components/auth-header.blade.php",
+    "path": "resources/views/components/auth-header.blade.php"
+  },
+  {
+    "id": "components/auth-session-status.blade.php",
+    "path": "resources/views/components/auth-session-status.blade.php"
+  },
+  {
+    "id": "components/context-help.blade.php",
+    "path": "resources/views/components/context-help.blade.php"
+  },
+  {
+    "id": "components/data-table.blade.php",
+    "path": "resources/views/components/data-table.blade.php"
+  },
+  {
+    "id": "components/desktop-user-menu.blade.php",
+    "path": "resources/views/components/desktop-user-menu.blade.php"
+  },
+  {
+    "id": "components/line-editor.blade.php",
+    "path": "resources/views/components/line-editor.blade.php"
+  },
+  {
+    "id": "components/locale-switcher.blade.php",
+    "path": "resources/views/components/locale-switcher.blade.php"
+  },
+  {
+    "id": "components/money.blade.php",
+    "path": "resources/views/components/money.blade.php"
+  },
+  {
+    "id": "components/page-header.blade.php",
+    "path": "resources/views/components/page-header.blade.php"
+  },
+  {
+    "id": "components/passkey-registration.blade.php",
+    "path": "resources/views/components/passkey-registration.blade.php"
+  },
+  {
+    "id": "components/passkey-verify.blade.php",
+    "path": "resources/views/components/passkey-verify.blade.php"
+  },
+  {
+    "id": "components/placeholder-pattern.blade.php",
+    "path": "resources/views/components/placeholder-pattern.blade.php"
+  },
+  {
+    "id": "components/product-line-lookup.blade.php",
+    "path": "resources/views/components/product-line-lookup.blade.php"
+  },
+  {
+    "id": "components/product-quantity.blade.php",
+    "path": "resources/views/components/product-quantity.blade.php"
+  },
+  {
+    "id": "components/variant-snapshot.blade.php",
+    "path": "resources/views/components/variant-snapshot.blade.php"
+  },
+  {
+    "id": "components/actions/button.blade.php",
+    "path": "resources/views/components/actions/button.blade.php"
+  },
+  {
+    "id": "components/actions/loading-button.blade.php",
+    "path": "resources/views/components/actions/loading-button.blade.php"
+  },
+  {
+    "id": "components/app/page.blade.php",
+    "path": "resources/views/components/app/page.blade.php"
+  },
+  {
+    "id": "components/assets/actions.blade.php",
+    "path": "resources/views/components/assets/actions.blade.php"
+  },
+  {
+    "id": "components/assets/dashboard.blade.php",
+    "path": "resources/views/components/assets/dashboard.blade.php"
+  },
+  {
+    "id": "components/cards/section-card.blade.php",
+    "path": "resources/views/components/cards/section-card.blade.php"
+  },
+  {
+    "id": "components/cards/stat-card.blade.php",
+    "path": "resources/views/components/cards/stat-card.blade.php"
+  },
+  {
+    "id": "components/data/value.blade.php",
+    "path": "resources/views/components/data/value.blade.php"
+  },
+  {
+    "id": "components/forms/form-section.blade.php",
+    "path": "resources/views/components/forms/form-section.blade.php"
+  },
+  {
+    "id": "components/layouts/app.blade.php",
+    "path": "resources/views/components/layouts/app.blade.php"
+  },
+  {
+    "id": "components/party/dashboard.blade.php",
+    "path": "resources/views/components/party/dashboard.blade.php"
+  },
+  {
+    "id": "components/platform/dashboard-tools.blade.php",
+    "path": "resources/views/components/platform/dashboard-tools.blade.php"
+  },
+  {
+    "id": "components/pricing/dashboard.blade.php",
+    "path": "resources/views/components/pricing/dashboard.blade.php"
+  },
+  {
+    "id": "components/purchasing/dashboard.blade.php",
+    "path": "resources/views/components/purchasing/dashboard.blade.php"
+  },
+  {
+    "id": "components/reports/kpi.blade.php",
+    "path": "resources/views/components/reports/kpi.blade.php"
+  },
+  {
+    "id": "components/reports/visual.blade.php",
+    "path": "resources/views/components/reports/visual.blade.php"
+  },
+  {
+    "id": "components/setup/context.blade.php",
+    "path": "resources/views/components/setup/context.blade.php"
+  },
+  {
+    "id": "components/setup/product-pricing-readiness.blade.php",
+    "path": "resources/views/components/setup/product-pricing-readiness.blade.php"
+  },
+  {
+    "id": "components/setup/route-context.blade.php",
+    "path": "resources/views/components/setup/route-context.blade.php"
+  },
+  {
+    "id": "components/setup/section-navigator.blade.php",
+    "path": "resources/views/components/setup/section-navigator.blade.php"
+  },
+  {
+    "id": "components/state/capability-boundary.blade.php",
+    "path": "resources/views/components/state/capability-boundary.blade.php"
+  },
+  {
+    "id": "components/state/denied.blade.php",
+    "path": "resources/views/components/state/denied.blade.php"
+  },
+  {
+    "id": "components/state/empty.blade.php",
+    "path": "resources/views/components/state/empty.blade.php"
+  },
+  {
+    "id": "components/state/error.blade.php",
+    "path": "resources/views/components/state/error.blade.php"
+  },
+  {
+    "id": "components/state/loading.blade.php",
+    "path": "resources/views/components/state/loading.blade.php"
+  },
+  {
+    "id": "components/status/badge.blade.php",
+    "path": "resources/views/components/status/badge.blade.php"
+  },
+  {
+    "id": "components/status/timeline.blade.php",
+    "path": "resources/views/components/status/timeline.blade.php"
+  },
+  {
+    "id": "components/tables/bulk-actions.blade.php",
+    "path": "resources/views/components/tables/bulk-actions.blade.php"
+  },
+  {
+    "id": "components/tables/data-panel.blade.php",
+    "path": "resources/views/components/tables/data-panel.blade.php"
+  },
+  {
+    "id": "components/tables/filter-bar.blade.php",
+    "path": "resources/views/components/tables/filter-bar.blade.php"
+  },
+  {
+    "id": "components/tables/filter-chips.blade.php",
+    "path": "resources/views/components/tables/filter-chips.blade.php"
+  },
+  {
+    "id": "components/tables/pagination.blade.php",
+    "path": "resources/views/components/tables/pagination.blade.php"
+  },
+  {
+    "id": "components/tables/resource-toolbar.blade.php",
+    "path": "resources/views/components/tables/resource-toolbar.blade.php"
+  },
+  {
+    "id": "components/tables/table-shell.blade.php",
+    "path": "resources/views/components/tables/table-shell.blade.php"
+  },
+  {
+    "id": "errors/403.blade.php",
+    "path": "resources/views/errors/403.blade.php"
+  },
+  {
+    "id": "errors/404.blade.php",
+    "path": "resources/views/errors/404.blade.php"
+  },
+  {
+    "id": "errors/419.blade.php",
+    "path": "resources/views/errors/419.blade.php"
+  },
+  {
+    "id": "errors/429.blade.php",
+    "path": "resources/views/errors/429.blade.php"
+  },
+  {
+    "id": "errors/500.blade.php",
+    "path": "resources/views/errors/500.blade.php"
+  },
+  {
+    "id": "errors/503.blade.php",
+    "path": "resources/views/errors/503.blade.php"
+  },
+  {
+    "id": "feed-store/operations.blade.php",
+    "path": "resources/views/feed-store/operations.blade.php"
+  },
+  {
+    "id": "flux/icon/book-open-text.blade.php",
+    "path": "resources/views/flux/icon/book-open-text.blade.php"
+  },
+  {
+    "id": "flux/icon/chevrons-up-down.blade.php",
+    "path": "resources/views/flux/icon/chevrons-up-down.blade.php"
+  },
+  {
+    "id": "flux/icon/folder-git-2.blade.php",
+    "path": "resources/views/flux/icon/folder-git-2.blade.php"
+  },
+  {
+    "id": "flux/icon/layout-grid.blade.php",
+    "path": "resources/views/flux/icon/layout-grid.blade.php"
+  },
+  {
+    "id": "flux/navlist/group.blade.php",
+    "path": "resources/views/flux/navlist/group.blade.php"
+  },
+  {
+    "id": "inventory/count-movements.blade.php",
+    "path": "resources/views/inventory/count-movements.blade.php"
+  },
+  {
+    "id": "inventory/count-report.blade.php",
+    "path": "resources/views/inventory/count-report.blade.php"
+  },
+  {
+    "id": "inventory/index.blade.php",
+    "path": "resources/views/inventory/index.blade.php"
+  },
+  {
+    "id": "inventory/opening-workflow.blade.php",
+    "path": "resources/views/inventory/opening-workflow.blade.php"
+  },
+  {
+    "id": "inventory/opening.blade.php",
+    "path": "resources/views/inventory/opening.blade.php"
+  },
+  {
+    "id": "inventory/stocktake-create.blade.php",
+    "path": "resources/views/inventory/stocktake-create.blade.php"
+  },
+  {
+    "id": "inventory/stocktake-entry.blade.php",
+    "path": "resources/views/inventory/stocktake-entry.blade.php"
+  },
+  {
+    "id": "inventory/stocktake-list.blade.php",
+    "path": "resources/views/inventory/stocktake-list.blade.php"
+  },
+  {
+    "id": "inventory/stocktake-review.blade.php",
+    "path": "resources/views/inventory/stocktake-review.blade.php"
+  },
+  {
+    "id": "inventory/stocktake-workspace.blade.php",
+    "path": "resources/views/inventory/stocktake-workspace.blade.php"
+  },
+  {
+    "id": "inventory/transfer-approval-review.blade.php",
+    "path": "resources/views/inventory/transfer-approval-review.blade.php"
+  },
+  {
+    "id": "inventory/transfer-receiving-inbox.blade.php",
+    "path": "resources/views/inventory/transfer-receiving-inbox.blade.php"
+  },
+  {
+    "id": "inventory/transfer-receiving-review.blade.php",
+    "path": "resources/views/inventory/transfer-receiving-review.blade.php"
+  },
+  {
+    "id": "layouts/app.blade.php",
+    "path": "resources/views/layouts/app.blade.php"
+  },
+  {
+    "id": "layouts/auth.blade.php",
+    "path": "resources/views/layouts/auth.blade.php"
+  },
+  {
+    "id": "layouts/pos.blade.php",
+    "path": "resources/views/layouts/pos.blade.php"
+  },
+  {
+    "id": "layouts/print.blade.php",
+    "path": "resources/views/layouts/print.blade.php"
+  },
+  {
+    "id": "layouts/app/header.blade.php",
+    "path": "resources/views/layouts/app/header.blade.php"
+  },
+  {
+    "id": "layouts/app/sidebar.blade.php",
+    "path": "resources/views/layouts/app/sidebar.blade.php"
+  },
+  {
+    "id": "layouts/auth/card.blade.php",
+    "path": "resources/views/layouts/auth/card.blade.php"
+  },
+  {
+    "id": "layouts/auth/simple.blade.php",
+    "path": "resources/views/layouts/auth/simple.blade.php"
+  },
+  {
+    "id": "layouts/auth/split.blade.php",
+    "path": "resources/views/layouts/auth/split.blade.php"
+  },
+  {
+    "id": "livewire/pos/cart.blade.php",
+    "path": "resources/views/livewire/pos/cart.blade.php"
+  },
+  {
+    "id": "livewire/pos/checkout-panel.blade.php",
+    "path": "resources/views/livewire/pos/checkout-panel.blade.php"
+  },
+  {
+    "id": "livewire/pos/product-browser.blade.php",
+    "path": "resources/views/livewire/pos/product-browser.blade.php"
+  },
+  {
+    "id": "livewire/pos/refund-wizard.blade.php",
+    "path": "resources/views/livewire/pos/refund-wizard.blade.php"
+  },
+  {
+    "id": "mail/pos-invoice-receipt.blade.php",
+    "path": "resources/views/mail/pos-invoice-receipt.blade.php"
+  },
+  {
+    "id": "pages/admin/customer-loyalty-settings.blade.php",
+    "path": "resources/views/pages/admin/customer-loyalty-settings.blade.php"
+  },
+  {
+    "id": "pages/alerts/index.blade.php",
+    "path": "resources/views/pages/alerts/index.blade.php"
+  },
+  {
+    "id": "pages/alerts/readiness.blade.php",
+    "path": "resources/views/pages/alerts/readiness.blade.php"
+  },
+  {
+    "id": "pages/auth/confirm-password.blade.php",
+    "path": "resources/views/pages/auth/confirm-password.blade.php"
+  },
+  {
+    "id": "pages/auth/forgot-password.blade.php",
+    "path": "resources/views/pages/auth/forgot-password.blade.php"
+  },
+  {
+    "id": "pages/auth/login.blade.php",
+    "path": "resources/views/pages/auth/login.blade.php"
+  },
+  {
+    "id": "pages/auth/register.blade.php",
+    "path": "resources/views/pages/auth/register.blade.php"
+  },
+  {
+    "id": "pages/auth/reset-password.blade.php",
+    "path": "resources/views/pages/auth/reset-password.blade.php"
+  },
+  {
+    "id": "pages/auth/two-factor-challenge.blade.php",
+    "path": "resources/views/pages/auth/two-factor-challenge.blade.php"
+  },
+  {
+    "id": "pages/auth/verify-email.blade.php",
+    "path": "resources/views/pages/auth/verify-email.blade.php"
+  },
+  {
+    "id": "pages/customers/_sales-analysis.blade.php",
+    "path": "resources/views/pages/customers/_sales-analysis.blade.php"
+  },
+  {
+    "id": "pages/customers/create.blade.php",
+    "path": "resources/views/pages/customers/create.blade.php"
+  },
+  {
+    "id": "pages/customers/groups.blade.php",
+    "path": "resources/views/pages/customers/groups.blade.php"
+  },
+  {
+    "id": "pages/customers/import.blade.php",
+    "path": "resources/views/pages/customers/import.blade.php"
+  },
+  {
+    "id": "pages/customers/index.blade.php",
+    "path": "resources/views/pages/customers/index.blade.php"
+  },
+  {
+    "id": "pages/customers/loyalty.blade.php",
+    "path": "resources/views/pages/customers/loyalty.blade.php"
+  },
+  {
+    "id": "pages/customers/show.blade.php",
+    "path": "resources/views/pages/customers/show.blade.php"
+  },
+  {
+    "id": "pages/exports/audit-readiness.blade.php",
+    "path": "resources/views/pages/exports/audit-readiness.blade.php"
+  },
+  {
+    "id": "pages/exports/index.blade.php",
+    "path": "resources/views/pages/exports/index.blade.php"
+  },
+  {
+    "id": "pages/exports/master-data-pdf.blade.php",
+    "path": "resources/views/pages/exports/master-data-pdf.blade.php"
+  },
+  {
+    "id": "pages/exports/report-pdf.blade.php",
+    "path": "resources/views/pages/exports/report-pdf.blade.php"
+  },
+  {
+    "id": "pages/exports/partials/cairo-pdf-styles.blade.php",
+    "path": "resources/views/pages/exports/partials/cairo-pdf-styles.blade.php"
+  },
+  {
+    "id": "pages/gift-instruments/card-print.blade.php",
+    "path": "resources/views/pages/gift-instruments/card-print.blade.php"
+  },
+  {
+    "id": "pages/gift-instruments/cards.blade.php",
+    "path": "resources/views/pages/gift-instruments/cards.blade.php"
+  },
+  {
+    "id": "pages/gift-instruments/index.blade.php",
+    "path": "resources/views/pages/gift-instruments/index.blade.php"
+  },
+  {
+    "id": "pages/gift-instruments/print.blade.php",
+    "path": "resources/views/pages/gift-instruments/print.blade.php"
+  },
+  {
+    "id": "pages/gift-instruments/readiness.blade.php",
+    "path": "resources/views/pages/gift-instruments/readiness.blade.php"
+  },
+  {
+    "id": "pages/gift-instruments/show.blade.php",
+    "path": "resources/views/pages/gift-instruments/show.blade.php"
+  },
+  {
+    "id": "pages/master-data/migration-readiness.blade.php",
+    "path": "resources/views/pages/master-data/migration-readiness.blade.php"
+  },
+  {
+    "id": "pages/operations/readiness.blade.php",
+    "path": "resources/views/pages/operations/readiness.blade.php"
+  },
+  {
+    "id": "pages/party/asset-events-readiness.blade.php",
+    "path": "resources/views/pages/party/asset-events-readiness.blade.php"
+  },
+  {
+    "id": "pages/party/asset-print.blade.php",
+    "path": "resources/views/pages/party/asset-print.blade.php"
+  },
+  {
+    "id": "pages/party/asset-show.blade.php",
+    "path": "resources/views/pages/party/asset-show.blade.php"
+  },
+  {
+    "id": "pages/party/assets-readiness.blade.php",
+    "path": "resources/views/pages/party/assets-readiness.blade.php"
+  },
+  {
+    "id": "pages/party/assets.blade.php",
+    "path": "resources/views/pages/party/assets.blade.php"
+  },
+  {
+    "id": "pages/party/calendar.blade.php",
+    "path": "resources/views/pages/party/calendar.blade.php"
+  },
+  {
+    "id": "pages/party/final-close-readiness.blade.php",
+    "path": "resources/views/pages/party/final-close-readiness.blade.php"
+  },
+  {
+    "id": "pages/party/operating-readiness.blade.php",
+    "path": "resources/views/pages/party/operating-readiness.blade.php"
+  },
+  {
+    "id": "pages/party/payments-readiness.blade.php",
+    "path": "resources/views/pages/party/payments-readiness.blade.php"
+  },
+  {
+    "id": "pages/party/print-invoice.blade.php",
+    "path": "resources/views/pages/party/print-invoice.blade.php"
+  },
+  {
+    "id": "pages/party/print-payment.blade.php",
+    "path": "resources/views/pages/party/print-payment.blade.php"
+  },
+  {
+    "id": "pages/party/readiness.blade.php",
+    "path": "resources/views/pages/party/readiness.blade.php"
+  },
+  {
+    "id": "pages/party/bookings/create.blade.php",
+    "path": "resources/views/pages/party/bookings/create.blade.php"
+  },
+  {
+    "id": "pages/party/bookings/index.blade.php",
+    "path": "resources/views/pages/party/bookings/index.blade.php"
+  },
+  {
+    "id": "pages/party/bookings/show.blade.php",
+    "path": "resources/views/pages/party/bookings/show.blade.php"
+  },
+  {
+    "id": "pages/party/invoices/index.blade.php",
+    "path": "resources/views/pages/party/invoices/index.blade.php"
+  },
+  {
+    "id": "pages/party/invoices/settle.blade.php",
+    "path": "resources/views/pages/party/invoices/settle.blade.php"
+  },
+  {
+    "id": "pages/party/invoices/show.blade.php",
+    "path": "resources/views/pages/party/invoices/show.blade.php"
+  },
+  {
+    "id": "pages/party/orders/index.blade.php",
+    "path": "resources/views/pages/party/orders/index.blade.php"
+  },
+  {
+    "id": "pages/party/orders/show.blade.php",
+    "path": "resources/views/pages/party/orders/show.blade.php"
+  },
+  {
+    "id": "pages/party/payments/index.blade.php",
+    "path": "resources/views/pages/party/payments/index.blade.php"
+  },
+  {
+    "id": "pages/payments/evidence.blade.php",
+    "path": "resources/views/pages/payments/evidence.blade.php"
+  },
+  {
+    "id": "pages/payments/index.blade.php",
+    "path": "resources/views/pages/payments/index.blade.php"
+  },
+  {
+    "id": "pages/pos/cash-movement.blade.php",
+    "path": "resources/views/pages/pos/cash-movement.blade.php"
+  },
+  {
+    "id": "pages/pos/customer-modal.blade.php",
+    "path": "resources/views/pages/pos/customer-modal.blade.php"
+  },
+  {
+    "id": "pages/pos/financial-readiness.blade.php",
+    "path": "resources/views/pages/pos/financial-readiness.blade.php"
+  },
+  {
+    "id": "pages/pos/index.blade.php",
+    "path": "resources/views/pages/pos/index.blade.php"
+  },
+  {
+    "id": "pages/pos/offline-conflict-show.blade.php",
+    "path": "resources/views/pages/pos/offline-conflict-show.blade.php"
+  },
+  {
+    "id": "pages/pos/offline-conflicts.blade.php",
+    "path": "resources/views/pages/pos/offline-conflicts.blade.php"
+  },
+  {
+    "id": "pages/pos/offline-queue.blade.php",
+    "path": "resources/views/pages/pos/offline-queue.blade.php"
+  },
+  {
+    "id": "pages/pos/offline-readiness.blade.php",
+    "path": "resources/views/pages/pos/offline-readiness.blade.php"
+  },
+  {
+    "id": "pages/pos/resume.blade.php",
+    "path": "resources/views/pages/pos/resume.blade.php"
+  },
+  {
+    "id": "pages/pos/shift-print-a4.blade.php",
+    "path": "resources/views/pages/pos/shift-print-a4.blade.php"
+  },
+  {
+    "id": "pages/pos/shift-print-thermal.blade.php",
+    "path": "resources/views/pages/pos/shift-print-thermal.blade.php"
+  },
+  {
+    "id": "pages/pos/shift-receipts.blade.php",
+    "path": "resources/views/pages/pos/shift-receipts.blade.php"
+  },
+  {
+    "id": "pages/pos/shift-variance.blade.php",
+    "path": "resources/views/pages/pos/shift-variance.blade.php"
+  },
+  {
+    "id": "pages/pos/shift.blade.php",
+    "path": "resources/views/pages/pos/shift.blade.php"
+  },
+  {
+    "id": "pages/pos/suspended.blade.php",
+    "path": "resources/views/pages/pos/suspended.blade.php"
+  },
+  {
+    "id": "pages/quotations/index.blade.php",
+    "path": "resources/views/pages/quotations/index.blade.php"
+  },
+  {
+    "id": "pages/quotations/print.blade.php",
+    "path": "resources/views/pages/quotations/print.blade.php"
+  },
+  {
+    "id": "pages/quotations/readiness.blade.php",
+    "path": "resources/views/pages/quotations/readiness.blade.php"
+  },
+  {
+    "id": "pages/quotations/show.blade.php",
+    "path": "resources/views/pages/quotations/show.blade.php"
+  },
+  {
+    "id": "pages/release/readiness.blade.php",
+    "path": "resources/views/pages/release/readiness.blade.php"
+  },
+  {
+    "id": "pages/reports/_navigation.blade.php",
+    "path": "resources/views/pages/reports/_navigation.blade.php"
+  },
+  {
+    "id": "pages/reports/_sales-filters.blade.php",
+    "path": "resources/views/pages/reports/_sales-filters.blade.php"
+  },
+  {
+    "id": "pages/reports/index.blade.php",
+    "path": "resources/views/pages/reports/index.blade.php"
+  },
+  {
+    "id": "pages/reports/inventory-valuation.blade.php",
+    "path": "resources/views/pages/reports/inventory-valuation.blade.php"
+  },
+  {
+    "id": "pages/reports/phase-one.blade.php",
+    "path": "resources/views/pages/reports/phase-one.blade.php"
+  },
+  {
+    "id": "pages/reports/readiness.blade.php",
+    "path": "resources/views/pages/reports/readiness.blade.php"
+  },
+  {
+    "id": "pages/reports/sales-by-product.blade.php",
+    "path": "resources/views/pages/reports/sales-by-product.blade.php"
+  },
+  {
+    "id": "pages/reports/sales-summary.blade.php",
+    "path": "resources/views/pages/reports/sales-summary.blade.php"
+  },
+  {
+    "id": "pages/reports/stock-movement.blade.php",
+    "path": "resources/views/pages/reports/stock-movement.blade.php"
+  },
+  {
+    "id": "pages/returns/index.blade.php",
+    "path": "resources/views/pages/returns/index.blade.php"
+  },
+  {
+    "id": "pages/returns/print.blade.php",
+    "path": "resources/views/pages/returns/print.blade.php"
+  },
+  {
+    "id": "pages/returns/readiness.blade.php",
+    "path": "resources/views/pages/returns/readiness.blade.php"
+  },
+  {
+    "id": "pages/returns/show.blade.php",
+    "path": "resources/views/pages/returns/show.blade.php"
+  },
+  {
+    "id": "pages/sales/index.blade.php",
+    "path": "resources/views/pages/sales/index.blade.php"
+  },
+  {
+    "id": "pages/sales/invoices-create.blade.php",
+    "path": "resources/views/pages/sales/invoices-create.blade.php"
+  },
+  {
+    "id": "pages/sales/invoices-draft.blade.php",
+    "path": "resources/views/pages/sales/invoices-draft.blade.php"
+  },
+  {
+    "id": "pages/sales/invoices.blade.php",
+    "path": "resources/views/pages/sales/invoices.blade.php"
+  },
+  {
+    "id": "pages/sales/print.blade.php",
+    "path": "resources/views/pages/sales/print.blade.php"
+  },
+  {
+    "id": "pages/sales/show.blade.php",
+    "path": "resources/views/pages/sales/show.blade.php"
+  },
+  {
+    "id": "pages/sales/thermal.blade.php",
+    "path": "resources/views/pages/sales/thermal.blade.php"
+  },
+  {
+    "id": "pages/settings/appearance.blade.php",
+    "path": "resources/views/pages/settings/appearance.blade.php"
+  },
+  {
+    "id": "pages/settings/delete-user-form.blade.php",
+    "path": "resources/views/pages/settings/delete-user-form.blade.php"
+  },
+  {
+    "id": "pages/settings/delete-user-modal.blade.php",
+    "path": "resources/views/pages/settings/delete-user-modal.blade.php"
+  },
+  {
+    "id": "pages/settings/layout.blade.php",
+    "path": "resources/views/pages/settings/layout.blade.php"
+  },
+  {
+    "id": "pages/settings/profile.blade.php",
+    "path": "resources/views/pages/settings/profile.blade.php"
+  },
+  {
+    "id": "pages/settings/security.blade.php",
+    "path": "resources/views/pages/settings/security.blade.php"
+  },
+  {
+    "id": "pages/settings/two-factor-setup-modal.blade.php",
+    "path": "resources/views/pages/settings/two-factor-setup-modal.blade.php"
+  },
+  {
+    "id": "pages/settings/two-factor/recovery-codes.blade.php",
+    "path": "resources/views/pages/settings/two-factor/recovery-codes.blade.php"
+  },
+  {
+    "id": "pages/uat/readiness.blade.php",
+    "path": "resources/views/pages/uat/readiness.blade.php"
+  },
+  {
+    "id": "pages/wallets/ledger.blade.php",
+    "path": "resources/views/pages/wallets/ledger.blade.php"
+  },
+  {
+    "id": "partials/head.blade.php",
+    "path": "resources/views/partials/head.blade.php"
+  },
+  {
+    "id": "partials/settings-heading.blade.php",
+    "path": "resources/views/partials/settings-heading.blade.php"
+  },
+  {
+    "id": "partials/theme-bootstrap.blade.php",
+    "path": "resources/views/partials/theme-bootstrap.blade.php"
+  },
+  {
+    "id": "platform/initial-setup.blade.php",
+    "path": "resources/views/platform/initial-setup.blade.php"
+  },
+  {
+    "id": "platform/admin/authorization-baseline.blade.php",
+    "path": "resources/views/platform/admin/authorization-baseline.blade.php"
+  },
+  {
+    "id": "platform/admin/branches.blade.php",
+    "path": "resources/views/platform/admin/branches.blade.php"
+  },
+  {
+    "id": "platform/admin/cities.blade.php",
+    "path": "resources/views/platform/admin/cities.blade.php"
+  },
+  {
+    "id": "platform/admin/drawers.blade.php",
+    "path": "resources/views/platform/admin/drawers.blade.php"
+  },
+  {
+    "id": "platform/admin/overview.blade.php",
+    "path": "resources/views/platform/admin/overview.blade.php"
+  },
+  {
+    "id": "platform/admin/print-template-preview.blade.php",
+    "path": "resources/views/platform/admin/print-template-preview.blade.php"
+  },
+  {
+    "id": "platform/admin/printer-preview.blade.php",
+    "path": "resources/views/platform/admin/printer-preview.blade.php"
+  },
+  {
+    "id": "platform/admin/role-permissions.blade.php",
+    "path": "resources/views/platform/admin/role-permissions.blade.php"
+  },
+  {
+    "id": "platform/admin/roles.blade.php",
+    "path": "resources/views/platform/admin/roles.blade.php"
+  },
+  {
+    "id": "platform/admin/settings.blade.php",
+    "path": "resources/views/platform/admin/settings.blade.php"
+  },
+  {
+    "id": "platform/admin/stores.blade.php",
+    "path": "resources/views/platform/admin/stores.blade.php"
+  },
+  {
+    "id": "platform/admin/translation-editor.blade.php",
+    "path": "resources/views/platform/admin/translation-editor.blade.php"
+  },
+  {
+    "id": "platform/help/flow.blade.php",
+    "path": "resources/views/platform/help/flow.blade.php"
+  },
+  {
+    "id": "platform/help/screen.blade.php",
+    "path": "resources/views/platform/help/screen.blade.php"
+  },
+  {
+    "id": "platform/system/app.blade.php",
+    "path": "resources/views/platform/system/app.blade.php"
+  },
+  {
+    "id": "platform/system/approval-inbox.blade.php",
+    "path": "resources/views/platform/system/approval-inbox.blade.php"
+  },
+  {
+    "id": "platform/system/audit-log.blade.php",
+    "path": "resources/views/platform/system/audit-log.blade.php"
+  },
+  {
+    "id": "platform/system/backups.blade.php",
+    "path": "resources/views/platform/system/backups.blade.php"
+  },
+  {
+    "id": "platform/system/health.blade.php",
+    "path": "resources/views/platform/system/health.blade.php"
+  },
+  {
+    "id": "platform/system/notifications.blade.php",
+    "path": "resources/views/platform/system/notifications.blade.php"
+  },
+  {
+    "id": "platform/system/ui-showcase.blade.php",
+    "path": "resources/views/platform/system/ui-showcase.blade.php"
+  },
+  {
+    "id": "pricing/index.blade.php",
+    "path": "resources/views/pricing/index.blade.php"
+  },
+  {
+    "id": "pricing/label-print.blade.php",
+    "path": "resources/views/pricing/label-print.blade.php"
+  },
+  {
+    "id": "pricing/labels.blade.php",
+    "path": "resources/views/pricing/labels.blade.php"
+  },
+  {
+    "id": "pricing/lists.blade.php",
+    "path": "resources/views/pricing/lists.blade.php"
+  },
+  {
+    "id": "pricing/product-matrix.blade.php",
+    "path": "resources/views/pricing/product-matrix.blade.php"
+  },
+  {
+    "id": "pricing/labels/advanced-settings.blade.php",
+    "path": "resources/views/pricing/labels/advanced-settings.blade.php"
+  },
+  {
+    "id": "pricing/labels/missing-barcode.blade.php",
+    "path": "resources/views/pricing/labels/missing-barcode.blade.php"
+  },
+  {
+    "id": "pricing/labels/search.blade.php",
+    "path": "resources/views/pricing/labels/search.blade.php"
+  },
+  {
+    "id": "pricing/labels/selected-product.blade.php",
+    "path": "resources/views/pricing/labels/selected-product.blade.php"
+  },
+  {
+    "id": "pricing/labels/selected-products.blade.php",
+    "path": "resources/views/pricing/labels/selected-products.blade.php"
+  },
+  {
+    "id": "pricing/labels/workspace-script.blade.php",
+    "path": "resources/views/pricing/labels/workspace-script.blade.php"
+  },
+  {
+    "id": "pricing/labels/workspace.blade.php",
+    "path": "resources/views/pricing/labels/workspace.blade.php"
+  },
+  {
+    "id": "purchasing/history.blade.php",
+    "path": "resources/views/purchasing/history.blade.php"
+  },
+  {
+    "id": "purchasing/invoice-import.blade.php",
+    "path": "resources/views/purchasing/invoice-import.blade.php"
+  },
+  {
+    "id": "purchasing/invoice-print.blade.php",
+    "path": "resources/views/purchasing/invoice-print.blade.php"
+  },
+  {
+    "id": "purchasing/invoice-readiness.blade.php",
+    "path": "resources/views/purchasing/invoice-readiness.blade.php"
+  },
+  {
+    "id": "purchasing/invoice-settings.blade.php",
+    "path": "resources/views/purchasing/invoice-settings.blade.php"
+  },
+  {
+    "id": "purchasing/invoices.blade.php",
+    "path": "resources/views/purchasing/invoices.blade.php"
+  },
+  {
+    "id": "purchasing/order-pdf.blade.php",
+    "path": "resources/views/purchasing/order-pdf.blade.php"
+  },
+  {
+    "id": "purchasing/orders.blade.php",
+    "path": "resources/views/purchasing/orders.blade.php"
+  },
+  {
+    "id": "purchasing/print.blade.php",
+    "path": "resources/views/purchasing/print.blade.php"
+  },
+  {
+    "id": "purchasing/quantity-differences.blade.php",
+    "path": "resources/views/purchasing/quantity-differences.blade.php"
+  },
+  {
+    "id": "purchasing/return-create.blade.php",
+    "path": "resources/views/purchasing/return-create.blade.php"
+  },
+  {
+    "id": "purchasing/return-detail.blade.php",
+    "path": "resources/views/purchasing/return-detail.blade.php"
+  },
+  {
+    "id": "purchasing/return-print.blade.php",
+    "path": "resources/views/purchasing/return-print.blade.php"
+  },
+  {
+    "id": "purchasing/return-settings.blade.php",
+    "path": "resources/views/purchasing/return-settings.blade.php"
+  },
+  {
+    "id": "purchasing/returns.blade.php",
+    "path": "resources/views/purchasing/returns.blade.php"
+  },
+  {
+    "id": "purchasing/partials/order-form.blade.php",
+    "path": "resources/views/purchasing/partials/order-form.blade.php"
+  }
+]
