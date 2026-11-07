@@ -107,7 +107,12 @@ window.posPaymentCalculator = ({ payable, allowOutstanding = false, creditOnly =
     },
     currentPayable() { return this.$root.querySelector('[data-pos-payable]')?.value ?? this.payable; },
     summary() {
-        return summarizePaymentParts(this.currentPayable(), this.parts(), { allowOutstanding: this.allowOutstanding, creditOnly: this.creditOnly });
+        const mode = this.$root.querySelector('[name="payment_mode"]')?.value;
+        const eligible = this.$root.querySelector('[data-pos-credit-eligible]')?.value;
+        return summarizePaymentParts(this.currentPayable(), this.parts(), {
+            allowOutstanding: eligible === undefined ? this.allowOutstanding : eligible === '1',
+            creditOnly: mode === undefined ? this.creditOnly : mode === 'credit',
+        });
     },
     progress() {
         return paymentProgress(this.currentPayable(), this.parts());

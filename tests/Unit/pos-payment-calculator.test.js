@@ -59,3 +59,20 @@ assert.equal(thirdCard.value, '30.00', 'Third part receives the remaining amount
 assert.equal(summarizePaymentParts('650.00', [{ methodId: 'card', amount: '500.00' }, { methodId: 'wallet', amount: '151.00' }]).valid, false, 'Noncash split cannot exceed invoice total');
 assert.equal(summarizePaymentParts('650.00', [{ methodId: 'cash', isCash: true, tendered: '500.00' }, { methodId: 'card', amount: '151.00' }]).change, 100n, 'Cash excess remains customer change');
 console.log('PASS: exact/under/over card allocation, cash change, mixed payment');
+
+const modeField = { value: 'credit' };
+const eligibleField = { value: '1' };
+const modeCalculator = window.posPaymentCalculator({ payable: '30', allowOutstanding: false, creditOnly: false });
+let currentParts = [];
+modeCalculator.$root = {
+    querySelector: (selector) => selector === '[name="payment_mode"]' ? modeField : selector === '[data-pos-credit-eligible]' ? eligibleField : null,
+    querySelectorAll: () => currentParts,
+};
+assert.equal(modeCalculator.canComplete(), true, 'Livewire switching to credit must update retained Alpine calculator');
+modeField.value = 'card';
+field.value = '30';
+currentParts = [part];
+assert.equal(modeCalculator.canComplete(), true, 'Switching back to card must allow exact payment');
+eligibleField.value = '0';
+field.value = '10';
+assert.equal(modeCalculator.canComplete(), false, 'Changing to a cash-only customer must reject partial payment');
