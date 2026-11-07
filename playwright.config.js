@@ -46,7 +46,7 @@ export default defineConfig({
         },
         {
             name: 'ar-mobile',
-            use: { ...devices['iPhone 13'], locale: 'ar-EG' },
+            use: { ...devices['iPhone 13'], browserName: 'chromium', locale: 'ar-EG' },
         },
         {
             name: 'pos-keyboard',

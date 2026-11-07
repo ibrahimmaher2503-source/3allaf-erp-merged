@@ -1,0 +1,9 @@
+screen_id,action,selector,evidence,status
+dashboard,open dashboard,link[href$="/dashboard"],app-shell.spec.ts,PASS
+dashboard,open notifications,a[href$="/notifications"],navigation-links.spec.ts,PASS
+dashboard,open alerts,a[href$="/alerts"],navigation-links.spec.ts,PASS
+dashboard,open approvals,a[href$="/approvals"],navigation-links.spec.ts,PASS
+dashboard,open catalog products,a[href$="/catalog/products"],navigation-links.spec.ts,PASS
+dashboard,open inventory balances,a[href$="/inventory/balances"],navigation-links.spec.ts,PASS
+shared,logout,form[action$="/logout"] button,authentication.spec.ts,PASS
+dashboard,accessible-name audit,button:visible or a:visible,app-shell.spec.ts,FAIL-finding-recorded
