@@ -4,8 +4,6 @@ import { roleCredentials } from './env';
 export async function loginAs(page: Page, role: string) {
     const credentials = roleCredentials(role);
     if (!credentials.password) throw new Error(`Missing UI_AUTH password for role ${role}`);
-    const loginIp = `10.0.${Math.floor(Math.random() * 200) + 1}.${Math.floor(Math.random() * 200) + 1}`;
-    await page.context().setExtraHTTPHeaders({ 'X-Forwarded-For': loginIp });
     await page.context().clearCookies();
     await page.goto('/login');
     await page.locator('input[name="username"]').fill(credentials.username);

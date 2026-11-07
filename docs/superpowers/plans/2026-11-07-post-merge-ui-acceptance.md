@@ -351,4 +351,3 @@
 - كل task يحتوي files وinterfaces وخطوات قابلة للتحقق وcommand متوقع؛ لا يعتمد على اختبار كود بديل عن UI.
 - Review Focus مربوط بمهام محددة.
 - حدود واضحة: لا production، لا push/deploy، لا أجهزة فعلية أو barcode hardware بدون تفويض وبيئة منفصلة.
-

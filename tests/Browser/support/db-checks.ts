@@ -5,4 +5,3 @@ export function queryScalar(): never {
 export function assertLedgerValue(): never {
     throw new Error('UI acceptance ledger assertions require a configured read-only MySQL adapter.');
 }
-
