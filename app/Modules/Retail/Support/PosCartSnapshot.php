@@ -64,6 +64,8 @@ final class PosCartSnapshot
             $unitPrice = isset($cartLine['open_price_amount']) ? (string) $cartLine['open_price_amount'] : (string) $price->amount;
             $balance = $balances->get($product->id);
             $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
+            $factor = (string) ($productUnit?->conversion_factor ?? '1');
+            $available = bccomp($factor, '0', 6) > 0 ? bcdiv($available, $factor, 6) : '0.000000';
             $lines[] = ['product' => $product, 'product_unit' => $productUnit, 'quantity' => (string) $cartLine['quantity'], 'available_quantity' => $available, 'unit_price' => $unitPrice, 'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'), 'price' => $price, 'cart' => $cartLine];
         }
         $taxApplicable = (bool) request()->session()->get('pos.tax_applicable', false);
