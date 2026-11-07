@@ -79,14 +79,34 @@ Environment: PHP 8.4, MariaDB 10.11, Laravel deps installed from `composer.lock`
 - `php artisan route:list`: 449 routes load.
 - `php artisan view:cache`: **all Blade views compile**.
 - `php -l` on every resolved PHP file: clean.
-- Unit suite: compared against both original repos run in the same environment (see section 6).
-- Feature suite: see section 6.
+- Unit and Feature suites: run on the merged tree and on both original repos (see section 6).
 
 Not run: phpstan/larastan (packages unavailable offline), browser/E2E checks.
 
 ## 6. Test comparison
 
-_(filled below)_
+All suites were run in the same environment (PHP 8.4, MariaDB 10.11) on the merged tree and on both original repos.
+
+**Unit suite**
+- merged: 99/122 pass. **Every remaining failure also fails in rajeh or 3allaf itself.** These are source-string checks tied to each repo's own files.
+
+**Feature suite (full)**
+- rajeh/main alone: 347/461 pass.
+- merged: 325/526 pass. The merged tree has more tests because it includes both repos' tests.
+- 14 tests that fail on rajeh/main pass on the merged tree.
+
+**3allaf feed-store tests (seeded with `DemoFeedStoreSeeder`)**, 3allaf baseline → merged:
+- Unchanged and passing: R1 sales reports 9/9, feed pricing 8/8, POS credit checkout 6/6, AR return split, last customer price, batch tracking, financial scope, factories, legacy settlement migration.
+- Failing the same way on the 3allaf baseline too: shift→treasury transfer 0/3, feed-store operations UI 0/3.
+- Now failing: P0 inventory receiving, P0.8 credit settlement, supplier credit payables, R2 inventory reports, expenses/cash accounts, customer receipts, fractional adjustment. The cause is rajeh's security hardening: a super admin is now limited to their **operational company**. When more than one company exists, a super admin without a branch/store scope is denied ("You are not authorized for this inventory store" / "No active company is available in your authorized scope"). These 3allaf tests create a second company with an unscoped super admin, so they hit this rule. In a single-company feed store with scoped users the rule does not apply. The fix is in the test fixtures (give the actor a branch scope), not in the business code. **Decide whether to keep rajeh's rule.**
+
+**Rajeh tests that fail because of 3allaf business rules (expected):**
+- products need a sellable base unit and a positive price per store/unit
+- shift closing requires a treasury cash account
+- inventory adjustments require a reason
+- quantities display as exact decimals (`2.000000` / `1.235`), not rajeh's rounded integers
+
+Rajeh fixtures don't create these records. Either update those fixtures or relax the 3allaf rule.
 
 ## 7. Needs your decision / follow‑ups
 
