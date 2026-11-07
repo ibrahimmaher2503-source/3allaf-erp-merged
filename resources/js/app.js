@@ -4,6 +4,7 @@ import './pos-payment-calculator';
 import './offline-pos';
 import './keyboard-product-lines';
 import './stocktake-scan';
+import './barcode-scanner';
 
 if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
     window.addEventListener('load', () => {
