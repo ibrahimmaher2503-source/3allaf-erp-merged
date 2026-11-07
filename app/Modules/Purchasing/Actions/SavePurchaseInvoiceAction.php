@@ -14,7 +14,6 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
-use App\Support\ProductQuantity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -161,11 +160,18 @@ final class SavePurchaseInvoiceAction
                 // [merge rajeh] Invoice lines linked to a purchase order inherit the approved order's price, discount and tax terms.
                 // Remaining-quantity validation stays after unit conversion (see calculated-lines loop below).
                 if ($purchaseOrderLine !== null) {
-                    $line['unit_cost'] = (string) ($purchaseOrderLine->entered_unit_price ?? $purchaseOrderLine->unit_cost);
+                    $orderFactor = (string) ($purchaseOrderLine->conversion_factor_snapshot ?? '1');
+                    $invoiceFactor = (string) ($productUnit?->conversion_factor ?? '1');
+                    if ($productUnit !== null && (int) $purchaseOrderLine->product_unit_id === (int) $productUnit->id) {
+                        $invoiceFactor = $orderFactor;
+                    }
+                    $orderPrice = (string) ($purchaseOrderLine->entered_unit_price ?? bcmul((string) $purchaseOrderLine->unit_cost, $orderFactor, 8));
+                    $line['unit_cost'] = bcdiv(bcmul($orderPrice, $invoiceFactor, 10), $orderFactor, 4);
                     $line['discount_type'] = $purchaseOrderLine->discount_type;
-                    $orderedEntered = (string) ($purchaseOrderLine->entered_quantity ?? $purchaseOrderLine->quantity_ordered);
-                    $line['discount_value'] = $purchaseOrderLine->discount_type === 'amount' && bccomp($orderedEntered, '0', 6) > 0
-                        ? bcdiv(bcmul((string) $purchaseOrderLine->discount_amount, (string) ($line['quantity'] ?? '0'), 10), $orderedEntered, 4)
+                    $orderedBase = (string) $purchaseOrderLine->quantity_ordered;
+                    $invoiceBase = bcmul((string) ($line['quantity'] ?? '0'), $invoiceFactor, 6);
+                    $line['discount_value'] = $purchaseOrderLine->discount_type === 'amount' && bccomp($orderedBase, '0', 6) > 0
+                        ? bcdiv(bcmul((string) $purchaseOrderLine->discount_amount, $invoiceBase, 10), $orderedBase, 4)
                         : (string) $purchaseOrderLine->discount_value;
                     $line['tax_rate'] = '0';
                     $line['tax_code'] = null;

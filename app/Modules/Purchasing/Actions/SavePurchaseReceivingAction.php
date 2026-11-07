@@ -29,7 +29,7 @@ final class SavePurchaseReceivingAction
 
         return DB::transaction(function () use ($invoiceId, $quantities, $expectedVersion, $actor): PurchaseInvoice {
             $invoice = PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
-                ->with('lines.distributions')->lockForUpdate()->findOrFail($invoiceId);
+                ->with(['lines.distributions', 'lines.product', 'charges'])->lockForUpdate()->findOrFail($invoiceId);
             if ($invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload.'));
             }
@@ -61,7 +61,7 @@ final class SavePurchaseReceivingAction
                 } else {
                     $values = app(PurchaseInvoiceCalculator::class)->calculateLine([
                         ...$line->getAttributes(),
-                        'product' => null,
+                        'product' => $line->product,
                         'product_unit' => null,
                         'quantity' => (string) $quantity,
                         'entered_quantity' => (string) $quantity,
@@ -82,6 +82,9 @@ final class SavePurchaseReceivingAction
                 foreach (['subtotal', 'tax_amount', 'discount_amount', 'total_amount'] as $field) {
                     $totals[$field] = bcadd($totals[$field], (string) $line->{$field === 'total_amount' ? 'line_total' : $field}, 4);
                 }
+            }
+            foreach ($invoice->charges as $charge) {
+                $totals['total_amount'] = bcadd($totals['total_amount'], (string) $charge->amount, 4);
             }
             $invoice->update([...$totals, 'lock_version' => $invoice->lock_version + 1, 'updated_by' => $actor->id]);
             ApprovalRecord::query()->where('source_type', 'purchase_invoices')->where('source_id', (string) $invoice->id)
