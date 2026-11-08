@@ -1,6 +1,6 @@
 # 45 — Purchasing Authorization and Approval Matrix
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Owner-approved local policy baseline extending `docs/04-roles-permissions.md` — DEC-050 (2026-08-06)
 **Authority:** DEC-038 (canonical matrix), NFR-03

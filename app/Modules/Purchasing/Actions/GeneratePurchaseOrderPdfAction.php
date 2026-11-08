@@ -50,7 +50,7 @@ final class GeneratePurchaseOrderPdfAction
             }
             if ($bytes === '') throw new RuntimeException('Purchase-order PDF generation returned no bytes.');
 
-            $temporary = tempnam(sys_get_temp_dir(), 'toyjoy-po-');
+            $temporary = tempnam(sys_get_temp_dir(), '3allaf-po-');
             if ($temporary === false) throw new RuntimeException('Could not allocate purchase-order PDF storage.');
             $pdfPath = $temporary.'.pdf';
             rename($temporary, $pdfPath);

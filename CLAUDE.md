@@ -1,4 +1,4 @@
-# TOY & JOY Claude Instructions
+# 3allaf Claude Instructions
 
 Read `AGENTS.md`, `AI_INDEX.md`, and the current `.ai/` task-state files before changing the project. `AGENTS.md` is the mandatory source of truth for agent behavior.
 

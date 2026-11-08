@@ -1,6 +1,6 @@
 # 27 — Customer, Loyalty, Wallet, and Gift Instrument Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** MD-06, CUS-01–CUS-04, RET-04  

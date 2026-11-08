@@ -1,6 +1,6 @@
 # 54 — Production Data Migration and Reconciliation
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation specification — team-adopted defaults, owner data outstanding
 **Authority:** MD-01–MD-06, PRC-01, INV-01, NFR-01, NFR-02

@@ -1,6 +1,6 @@
 # 23 — Product and Barcode Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** PRD requirements MD-02–MD-05 and PRC-01–PRC-02  

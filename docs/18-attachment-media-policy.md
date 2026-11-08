@@ -1,6 +1,6 @@
 # 18 — Attachment and Media Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Approved local implementation baseline; production storage provider and retention infrastructure remain configurable  
 **Authority:** PRD NFR-01, NFR-04, POS-03, security checklist, and owner direction  

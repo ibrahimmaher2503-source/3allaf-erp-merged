@@ -597,7 +597,7 @@ new #[Title('Branch Management')] class extends Component
                     wire:model="branchForm.email"
                     :label="__('Email')"
                     type="email"
-                    placeholder="branch@toyjoy.com"
+                    placeholder="branch@3allaf.com"
                 />
 
             </div>

@@ -1,6 +1,6 @@
 # 42 — Purchase Invoice Import Specification
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** PUR-04, AC-PUR-04

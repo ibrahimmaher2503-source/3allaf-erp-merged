@@ -1,6 +1,6 @@
 # 22 — Application, Service, and Integration Conventions
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Approved implementation baseline  
 **Architecture:** Laravel modular monolith, Blade, full-page Livewire, Flux UI  

@@ -1,6 +1,6 @@
 # 55 — Chart and Visualization Specification
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation specification — team-adopted defaults, owner approval outstanding
 **Authority:** RPT-01, RPT-02, RPT-03, NFR-03, NFR-05

@@ -6,7 +6,7 @@ The contextual Page Guide and Appearance Customizer are shared Platform capabili
 
 ## 1. Authority and Purpose
 
-This is the authoritative technical architecture for TOY & JOY Phase 1. It implements the approved Laravel modular-monolith direction and supplements the PRD, Implementation Plan, canonical authorization matrix, approved decisions, and policies. It does not replace a higher-authority source.
+This is the authoritative technical architecture for 3allaf Phase 1. It implements the approved Laravel modular-monolith direction and supplements the PRD, Implementation Plan, canonical authorization matrix, approved decisions, and policies. It does not replace a higher-authority source.
 
 The application remains one Laravel repository, deployment, database, authentication system, and asset build. Modules are ownership boundaries, not services. Do not introduce microservices, a separate frontend, a normal-screen API, GraphQL, or a full SPA.
 

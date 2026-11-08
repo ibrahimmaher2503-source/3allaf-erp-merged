@@ -1,4 +1,4 @@
-# TOY & JOY Phase 1 — Implementation Backlog
+# 3allaf Phase 1 — Implementation Backlog
 
 ## Detailed Specification References (DEC-040)
 
@@ -134,7 +134,7 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 - **Optional step:** Printer profile review. Production device acceptance remains a separate UAT gate.
 - **Safety:** No production defaults, reason catalog entries, production approval limits, production users, or approvals are created automatically. The owner-authorized Demo register may contain clearly labeled pending examples; pending/locked-only financial versions do not count as ready, and only an effective, non-expired version linked to an approved `ApprovalRecord` counts.
 - **Routes / permissions:** `/dashboard` shows the setup panel when required data is missing; `/initial-setup` is limited to `company_settings.edit`. Existing settings, branches, authorization baseline, and supplier-return settings screens remain the data-entry surfaces.
-- **Evidence:** Browser-verified with Local Demo Administrator at `/dashboard`, `/initial-setup`, and `/purchasing/returns/settings`; after explicit owner authorization, Demo company identity is populated as `TOY & JOY - Local Demo / EGP / ج.م`, readiness is `3/5 (60%)`, and four supplier-return financial policy examples are visible as `Awaiting approval`. Existing payment/tax/numbering/printer Demo rows are explicitly labeled; `supplier_return_reasons=0`, `approved_versions=0`, and no `ApprovalRecord` was created for these Demo values. Non-administrative Local Demo Cashier received the existing Access Denied screen; console reported zero JavaScript errors. `DemoSeeder` completed successfully on the local SQLite database after preserving invoice-referenced purchase-order lines.
+- **Evidence:** Browser-verified with Local Demo Administrator at `/dashboard`, `/initial-setup`, and `/purchasing/returns/settings`; after explicit owner authorization, Demo company identity is populated as `3allaf - Local Demo / EGP / ج.م`, readiness is `3/5 (60%)`, and four supplier-return financial policy examples are visible as `Awaiting approval`. Existing payment/tax/numbering/printer Demo rows are explicitly labeled; `supplier_return_reasons=0`, `approved_versions=0`, and no `ApprovalRecord` was created for these Demo values. Non-administrative Local Demo Cashier received the existing Access Denied screen; console reported zero JavaScript errors. `DemoSeeder` completed successfully on the local SQLite database after preserving invoice-referenced purchase-order lines.
 
 ### TSK-005 — Configure Company, Payment, Tax, Numbering, and Printer Settings
 

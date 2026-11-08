@@ -6,7 +6,7 @@ product
 
 ## Users
 
-TOY & JOY serves System Administrators, Branch Managers, Cashiers, Purchasing Officers, Warehouse Managers, Pricing Officers, Party Managers, Stock Counters, and Accountants/Reviewers. They work on desktop and tablet devices in stores, warehouses, offices, and cashier stations, often under time pressure and with mixed technical experience. Their primary jobs are configuring operations, moving and counting stock, completing fast sales, reconciling shifts, serving customers, and coordinating party services and rental assets.
+3allaf serves System Administrators, Branch Managers, Cashiers, Purchasing Officers, Warehouse Managers, Pricing Officers, Party Managers, Stock Counters, and Accountants/Reviewers. They work on desktop and tablet devices in stores, warehouses, offices, and cashier stations, often under time pressure and with mixed technical experience. Their primary jobs are configuring operations, moving and counting stock, completing fast sales, reconciling shifts, serving customers, and coordinating party services and rental assets.
 
 ## Product Purpose
 

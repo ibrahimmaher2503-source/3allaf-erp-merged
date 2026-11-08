@@ -1,6 +1,6 @@
 # 48 — POS Financial Calculation Policy
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation policy — team-adopted defaults, owner approval outstanding
 **Authority:** POS-03–POS-07, POS-05, CSH-02–CSH-04, NFR-06

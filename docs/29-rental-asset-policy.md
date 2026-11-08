@@ -1,6 +1,6 @@
 # 29 — Rental Asset, Damage, Loss, and Depreciation Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** AST-01–AST-05  

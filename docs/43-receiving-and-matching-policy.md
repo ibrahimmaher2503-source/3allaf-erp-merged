@@ -1,6 +1,6 @@
 # 43 — Receiving, Matching, and Purchase Document Numbering Policy
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** PUR-01–PUR-06, AC-PUR-05

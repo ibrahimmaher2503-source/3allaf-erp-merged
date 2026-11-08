@@ -1,6 +1,6 @@
 # 50 — Reporting Formula Catalog
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation specification — team-adopted defaults, owner approval outstanding
 **Authority:** RPT-01–RPT-03, Required Report Groups

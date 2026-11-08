@@ -1,6 +1,6 @@
 # 25 — Inventory Exception and Reconciliation Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** INV-01–INV-09  

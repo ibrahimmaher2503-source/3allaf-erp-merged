@@ -283,7 +283,7 @@ final class ProductionSeeder extends Seeder
     private function seedOperationalBaseline(): void
     {
         $company = Company::query()->firstOrCreate(['code' => 'TOY-JOY'], [
-            'name_ar' => 'توي آند جوي', 'name_en' => 'Toy & Joy', 'legal_name' => 'Toy & Joy',
+            'name_ar' => 'علاف', 'name_en' => '3allaf', 'legal_name' => '3allaf',
             'currency_code' => 'EGP', 'currency_symbol' => 'E£', 'timezone' => 'Africa/Cairo',
             'locale_default' => 'ar', 'email' => 'admin@instaparty.online', 'status' => 'active',
         ]);

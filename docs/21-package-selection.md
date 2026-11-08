@@ -1,6 +1,6 @@
 # 21 — Package Selection and Capability Register
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Approved package-selection process; package names/versions require actual project compatibility review  
 **Technology baseline:** Laravel 13, PHP 8.4, Livewire 4, Flux UI 2, Tailwind CSS 4, Vite 8

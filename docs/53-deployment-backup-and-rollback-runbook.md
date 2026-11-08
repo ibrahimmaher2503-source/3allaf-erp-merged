@@ -1,6 +1,6 @@
 # 53 — Deployment, Backup, Restore, and Rollback Runbook
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived operational specification — team-adopted defaults, infrastructure decisions outstanding
 **Authority:** NFR-04, NFR-01

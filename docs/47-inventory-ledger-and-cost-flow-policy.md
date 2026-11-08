@@ -1,6 +1,6 @@
 # 47 — Inventory Ledger and Cost Flow Policy
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** DEC-052 engineering baseline adopted for TSK-016 Local/Dev structure and cost-flow enforcement; return-reason catalog content and numeric approval limits remain owner/configuration inputs.
 **Authority:** INV-01–INV-09, PUR-05, PUR-06, RET-02, RET-03, NFR-01, NFR-02

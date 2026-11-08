@@ -323,7 +323,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'pdf' => 'application/pdf','csv' => 'text/csv; charset=UTF-8',default => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         };
 
-        return Storage::disk($job->storage_disk ?: 'local')->download($job->storage_path, 'toyjoy-'.$job->report_key.'-'.$job->id.'.'.$extension, ['Content-Type' => $mime]);
+        return Storage::disk($job->storage_disk ?: 'local')->download($job->storage_path, '3allaf-'.$job->report_key.'-'.$job->id.'.'.$extension, ['Content-Type' => $mime]);
     })->name('exports.download');
 
     Route::get('exports/{job}/view', function (Request $request, ExportJob $job) {

@@ -1,6 +1,6 @@
-# TOY & JOY Mandatory Agent Instructions
+# 3allaf Mandatory Agent Instructions
 
-This file governs every AI coding agent working on TOY & JOY Phase 1. The repository contains the documentation baseline and a Laravel 13 application foundation. Project state is dynamic. Always read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, and the latest relevant `.ai/SESSION_SUMMARY.md` entry for the actual state.
+This file governs every AI coding agent working on 3allaf Phase 1. The repository contains the documentation baseline and a Laravel 13 application foundation. Project state is dynamic. Always read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, and the latest relevant `.ai/SESSION_SUMMARY.md` entry for the actual state.
 
 Repository-wide mandatory policy: every Codex account and every user working through SSH, in this worktree or any future worktree based on this commit, must follow `.ai/ERP_CHANGE_POLICY.md`, including its classification, scope-escalation, verification-budget, batching, and reporting rules. No user-specific workflow or nested instruction file may weaken or bypass that policy; additional instructions may only be equally or more restrictive.
 

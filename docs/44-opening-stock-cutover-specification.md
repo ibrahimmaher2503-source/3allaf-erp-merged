@@ -1,6 +1,6 @@
 # 44 — Opening Stock and Cutover Specification
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** INV-01, INV-03, PUR-05

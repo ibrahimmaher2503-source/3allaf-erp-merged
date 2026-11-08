@@ -1,6 +1,6 @@
 # 19 — Audit, Integrity, and Immutability Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Approved implementation baseline  
 **Authority:** PRD NFR-01, NFR-02, NFR-06, canonical permissions, and owner direction  
@@ -10,7 +10,7 @@
 
 ## 1. Purpose
 
-This policy defines trustworthy history for TOY & JOY. It standardizes append-only audit events, approved-record immutability, correction by reference, sensitive-value redaction, and traceability across modules.
+This policy defines trustworthy history for 3allaf. It standardizes append-only audit events, approved-record immutability, correction by reference, sensitive-value redaction, and traceability across modules.
 
 ---
 

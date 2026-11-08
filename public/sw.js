@@ -1,7 +1,7 @@
-// TOY & JOY Minimal Static Service Worker Shell
+// 3allaf Minimal Static Service Worker Shell
 // Strictly no caching of authenticated/private responses or dynamic routes.
 
-const CACHE_NAME = 'toy-joy-shell-v1';
+const CACHE_NAME = '3allaf-shell-v1';
 const STATIC_ASSETS = [
     '/favicon.ico',
     '/favicon.svg',

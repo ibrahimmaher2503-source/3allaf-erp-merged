@@ -1,6 +1,6 @@
 # 57 — UI Interaction and Data Entry Standard
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation standard — team-adopted defaults, owner approval outstanding
 **Authority:** POS-01, NFR-02, NFR-03, NFR-05, NFR-06

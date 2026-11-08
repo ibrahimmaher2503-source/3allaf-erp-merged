@@ -1,6 +1,6 @@
 # 26 — Discount, Return, Exchange, and Refund Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** POS-05–POS-07 and RET-01–RET-04  

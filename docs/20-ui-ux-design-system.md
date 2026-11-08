@@ -1,6 +1,6 @@
 # 20 — UI/UX Design System
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Approved implementation baseline  
 **Technology:** Blade, Livewire, Flux UI, Tailwind CSS, Vite  

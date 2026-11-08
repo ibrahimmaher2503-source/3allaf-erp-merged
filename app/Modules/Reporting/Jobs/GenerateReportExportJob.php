@@ -126,7 +126,7 @@ final class GenerateReportExportJob implements ShouldQueue
     /** @param array<string, mixed> $snapshot */
     private function xlsx(array $snapshot): string
     {
-        $temporary = tempnam(sys_get_temp_dir(), 'toyjoy-export-');
+        $temporary = tempnam(sys_get_temp_dir(), '3allaf-export-');
         if ($temporary === false) {
             throw new RuntimeException('Could not allocate a temporary export file.');
         }

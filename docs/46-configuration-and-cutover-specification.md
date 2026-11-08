@@ -1,6 +1,6 @@
 # 46 — Financial Configuration and Cutover Specification
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Team-adopted engineering baseline — owner approval outstanding
 **Authority:** DEC-043

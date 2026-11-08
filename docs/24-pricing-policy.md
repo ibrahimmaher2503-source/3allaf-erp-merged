@@ -1,6 +1,6 @@
 # 24 — Pricing and Label Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** PRC-03–PRC-08  

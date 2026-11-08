@@ -1,6 +1,6 @@
 # 41 — Purchase Cost, Rounding, Tax, and Discount Policy
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** PUR-04, PUR-05, MD-01, INV-01

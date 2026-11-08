@@ -2,11 +2,11 @@
 
 ## Project Summary
 
-TOY & JOY Phase 1 will provide one cloud-hosted, browser-based system for retail-store, warehouse, POS, customer, and party operations. It is designed for central administration and multiple branches/stores while retaining trustworthy transaction history, role-scoped visibility, inventory integrity, controlled cash handling, and strict separation between retail and party financial activity.
+3allaf Phase 1 will provide one cloud-hosted, browser-based system for retail-store, warehouse, POS, customer, and party operations. It is designed for central administration and multiple branches/stores while retaining trustworthy transaction history, role-scoped visibility, inventory integrity, controlled cash handling, and strict separation between retail and party financial activity.
 
 ## Business Context
 
-TOY & JOY operates product retail and party services/rentals. Both activities need shared customer identity and loyalty, but they have different inventory, invoice, wallet, operational, and permission boundaries. Current work converts an approved PRD and milestone plan into a single traceable execution system for future human and AI implementers.
+3allaf operates product retail and party services/rentals. Both activities need shared customer identity and loyalty, but they have different inventory, invoice, wallet, operational, and permission boundaries. Current work converts an approved PRD and milestone plan into a single traceable execution system for future human and AI implementers.
 
 ## Problem Statement
 

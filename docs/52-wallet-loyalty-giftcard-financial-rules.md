@@ -1,6 +1,6 @@
 # 52 — Wallet, Loyalty, and Gift Card Financial Rules
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation policy — team-adopted defaults, owner approval outstanding
 **Authority:** CUS-01–CUS-04, RET-02, RET-04, NFR-01, NFR-02

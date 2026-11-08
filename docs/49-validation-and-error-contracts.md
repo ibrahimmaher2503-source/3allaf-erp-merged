@@ -1,6 +1,6 @@
 # 49 — Validation and Error Contracts
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation specification — team-adopted defaults
 **Authority:** NFR-03, NFR-04, NFR-05, NFR-06

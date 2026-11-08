@@ -1,6 +1,6 @@
 # 51 — Offline POS Operating Policy
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation policy — team-adopted defaults, owner approval outstanding
 **Authority:** POS-01, POS-03, Offline Cashier Mode, NFR-04

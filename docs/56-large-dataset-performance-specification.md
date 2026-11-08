@@ -1,6 +1,6 @@
 # 56 — Large Dataset, Table, and Performance Specification
 
-**Product:** TOY & JOY
+**Product:** 3allaf
 **Phase:** Phase 1
 **Status:** Derived implementation specification — team-adopted defaults, owner approval outstanding
 **Authority:** NFR-05 (searchable/filterable views, pagination or equivalent safe loading), NFR-03, NFR-04, RPT-03

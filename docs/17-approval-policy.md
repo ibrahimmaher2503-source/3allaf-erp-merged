@@ -1,6 +1,6 @@
 # 17 — Approval and Reason Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Approved local implementation baseline; production-sensitive limits remain configurable  
 **Authority:** PRD, `04-roles-permissions.md`, `12-acceptance-criteria.md`, `13-definition-of-done.md`, and owner direction  
@@ -10,7 +10,7 @@
 
 ## 1. Purpose
 
-This policy defines the reusable approval model for TOY & JOY. It exists to prevent each module from inventing its own workflow and to preserve clear separation between preparation, approval, correction, and audit.
+This policy defines the reusable approval model for 3allaf. It exists to prevent each module from inventing its own workflow and to preserve clear separation between preparation, approval, correction, and audit.
 
 The policy does not create business modules. It defines conventions that future modules must apply when their own records and screens are implemented.
 

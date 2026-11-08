@@ -1,6 +1,6 @@
 # 02 — Product Requirements Document
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1 — Retail Stores, Inventory, POS, and Party Operations  
 **Status:** Approved Phase 1 functional baseline, normalized for implementation  
 **Source authority:** The approved English PRD supplied by I.S. Intelligent Solutions  

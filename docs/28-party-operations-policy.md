@@ -1,6 +1,6 @@
 # 28 — Party Operations and Settlement Policy
 
-**Product:** TOY & JOY  
+**Product:** 3allaf  
 **Phase:** Phase 1  
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** PTY-01–PTY-06 and AST-05  
