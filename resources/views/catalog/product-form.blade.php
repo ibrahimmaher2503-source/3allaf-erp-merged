@@ -532,7 +532,7 @@ new #[Title('Product Card')] class extends Component
 
     public function render()
     {
-        $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
+        $companyId = (int) app(AuthorizedCompanyContext::class)->resolveForPage(auth()->user(), request()->input('company_id'))->id;
         $product = $this->productId === null ? null : Product::query()
             ->with(['category', 'brand', 'barcodes', 'images.attachment', 'ages', 'characters', 'filterValues'])
             ->findOrFail($this->productId);

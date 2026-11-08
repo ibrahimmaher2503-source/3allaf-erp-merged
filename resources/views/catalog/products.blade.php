@@ -379,7 +379,7 @@ new #[Title('Product Masters')] class extends Component
     #[Computed]
     public function catalogLookups(): array
     {
-        $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
+        $companyId = (int) app(AuthorizedCompanyContext::class)->resolveForPage(auth()->user(), request()->input('company_id'))->id;
         return [
             'categories' => Category::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
             'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
