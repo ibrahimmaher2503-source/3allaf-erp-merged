@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use App\Modules\Assets\Models\RentalAsset;
-use App\Modules\Catalog\Models\ProductUnit;
 use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
@@ -12,6 +10,7 @@ use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductUnit;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerGroup;
@@ -25,9 +24,9 @@ use App\Modules\Reporting\Actions\CreateExportJobAction;
 use App\Modules\Reporting\Actions\EvaluateAlertsAction;
 use App\Modules\Reporting\Models\Alert;
 use App\Modules\Reporting\Models\ExportJob;
+use App\Modules\Reporting\Queries\InventoryReport;
 use App\Modules\Reporting\Queries\PhaseOneReports;
 use App\Modules\Reporting\Queries\ReportSnapshot;
-use App\Modules\Reporting\Queries\InventoryReport;
 use App\Modules\Reporting\Queries\SalesReport;
 use App\Modules\Retail\Models\Sale;
 use Illuminate\Database\Eloquent\Builder;
@@ -125,6 +124,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $reportKey = $focusedModule ?? 'dashboard';
         $reportTitle = $focusedModule === null ? __('Reports and Export Center') : __($reportTitles[$focusedModule]);
+
         return view('pages.reports.index', compact('report', 'reportKey', 'reportTitle', 'branches', 'stores', 'users', 'products', 'categories', 'paymentMethods', 'customers', 'suppliers', 'brands', 'ages', 'characters', 'colours', 'genders'));
     };
 
@@ -262,14 +262,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         $evaluator->execute($user);
-        $alerts = Alert::query()->visibleTo($user)->with(['branch', 'store'])->where('status', 'open')->latest('id')->paginate(20)->through(function (Alert $alert) use ($user): Alert {
+        $alerts = Alert::query()->visibleTo($user)->with(['branch', 'store'])->where('status', 'open')->where('alert_type', '!=', 'asset_issue')->latest('id')->paginate(20)->through(function (Alert $alert) use ($user): Alert {
             $alert->source_url = null;
-            if ($alert->source_type === RentalAsset::class && $user->can('rental_assets.view')) {
-                $asset = RentalAsset::query()->visibleTo($user)->whereKey((int) $alert->source_id)->first();
-                if ($asset !== null) {
-                    $alert->source_url = route('party.assets.index', ['q' => $asset->code]);
-                }
-            } elseif (in_array($alert->source_type, [StockBalance::class, Product::class], true) && $user->can('inventory_stock_card.view')) {
+            if (in_array($alert->source_type, [StockBalance::class, Product::class], true) && $user->can('inventory_stock_card.view')) {
                 $productId = (int) ($alert->metadata['product_id'] ?? $alert->source_id);
                 if ($productId > 0) {
                     $alert->source_url = route('inventory.stock-card', $productId);
@@ -293,7 +288,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('dashboard_reports.edit'), 403);
         $updated = DB::transaction(function () use ($user, $alert): bool {
-            $locked = Alert::query()->visibleTo($user)->whereKey($alert->id)->lockForUpdate()->firstOrFail();
+            $locked = Alert::query()->visibleTo($user)->where('alert_type', '!=', 'asset_issue')->whereKey($alert->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'open') {
                 return false;
             }
@@ -310,7 +305,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('dashboard_reports.export_xlsx') || $user->can('dashboard_reports.export_pdf'), 403);
-        $jobs = ExportJob::query()->where('requested_by', $user->id)->latest('id')->paginate(20)->withQueryString();
+        $jobs = ExportJob::query()->where('requested_by', $user->id)->whereNotIn('report_key', ['parties', 'assets'])->latest('id')->paginate(20)->withQueryString();
 
         return view('pages.exports.index', compact('jobs'));
     })->name('exports.index');
@@ -319,6 +314,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id, 403);
+        abort_if(in_array($job->report_key, ['parties', 'assets'], true), 404);
         abort_unless($job->status === 'ready' && $job->expires_at?->isFuture(), 410);
         abort_unless($job->storage_path !== null && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 404);
         app(RecordAuditEvent::class)->execute('reporting', 'export_downloaded', $job, branchId: $job->branch_id, storeId: $job->store_id, metadata: ['row_count' => $job->row_count, 'filters' => $job->filters, 'expires_at' => $job->expires_at?->toIso8601String()]);
@@ -333,6 +329,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('exports/{job}/view', function (Request $request, ExportJob $job) {
         /** @var User $user */ $user = $request->user();
         abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id, 403);
+        abort_if(in_array($job->report_key, ['parties', 'assets'], true), 404);
         abort_unless($job->status === 'ready' && $job->expires_at?->isFuture() && $job->storage_path && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 410);
 
         return Storage::disk($job->storage_disk ?: 'local')->response($job->storage_path, null, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);

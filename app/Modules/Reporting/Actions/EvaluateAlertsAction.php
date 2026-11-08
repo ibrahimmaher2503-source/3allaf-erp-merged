@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Reporting\Actions;
 
 use App\Models\User;
-use App\Modules\Assets\Actions\EvaluateAssetAlertsAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Support\LowStockRule;
@@ -16,7 +15,7 @@ final class EvaluateAlertsAction
 {
     public function execute(?User $user = null): int
     {
-        $count = app(EvaluateAssetAlertsAction::class)->execute($user);
+        $count = 0;
         $storeIds = Store::query()->when($user !== null, fn ($query) => $query->visibleTo($user))
             ->whereNotNull('branch_id')->where('status', 'active')->pluck('id')->all();
         StockBalance::reportRows($storeIds)

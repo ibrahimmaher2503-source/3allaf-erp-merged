@@ -97,6 +97,10 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             }
 
+            if (preg_match('/^(party_wallet|party_bookings_invoices|party_operating_orders_consumables|rental_assets)\./', $ability)) {
+                return false;
+            }
+
             // The active System Administrator role owns every application
             // permission, including future dotted permission codes. Model
             // policy abilities (view/decide/etc.) must still run so workflow

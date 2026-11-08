@@ -52,6 +52,10 @@ class ApprovalRecordPolicy
 
     private function hasScope(User $user, ApprovalRecord $record): bool
     {
+        if (in_array($record->source_type, ApprovalRecord::PARTY_SOURCES, true)) {
+            return false;
+        }
+
         if ($user->canBypassApproval()) {
             if ($record->branch_id !== null && ! $user->canAccessBranch((int) $record->branch_id)) {
                 return false;

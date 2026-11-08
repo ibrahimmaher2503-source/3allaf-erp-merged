@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Actions\ApprovePartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\ApproveProductWalletAdjustmentAction;
@@ -14,9 +13,7 @@ use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Customer\Models\PartyWalletLedger;
 use App\Modules\Customer\Models\ProductWalletLedger;
-use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Support\WalletPolicy;
-use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\RequestApproval;
@@ -613,198 +610,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back()->with('success', __('Party Wallet adjustment rejected and audited.'));
     })->middleware('can:party_wallet.approve')->name('wallets.party.adjustments.reject');
 
-    Route::get('pos/session-legacy', function (Request $request, PosContextResolver $contextResolver) {
-        /** @var User $user */
-        $user = $request->user();
-        abort_unless($user->can('pos_sales.view'), 403);
-        $context = $contextResolver->resolve($user);
-        $store = $context->store;
-        $shift = $context->shift;
-        $selectedCustomer = null;
-        $customerSearchResults = collect();
-        $customerQuery = trim((string) $request->query('customer_q', ''));
-        $customerPurposes = [];
-        $customerPolicyError = null;
-        if ($store !== null && $user->can('customers.view')) {
-            try {
-                $customerPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
-            } catch (InvalidArgumentException $exception) {
-                $customerPolicyError = UserSafeError::message($exception);
-            }
-            $selectedCustomerId = $request->session()->get('pos.customer_id');
-            if (is_numeric($selectedCustomerId)) {
-                $selectedCustomer = Customer::query()
-                    ->visibleFrom($user, (int) $store->branch_id, (int) $store->id)
-                    ->where('status', 'active')
-                    ->find((int) $selectedCustomerId);
-            }
-            if ($customerQuery !== '') {
-                $digits = preg_replace('/[^0-9]+/', '', $customerQuery);
-                $customerSearchResults = Customer::query()->visibleTo($user)->where('status', 'active')
-                    ->where(function ($query) use ($customerQuery, $digits): void {
-                        $query->where('name_ar', 'like', '%'.$customerQuery.'%')->orWhere('name_en', 'like', '%'.$customerQuery.'%');
-                        if (is_string($digits) && $digits !== '') {
-                            $query->orWhere('phone_normalized', 'like', '%'.$digits.'%');
-                        }
-                    })->orderBy('name_en')->limit(10)->get();
-            }
-        }
-        /** @var array<int, array{product_id: int, quantity: numeric-string}> $sessionCart */
-        $sessionCart = $request->session()->get('pos.cart', []);
-        $cart = collect($sessionCart);
-        $productIds = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->all();
-        $cartProducts = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
-        $productQuery = trim((string) $request->query('product_q', ''));
-        $categoryId = $request->integer('category') ?: null;
-        $availableCategories = Category::query()
-            ->active()
-            ->whereHas('products', fn ($query) => $query->active())
-            ->orderBy('sort_order')
-            ->orderBy('name_en')
-            ->limit(12)
-            ->get();
-        if ($categoryId !== null && ! $availableCategories->contains('id', $categoryId)) {
-            $categoryId = null;
-        }
-        $availableProductsQuery = Product::query()
-            ->active()
-            ->familiesAndSimple()
-            ->with([
-                'category:id,name_ar,name_en',
-                'barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')->orderBy('barcode'),
-            ])
-            ->orderBy('item_code')
-            ->limit(24);
-        if ($categoryId !== null) {
-            $availableProductsQuery->where('category_id', $categoryId);
-        }
-        if ($productQuery !== '') {
-            $availableProductsQuery->where(function ($query) use ($productQuery): void {
-                $query->where('item_code', 'like', '%'.$productQuery.'%')
-                    ->orWhere('name_ar', 'like', '%'.$productQuery.'%')
-                    ->orWhere('name_en', 'like', '%'.$productQuery.'%')
-                    ->orWhereHas('barcodes', fn ($barcodeQuery) => $barcodeQuery->active()->where('barcode', 'like', '%'.$productQuery.'%'));
-            });
-        }
-        $availableProducts = $availableProductsQuery->get();
-        $stockByProduct = $store === null
-            ? collect()
-            : StockBalance::query()
-                ->where('store_id', $store->id)
-                ->whereIn('product_id', $availableProducts->pluck('id'))
-                ->get(['product_id', 'on_hand', 'reserved'])
-                ->keyBy('product_id');
-        $pricedProductIds = $availableProducts->pluck('id')->merge($productIds)->all();
-        $priceMap = $store === null
-            ? collect()
-            : app(EffectivePriceResolver::class)->resolveForStore($pricedProductIds, (int) $store->id);
-        $otherStoreAvailability = collect();
-        if ($productQuery !== '' && $store !== null) {
-            $visibleOtherStoreIds = Store::query()
-                ->visibleTo($user)
-                ->where('type', 'selling')
-                ->where('status', 'active')
-                ->where('id', '<>', $store->id)
-                ->limit(50)
-                ->pluck('id');
-            if ($visibleOtherStoreIds->isNotEmpty()) {
-                $otherStoreAvailability = StockBalance::query()
-                    ->with(['product', 'store.branch'])
-                    ->whereIn('store_id', $visibleOtherStoreIds)
-                    ->whereRaw('(on_hand - reserved) > 0')
-                    ->whereHas('product', function ($query) use ($productQuery): void {
-                        $query->active()->where(function ($productSearch) use ($productQuery): void {
-                            $productSearch->where('item_code', 'like', '%'.$productQuery.'%')
-                                ->orWhere('name_ar', 'like', '%'.$productQuery.'%')
-                                ->orWhere('name_en', 'like', '%'.$productQuery.'%')
-                                ->orWhereHas('barcodes', fn ($barcodeQuery) => $barcodeQuery->active()->where('barcode', 'like', '%'.$productQuery.'%'));
-                        });
-                    })
-                    ->orderBy('store_id')
-                    ->limit(50)
-                    ->get();
-            }
-        }
-        $suspendedCount = Sale::query()->visibleTo($user)->where('status', 'suspended')->count();
-        $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
-        $cashMethod = $paymentMethods->first(fn (PaymentMethod $method): bool => $method->isCash());
-        $giftCardMethods = $paymentMethods->filter(fn (PaymentMethod $method): bool => (string) $method->type === 'gift_card')->values();
-        $electronicMethods = $paymentMethods->reject(fn (PaymentMethod $method): bool => ($cashMethod !== null && $method->is($cashMethod)) || (string) $method->type === 'gift_card')->values();
-
-        $previewLines = [];
-        foreach ($cart as $cartLine) {
-            $approvalIds = collect([
-                $cartLine['open_price_approval_id'] ?? null,
-                $cartLine['discount_approval_id'] ?? null,
-            ])->filter(fn ($id): bool => filled($id))->map(fn ($id): int => (int) $id)->unique()->values();
-            if ($approvalIds->isNotEmpty()) {
-                $approvals = ApprovalRecord::query()->whereIn('id', $approvalIds)->get()->keyBy('id');
-                if (filled($cartLine['open_price_approval_id'] ?? null) && ($approval = $approvals->get((int) $cartLine['open_price_approval_id'])) !== null) {
-                    $cartLine['open_price_approval_state'] = $approval->approval_state->value;
-                }
-                if (filled($cartLine['discount_approval_id'] ?? null) && ($approval = $approvals->get((int) $cartLine['discount_approval_id'])) !== null) {
-                    $cartLine['discount_approval_state'] = $approval->approval_state->value;
-                }
-                $cart[$cart->search(fn (array $candidate): bool => (int) ($candidate['product_id'] ?? 0) === (int) $cartLine['product_id'])] = $cartLine;
-            }
-            $product = $cartProducts->get((int) $cartLine['product_id']);
-            $price = $product && $store ? $priceMap->get($product->id) : null;
-            if ($product && $price) {
-                $previewLines[] = [
-                    'product' => $product,
-                    'quantity' => (string) $cartLine['quantity'],
-                    'unit_price' => (string) ($cartLine['open_price_amount'] ?? $price->amount),
-                    'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'),
-                    'price' => $price,
-                    'cart' => $cartLine,
-                ];
-            }
-        }
-        $request->session()->put('pos.cart', $cart->values()->all());
-        app(PosOpenOrderManager::class)->persistSession($request, $user, $context);
-        $taxApplicable = (bool) $request->session()->get('pos.tax_applicable', false);
-        $effectiveTaxes = TaxSetting::query()
-            ->where('company_id', $store->company_id)
-            ->where('status', 'active')
-            ->where('is_default', true)
-            ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
-            ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->limit(2)->get();
-        $taxSetting = $effectiveTaxes->count() === 1 && filled($effectiveTaxes->first()?->rate) ? $effectiveTaxes->first() : null;
-        $previewError = null;
-        try {
-            $preview = $previewLines === [] ? null : app(PosCalculationService::class)->calculate(
-                array_map(static fn (array $line): array => [
-                    'quantity' => $line['quantity'],
-                    'unit_price' => $line['unit_price'],
-                    'discount_amount' => $line['discount_amount'],
-                ], $previewLines),
-                '0.00',
-                $taxApplicable
-                    ? ['applicable' => true, 'rate' => $taxSetting?->rate, 'inclusive' => (bool) ($taxSetting?->is_tax_inclusive ?? false)]
-                    : ['applicable' => false],
-            );
-        } catch (InvalidArgumentException $exception) {
-            $preview = null;
-            $previewError = UserSafeError::message($exception);
-        }
-
-        $checkoutToken = $request->session()->get('pos.checkout_token');
-        if (! is_string($checkoutToken) || $checkoutToken === '') {
-            $checkoutToken = (string) Str::uuid();
-            $request->session()->put('pos.checkout_token', $checkoutToken);
-        }
-
-        $openPriceApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
-        $discountApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
-
-        return view('pages.pos.index', compact(
-            'context', 'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
-            'paymentMethods', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
-            'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
-            'productQuery', 'categoryId', 'availableCategories', 'otherStoreAvailability', 'stockByProduct',
-        ));
-    })->middleware('can:pos_sales.view')->name('pos.legacy');
+    Route::get('pos/session-legacy', fn (Request $request) => redirect()->route('pos', $request->query()))
+        ->middleware('can:pos_sales.view')->name('pos.legacy');
 
     // TSK-025 - real shift/cash workflow (DEC-066, docs/32). Replaces the
     // previous read-only readiness boundary.

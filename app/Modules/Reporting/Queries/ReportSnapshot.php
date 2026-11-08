@@ -367,12 +367,14 @@ final class ReportSnapshot
             }
             $latestProductWalletIds = (clone $productWallets)->selectRaw('MAX(id)')->groupBy('customer_id');
             $productWalletBalance = (float) ProductWalletLedger::query()->whereIn('id', $latestProductWalletIds)->sum('balance_after');
-            $partyWallets = PartyWalletLedger::query()->whereIn('store_id', $storeIds);
-            if ($userId !== null) {
-                $partyWallets->where('created_by', $userId);
+            if (Gate::forUser($user)->allows('party_wallet.view')) {
+                $partyWallets = PartyWalletLedger::query()->whereIn('store_id', $storeIds);
+                if ($userId !== null) {
+                    $partyWallets->where('created_by', $userId);
+                }
+                $latestPartyWalletIds = (clone $partyWallets)->selectRaw('MAX(id)')->groupBy('customer_id');
+                $partyWalletBalance = (float) PartyWalletLedger::query()->whereIn('id', $latestPartyWalletIds)->sum('balance_after');
             }
-            $latestPartyWalletIds = (clone $partyWallets)->selectRaw('MAX(id)')->groupBy('customer_id');
-            $partyWalletBalance = (float) PartyWalletLedger::query()->whereIn('id', $latestPartyWalletIds)->sum('balance_after');
             $cards = GiftCard::query()->visibleTo($user)->whereIn('store_id', $storeIds);
             if ($userId !== null) {
                 $cards->where('issued_by', $userId);
@@ -450,13 +452,17 @@ final class ReportSnapshot
             'unclosed_shifts' => $unclosedShiftCount,
             'customer_count' => $customerCount,
             'new_customer_count' => $newCustomerCount,
-            'party_booking_count' => $partyBookingCount,
-            'upcoming_party_count' => $upcomingPartyCount,
-            'party_invoice_count' => $partyInvoiceCount,
-            'party_balance_due' => round($partyBalanceDue, 2),
-            'assets_available' => $assetsAvailable,
-            'assets_reserved' => $assetsReserved,
-            'asset_issues' => $assetIssues,
+            ...(in_array('parties', $modules, true) ? [
+                'party_booking_count' => $partyBookingCount,
+                'upcoming_party_count' => $upcomingPartyCount,
+                'party_invoice_count' => $partyInvoiceCount,
+                'party_balance_due' => round($partyBalanceDue, 2),
+            ] : []),
+            ...(in_array('assets', $modules, true) ? [
+                'assets_available' => $assetsAvailable,
+                'assets_reserved' => $assetsReserved,
+                'asset_issues' => $assetIssues,
+            ] : []),
         ];
         if (Gate::forUser($user)->allows('shifts_cash_movements.approve') && in_array('cash', $modules, true)) {
             $kpis['shift_variance'] = round($shiftVariance, 2);

@@ -609,13 +609,18 @@ final class RetailTutorialFactory
         };
 
         $isSettings = $kind === 'settings';
+        $viewPermission = match (true) {
+            $isSettings => 'company_settings.view',
+            str_starts_with($kind, 'party') => 'party_bookings_invoices.view',
+            default => 'pos_sales.view',
+        };
         $actions = $isSettings
             ? self::actions([
                 ['settings.review', ['ar' => 'مراجعة مفاتيح القرار', 'en' => 'Review decision keys'], 'company_settings.view'],
                 ['settings.save-local', ['ar' => 'حفظ version محلية', 'en' => 'Save a local version'], 'company_settings.edit'],
             ])
             : self::actions([
-                ['readiness.review', ['ar' => 'مراجعة الجاهزية', 'en' => 'Review readiness'], 'pos_sales.view'],
+                ['readiness.review', ['ar' => 'مراجعة الجاهزية', 'en' => 'Review readiness'], $viewPermission],
             ]);
 
         $steps = [
@@ -630,7 +635,7 @@ final class RetailTutorialFactory
             'title' => ['ar' => $routeTitleAr, 'en' => $routeTitleEn],
             'purpose' => ['ar' => "دليل {$routeTitleAr} ضمن {$task}؛ {$pending} ما زالت معلقة.", 'en' => "Guide for {$routeTitleEn} within {$task}; {$pending} remain pending."],
             'when_to_use' => ['ar' => 'استخدمه للقراءة والتحقق فقط قبل توفر اعتماد المالك.', 'en' => 'Use it for read-only review before owner approval is available.'],
-            'permissions' => $isSettings ? ['company_settings.view'] : ['pos_sales.view'],
+            'permissions' => [$viewPermission],
             'approved_actions' => $actions,
             'stories' => [$task],
             'flows' => ['FLW-READINESS-01'],

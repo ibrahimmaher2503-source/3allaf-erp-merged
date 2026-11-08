@@ -50,7 +50,7 @@ return [
         ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'scale', 'label' => ['ar' => 'اعتمادات الأسعار', 'en' => 'Price approvals']],
         ['route' => 'pricing.focus', 'parameters' => ['mode' => 'history'], 'permission' => 'pricing_labels.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل الأسعار', 'en' => 'Price history']],
     ]],
-    ['key' => 'parties', 'enabled' => true, 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
+    ['key' => 'parties', 'enabled' => false, 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
         ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة والحجوزات', 'en' => 'Overview & bookings']],
         ['route' => 'parties.calendar', 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'التقويم والأجندة', 'en' => 'Calendar & agenda']],
         ['route' => 'parties.invoices.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير ومدفوعات الحفلات', 'en' => 'Party invoices & payments']],

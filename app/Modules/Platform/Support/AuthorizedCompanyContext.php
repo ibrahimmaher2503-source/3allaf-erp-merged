@@ -24,6 +24,15 @@ final class AuthorizedCompanyContext
             ->get();
     }
 
+    public function resolveForPage(User $actor, mixed $requested = null): Company
+    {
+        try {
+            return $this->resolve($actor, $requested);
+        } catch (ValidationException $exception) {
+            abort(403, $exception->getMessage());
+        }
+    }
+
     public function resolve(User $actor, mixed $requested = null): Company
     {
         $companies = $this->companies($actor);

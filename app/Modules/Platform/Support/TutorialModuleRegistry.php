@@ -52,7 +52,7 @@ final class TutorialModuleRegistry
             'customers' => [
                 'key' => 'customers',
                 'title' => ['ar' => 'العملاء والمحافظ', 'en' => 'Customers and wallets'],
-                'description' => ['ar' => 'حافظ على ملف العميل وتاريخه وولائه، مع فصل محفظة المنتجات عن محفظة الحفلات.', 'en' => 'Maintain customer profiles, history, and loyalty while keeping product and party wallets separate.'],
+                'description' => ['ar' => 'حافظ على ملف العميل وتاريخه وولائه ومحفظة المنتجات.', 'en' => 'Maintain customer profiles, history, loyalty, and product wallets.'],
             ],
             'catalog' => [
                 'key' => 'catalog',

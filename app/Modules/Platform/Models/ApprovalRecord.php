@@ -12,6 +12,8 @@ use LogicException;
 
 class ApprovalRecord extends Model
 {
+    public const PARTY_SOURCES = ['party_wallet_adjustments', 'asset_events'];
+
     private bool $transitioning = false;
 
     protected $fillable = [
@@ -103,6 +105,8 @@ class ApprovalRecord extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
+        $query->whereNotIn('source_type', self::PARTY_SOURCES);
+
         if ($user->canBypassApproval()) {
             $branchIds = Branch::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id');
             $storeIds = Store::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id');

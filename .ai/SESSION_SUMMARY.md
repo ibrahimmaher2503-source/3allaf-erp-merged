@@ -1593,3 +1593,27 @@
 ## 2026-11-07 — Merge review checkpoint
 
 Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commits address six merge defects (purchase receipt fractions/charges/unit inheritance, cumulative transfer finalization, checkout credit mode, cart unit availability). Added feature regressions; 8 tests passed with24 assertions in final focused run. Earlier red evidence retained. Unit and Feature suites attempted on both parents and merged tree; environment and fixture limitations are documented in REVIEW_REPORT.md. MariaDB runs from a new isolated data directory after existing XAMPP data server crashed; old data files were not repaired or deleted. No push, deployment or browser acceptance. Review remains incomplete: per-failure causal classification, remaining ten-scenario coverage and full conflict decision audit. Evidence in sibling work/evidence and user outputs.
+
+## 2026-11-07 — Keyboard-wedge barcode scanner support (global)
+
+- Task: owner asked for the connected barcode scanner to be read and used by the system.
+- Device: Windows reports it as USB `VID_34EB&PID_1502` ("HIDKeyBoard"), a HID keyboard on Microsoft's built-in driver (10.0.26100.9711). No vendor driver is required; the browser receives scans as keystrokes.
+- Work: extended `resources/js/barcode-scanner.js` (originally added in d684e9a3) so that it detects scanner bursts (≥4 keys, average gap ≤40 ms, Enter or Tab terminator) and rebuilds the code from `event.code`, which stops an Arabic keyboard layout from corrupting alphanumeric codes. A scan made with the cursor outside a field goes to the visible `[data-scan-target]`, then the stocktake scan input, then non-catalog product-line lookups. The trailing Enter can no longer click a focused button. Inside an open dialog, only that dialog's fields receive scans. The POS search sets `search` and calls `submitSearch` through Livewire in one request (`data-barcode-livewire`), avoiding the stale-debounce race. A short scan toast was added.
+- Verification actually run: `node --check` and `npm run build` succeeded. No automated tests or browser automation were run (not authorized under the current task directive). The physical scan has not yet been verified by the owner.
+- Not committed or pushed.
+- Follow-up (same day, owner asked for a local test and LAN access): started `php artisan serve --host=0.0.0.0 --port=8001`; `http://192.168.1.24:8001` responds, and the existing php.exe inbound Public firewall rule allows it. Owner-requested Playwright checks against the LAN URL: a scanner-speed burst (10 ms per key) was detected; human typing (150 ms) was not; Arabic-layout physical keys were rebuilt to `FEED-K1`; Enter did not click a focused button; on `/pos` the scan was routed to `#live-pos-product-search` and `submitSearch` ran. The check found that letter case was lost; this was fixed by keeping ASCII `event.key` and using `event.code` only for non-ASCII characters. Adding to the cart was not verified because no cashier shift is open. No DB writes.
+
+## 2026-11-08 — Local catalog and legacy POS page errors
+
+- **Class and scope:** L2, local HTTP page handling on source `d684e9a3`. Active production baseline was outside this local check.
+- **Catalog:** Product list and create/edit pages return the existing 403 page when company context cannot be resolved. Write-side validation and company-scope rules remain in the existing resolver.
+- **POS:** The legacy GET address forwards to the current POS with its query string and original view permission. The former GET handler could fail both with and without an operational shift. Legacy POST handlers were outside the change.
+- **Verification:** Reproduced HTTP 500 in Chromium before editing. Reopened five URLs with both local admin accounts after editing. All ten checks matched expected 200/403 responses, including the legacy redirect with its query string. PHP lint, Pint, and diff checks passed. No checkout or payment operation was exercised.
+- **Delivery:** Local edits only. No migration, commit, push, or deployment.
+
+## 2026-11-08 — Disable party operations in the local feed-store edition
+
+- **Class and source:** L2 on `d684e9a3` plus the existing local working tree. Changes are limited to party/rental capability and its entry points in shared screens.
+- **Scope:** Disabled the party menu and the party booking, operations, wallet and rental capabilities. Shared approval, reporting, export, alert and help entry points respect the removal. Historical records and schema remain available for retention.
+- **Verification:** Before editing, Chromium reproduced party URLs returning 200 and party links on shared screens. After editing, 32 local checks passed, including 403 responses for party URLs and representative writes and 200 responses for retail screens. PHP lint and diff checks passed.
+- **Delivery:** Local code only. No migration, deletion, commit, push or deployment.

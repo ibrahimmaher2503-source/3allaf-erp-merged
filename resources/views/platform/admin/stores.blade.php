@@ -403,7 +403,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 <flux:select.option value="all">{{ __('All Warehouse Types') }}</flux:select.option>
                 <flux:select.option value="selling">{{ __('Point of Sale (POS)') }}</flux:select.option>
                 <flux:select.option value="warehouse">{{ __('Warehouse — physical inventory') }}</flux:select.option>
-                <flux:select.option value="party">{{ __('Service Center') }}</flux:select.option>
                 <flux:select.option value="damaged">{{ __('Damaged & Defective Stock — inventory routing') }}</flux:select.option>
                 <flux:select.option value="transit">{{ __('Stock in Transit — inventory routing') }}</flux:select.option>
             </flux:select>
