@@ -14,7 +14,7 @@
     }
 </style>
 <div class="min-w-0 space-y-4" data-guide="inventory-counts" data-stocktake-screen="{{ $focus }}">
-    <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-1 py-3 dark:border-zinc-800 sm:px-2" data-stocktake-page-header>
+    <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white dark:bg-transparent px-1 py-3 dark:border-zinc-800 sm:px-2" data-stocktake-page-header>
         <div class="min-w-0">
             <nav class="flex flex-wrap items-center gap-1.5 text-xs text-zinc-500" aria-label="{{ $t('مسار الجرد', 'Stocktake breadcrumb') }}">
                 <a href="{{ route('inventory.index') }}" class="hover:text-primary">{{ $t('المخزون', 'Inventory') }}</a><span>/</span>
@@ -35,6 +35,7 @@
                 @if($focus === 'count-entry')
                     @if($count->status === 'in_progress')@can('stock_counts.edit')<a href="#stocktake-manual-add" onclick="document.getElementById('stocktake-manual-add').open = true; requestAnimationFrame(() => document.querySelector('[data-product-line-editor] [data-product-search]')?.focus())" class="{{ $button }} inline-flex min-h-10 items-center bg-emerald-700 text-white">{{ $t('إضافة عنصر', 'Add item') }}</a>@endcan @endif
                     <a href="{{ route('inventory.counts.reconcile-page', $count) }}" class="{{ $button }} inline-flex min-h-10 items-center border border-sky-300 text-sky-800 dark:text-sky-300">{{ $t('مراجعة الجرد', 'Review count') }}</a>
+                    @if($count->status === 'in_progress')@can('stock_counts.submit')<form method="POST" action="{{ route('inventory.counts.submit', $count) }}" class="inline-flex">@csrf<button type="submit" class="{{ $button }} inline-flex min-h-10 items-center bg-emerald-700 text-white">{{ $t('إرسال الجرد للمراجعة', 'Submit count for review') }}</button></form>@endcan @endif
                 @elseif(in_array($count->status, ['draft', 'in_progress'], true))@can('stock_counts.edit')<a href="{{ route('inventory.counts.entry', $count) }}" class="{{ $button }} inline-flex min-h-10 items-center border border-sky-300 text-sky-800 dark:text-sky-300">{{ $t('متابعة العد', 'Resume count') }}</a>@endcan @endif
             @endif
         </div>
