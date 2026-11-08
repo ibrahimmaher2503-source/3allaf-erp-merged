@@ -170,7 +170,7 @@
                             $transferFormLines = [];
                             foreach ($submittedLines as $index => $submittedLine) {
                                 if (! is_array($submittedLine)) continue;
-                                $draftLine = new \App\Modules\Inventory\Models\StockTransferLine(['product_id' => (int) ($submittedLine['product_id'] ?? 0), 'quantity_requested' => $submittedLine['quantity_requested'] ?? '']);
+                                $draftLine = new \App\Modules\Inventory\Models\StockTransferLine(['product_id' => (int) ($submittedLine['product_id'] ?? 0), 'quantity_requested' => is_numeric($submittedLine['quantity_requested'] ?? null) ? $submittedLine['quantity_requested'] : 0]);
                                 $draftLine->setRelation('product', $submittedProducts->get($draftLine->product_id));
                                 $draftLine->setRelation('allocations', collect((array) ($submittedLine['allocations'] ?? []))->map(fn ($quantity, $destinationId) => new \App\Modules\Inventory\Models\StockTransferAllocation(['destination_store_id' => (int) $destinationId, 'quantity' => $quantity])));
                                 $transferFormLines[$index] = $draftLine;
@@ -220,7 +220,7 @@
                                     @foreach($visibleStores->where('status', 'active') as $destination)
                                         <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
                                             <span>{{ \App\Support\HumanName::name($destination) }}</span>
-                                            <input dir="ltr" name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ ($allocationValue = old('lines.'.$lineIndex.'.allocations.'.$destination->id, $transferLine?->allocations?->firstWhere('destination_store_id', $destination->id)?->quantity ?? '')) === '' ? '' : $qty($allocationValue) }}" class="{{ $field }}" inputmode="decimal" min="0" step="any" placeholder="0" data-allocation-input>
+                                            <input dir="ltr" name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ ($allocationValue = old('lines.'.$lineIndex.'.allocations.'.$destination->id, $transferLine?->allocations?->firstWhere('destination_store_id', $destination->id)?->quantity ?? '')) === '' || $allocationValue === null ? '' : $qty($allocationValue) }}" class="{{ $field }}" inputmode="decimal" min="0" step="any" placeholder="0" data-allocation-input>
                                         </label>
                                     @endforeach
                                 </div>
