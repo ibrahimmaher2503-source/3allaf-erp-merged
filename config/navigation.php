@@ -24,7 +24,7 @@ return [
         ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'users', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],
         ['route' => 'customers.groups.index', 'permission' => 'customers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات العملاء', 'en' => 'Customer groups']],
         ['route' => 'customers.import', 'permission' => 'customers.create', 'icon' => 'arrow-up-tray', 'label' => ['ar' => 'استيراد العملاء', 'en' => 'Customer import']],
-        ['route' => 'customers.loyalty-readiness', 'permission' => 'customers.view', 'icon' => 'star', 'label' => ['ar' => 'جاهزية نقاط الولاء', 'en' => 'Loyalty readiness']],
+        ['route' => 'customers.index', 'parameters' => ['mode' => 'loyalty'], 'permission' => 'customers.view', 'icon' => 'star', 'label' => ['ar' => 'نقاط الولاء', 'en' => 'Loyalty & points']],
     ]],
     ['key' => 'inventory', 'icon' => 'archive-box', 'label' => ['ar' => 'المنتجات والمخزون', 'en' => 'Products & inventory'], 'items' => [
         ['type' => 'heading', 'label' => ['ar' => 'المنتجات', 'en' => 'Products']],
