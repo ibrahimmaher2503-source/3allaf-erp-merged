@@ -1375,3 +1375,21 @@ body.app-layout :where(input[type="number"],input[inputmode="decimal"],input[inp
     outline: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
     outline-offset: 0;
 }
+
+/* dd/mm/yyyy overlay for native date inputs (see resources/js/date-format.js). */
+input.date-fmt-input::-webkit-datetime-edit { color: transparent; }
+input.date-fmt-input::-webkit-datetime-edit-fields-wrapper { color: transparent; }
+input.date-fmt-input { color: transparent; }
+input.date-fmt-input:focus::-webkit-datetime-edit { color: transparent; }
+.date-fmt {
+    position: absolute;
+    pointer-events: none;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-size: 0.875rem;
+    font-variant-numeric: lining-nums tabular-nums;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+}
+.date-fmt--empty { color: color-mix(in srgb, var(--color-text-primary) 45%, transparent); }
+.date-fmt--disabled { opacity: 0.6; }
