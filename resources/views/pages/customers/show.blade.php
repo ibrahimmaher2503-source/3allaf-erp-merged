@@ -9,9 +9,17 @@
                 <p class="text-xs font-semibold tracking-wide text-cyan-700">{{ __('Customer profile') }}</p>
                 <div class="mt-2 flex flex-wrap items-center gap-3">
                     <flux:heading size="xl">{{ $displayName }}</flux:heading>
-                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{{ __($customer->status) }}</span>
+                    <x-status.badge :status="$customer->status" />
+                    @if($customer->customer_type)<flux:badge size="sm" color="{{ $customer->customer_type === 'cash' ? 'zinc' : 'amber' }}">{{ match($customer->customer_type) { 'cash' => (str_starts_with(app()->getLocale(), 'ar') ? 'نقدي' : 'Cash'), 'credit' => (str_starts_with(app()->getLocale(), 'ar') ? 'آجل' : 'Credit'), default => (str_starts_with(app()->getLocale(), 'ar') ? 'نقدي وآجل' : 'Cash & credit') } }}</flux:badge>@endif
                 </div>
-                <flux:text class="mt-1" dir="ltr">{{ $customer->phone_display }}</flux:text>
+                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted">
+                    <span class="font-mono" dir="ltr">{{ $customer->phone_display }}</span>
+                    @if($customer->secondary_phone)<span class="font-mono" dir="ltr">{{ $customer->secondary_phone }}</span>@endif
+                    @can('customers.sensitive')@if($customer->email)<span dir="ltr">{{ $customer->email }}</span>@endif @endcan
+                    @if($customer->governorate || $customer->city)<span>{{ collect([$customer->governorate, $customer->city])->filter()->map(fn($place) => str_starts_with(app()->getLocale(), 'ar') ? $place->name_ar : $place->name_en)->implode(' - ') }}</span>@endif
+                    @if($customer->group)<span>{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->group->name_ar : $customer->group->name_en }}</span>@endif
+                    <span class="font-mono text-xs" dir="ltr">{{ $customer->customer_code }}</span>
+                </div>
             </div>
             <div class="flex flex-wrap gap-2">
                 @can('loyalty.view')
@@ -23,6 +31,14 @@
                 <flux:button href="{{ route('customers.index') }}" variant="subtle" icon="arrow-left">{{ __('Back to customers') }}</flux:button>
             </div>
         </div>
+
+        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملخص حساب العميل' : 'Customer account summary' }}">
+            <div class="rounded-xl border p-4 {{ bccomp((string) $arOutstanding, '0', 4) > 0 ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20' : 'border-border bg-surface' }}"><div class="text-xs text-text-muted">{{ __('Current outstanding balance') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ $arOutstanding }} {{ $currencyCode }}</div><div class="text-xs text-text-muted">{{ $arInvoices->count() }} {{ str_starts_with(app()->getLocale(), 'ar') ? 'فاتورة مفتوحة' : 'open invoices' }}</div></div>
+            <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Credit limit') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ $customer->credit_limit !== null ? $customer->credit_limit.' '.$currencyCode : '—' }}</div><div class="text-xs text-text-muted">{{ __('Available credit') }}: <span dir="ltr">{{ $availableCredit ?? '—' }}</span></div></div>
+            <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Unapplied customer credit') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ $unappliedCredit }} {{ $currencyCode }}</div></div>
+            @can('loyalty.view')<div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Shared balance') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ number_format($balance) }}</div><div class="text-xs text-text-muted">{{ __('Points across the customer ledger') }}</div></div>@endcan
+            @can('product_wallet.view')<div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Product Wallet') }}</div><div class="mt-1 break-all text-xl font-black tabular-nums" dir="ltr">{{ $productWalletBalance }}</div></div>@endcan
+        </section>
 
         @if (session('success'))
             <flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>
@@ -57,6 +73,9 @@
                                     <flux:select.option value="{{ $group->id }}" :selected="old('customer_group_id', $customer->customer_group_id) == $group->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $group->hierarchy_path : collect(explode(' / ', $group->hierarchy_path))->map(fn($name) => $groupOptions->first(fn($candidate) => ($candidate->name_ar ?: $candidate->name_en) === $name)?->name_en ?: $name)->implode(' / ') }}</flux:select.option>
                                 @endforeach
                             </flux:select><x-context-help :title="__('Customer group')" :label="__('Open contextual help')"><p>{{ __('Optional hierarchical group for customer search and reporting.') }}</p></x-context-help></div>
+                            <flux:select name="customer_type" :label="__('Customer payment type')"><flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير محدد' : 'Not set' }}</flux:select.option><flux:select.option value="cash" :selected="old('customer_type', $customer->customer_type) === 'cash'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي فقط' : 'Cash only' }}</flux:select.option><flux:select.option value="credit" :selected="old('customer_type', $customer->customer_type) === 'credit'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'آجل (ائتمان)' : 'Credit' }}</flux:select.option><flux:select.option value="both" :selected="old('customer_type', $customer->customer_type) === 'both'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي وآجل' : 'Cash and credit' }}</flux:select.option></flux:select>
+                            <flux:input name="credit_limit" type="number" min="0" step="0.01" inputmode="decimal" :label="__('Credit limit')" :value="old('credit_limit', $customer->credit_limit !== null ? rtrim(rtrim((string) $customer->credit_limit, '0'), '.') : '')" dir="ltr" />
+                            <div class="sm:col-span-2"><flux:textarea name="notes" :label="__('Notes')" rows="2">{{ old('notes', $customer->notes) }}</flux:textarea></div>
                             @can('customers.sensitive')
                                 <flux:input name="email" :label="__('Email')" :value="old('email', $customer->email)" type="email" autocomplete="email" />
                                 <flux:select name="governorate_id" x-model="governorate" x-on:change="city=''" :label="__('Governorate')"><flux:select.option value="">{{ __('Legacy — not recorded') }}</flux:select.option>@foreach($governorates as $g)<flux:select.option value="{{ $g->id }}">{{ str_starts_with(app()->getLocale(), 'ar')?$g->name_ar:$g->name_en }}</flux:select.option>@endforeach</flux:select>
@@ -172,6 +191,7 @@
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                     <flux:heading size="lg">{{ __('Creation source metadata') }}</flux:heading>
                     <dl class="mt-4 space-y-3 text-sm">
+                        @if($customer->notes)<div><dt class="text-xs font-semibold text-slate-500">{{ __('Notes') }}</dt><dd class="mt-1 whitespace-pre-line">{{ $customer->notes }}</dd></div>@endif
                         <div><dt class="text-xs font-semibold text-slate-500">{{ __('Selling store') }}</dt><dd class="mt-1">{{ $storeName }}</dd></div>
                         <div><dt class="text-xs font-semibold text-slate-500">{{ __('Creation source records') }}</dt><dd class="mt-1">{{ $customer->scopes->count() }}</dd></div>
                         @can('customers.sensitive')

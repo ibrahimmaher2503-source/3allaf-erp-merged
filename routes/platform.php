@@ -137,6 +137,55 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
         ->middleware('can:drawers_payments_tax_numbering_printers.view')
         ->name('admin.drawers.compatibility');
     $router->livewire('admin/authorization-baseline', 'platform::admin.authorization-baseline')->middleware('can:users_roles_permissions.view')->name('admin.authorization-baseline');
+    $employeeScope = static function (User $actor) {
+        $query = User::query();
+        if ($actor->is_super_admin || $actor->hasGlobalApplicationAccess()) {
+            return $query;
+        }
+
+        return $query->where(function ($visible) use ($actor): void {
+            $visible->whereKey($actor->id)
+                ->orWhereHas('branchScopes', fn ($scopes) => $scopes->where('status', 'active')->whereIn('branch_id', \App\Modules\Platform\Models\Branch::query()->visibleTo($actor)->select('id')))
+                ->orWhereHas('storeScopes', fn ($scopes) => $scopes->where('status', 'active')->whereIn('store_id', \App\Modules\Platform\Models\Store::query()->visibleTo($actor)->select('id')));
+        });
+    };
+    $router->get('admin/employees', function (Request $request) use ($employeeScope) {
+        /** @var User $actor */
+        $actor = $request->user();
+        $term = trim((string) $request->query('q', ''));
+        $status = (string) $request->query('status', '');
+        $roleId = $request->integer('role_id');
+        $query = $employeeScope($actor)->with(['roles', 'branchScopes.branch'])->withCount(['branchScopes as active_branches_count' => fn ($q) => $q->where('status', 'active')])
+            ->when($term !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', "%{$term}%")->orWhere('username', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%")))
+            ->when(in_array($status, ['active', 'disabled', 'inactive'], true), fn ($q) => $q->where('status', $status))
+            ->when($roleId > 0, fn ($q) => $q->whereHas('roles', fn ($r) => $r->whereKey($roleId)))
+            ->orderBy('name');
+        $employees = $query->paginate(20)->withQueryString();
+        $totals = [
+            'all' => $employeeScope($actor)->count(),
+            'active' => $employeeScope($actor)->where('status', 'active')->count(),
+            'inactive' => $employeeScope($actor)->where('status', '!=', 'active')->count(),
+        ];
+        $roles = \App\Modules\Platform\Models\Role::query()->orderBy('name_en')->get();
+
+        return view('pages.employees.index', compact('employees', 'totals', 'roles', 'term', 'status', 'roleId'));
+    })->middleware('can:users_roles_permissions.view')->name('admin.employees');
+    $router->get('admin/employees/{employeeId}', function (Request $request, int $employeeId) use ($employeeScope) {
+        /** @var User $actor */
+        $actor = $request->user();
+        $employee = $employeeScope($actor)->with(['roles', 'branchScopes.branch', 'storeScopes.store', 'uiPreference'])->findOrFail($employeeId);
+        $sales = \App\Modules\Retail\Models\Sale::query()->where('cashier_id', $employee->id)->whereNotNull('approved_at');
+        $stats = [
+            'sales_count' => (clone $sales)->count(),
+            'sales_total' => (string) ((clone $sales)->sum('payable_total') ?? '0'),
+            'last_sale_at' => (clone $sales)->max('approved_at'),
+        ];
+        $recentActivity = \Illuminate\Support\Facades\Schema::hasTable('audit_logs') && \Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'actor_id')
+            ? \Illuminate\Support\Facades\DB::table('audit_logs')->where('actor_id', $employee->id)->latest('id')->limit(10)->get()
+            : collect();
+
+        return view('pages.employees.show', compact('employee', 'stats', 'recentActivity'));
+    })->whereNumber('employeeId')->middleware('can:users_roles_permissions.view')->name('admin.employees.show');
     $router->livewire('admin/roles', 'platform::admin.roles')->middleware('can:manage-global-role-catalog')->name('admin.roles');
     $router->livewire('admin/roles/{role}/permissions', 'platform::admin.role-permissions')->whereNumber('role')->middleware('can:manage-global-role-catalog')->name('admin.role-permissions');
 

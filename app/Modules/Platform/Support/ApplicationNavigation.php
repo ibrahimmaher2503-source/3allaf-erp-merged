@@ -11,7 +11,9 @@ final class ApplicationNavigation
 {
     private const ACTIVE_ROUTES = [
         'sales.invoices' => ['sales.invoices', 'sales.show', 'sales.print', 'sales.receipt.*'],
-        'customers.index' => ['customers.index', 'customers.create', 'customers.show'],
+        'customers.index' => ['customers.index', 'customers.create', 'customers.show', 'customers.update', 'customers.pricing*', 'customers.product-wallet*', 'customers.party-wallet*', 'customers.loyalty'],
+        'customers.import' => ['customers.import*'],
+        'customers.loyalty-readiness' => ['customers.loyalty-readiness'],
         'customers.groups.index' => ['customers.groups.*'],
         'pos.shift' => ['pos.shift*'],
         'purchasing.orders' => ['purchasing.orders*'],
@@ -36,7 +38,8 @@ final class ApplicationNavigation
         'admin.branches' => ['admin.branches*'],
         'admin.stores' => ['admin.stores*'],
         'admin.authorization-baseline' => ['admin.authorization-baseline*', 'admin.users*'],
-        'admin.roles' => ['admin.roles*'],
+        'admin.roles' => ['admin.roles*', 'admin.role-permissions'],
+        'admin.employees' => ['admin.employees*'],
         'initial-setup' => ['initial-setup*'],
         'admin.settings' => ['admin.settings*', 'admin.printers*'],
         'admin.audit' => ['admin.audit*'],
@@ -107,6 +110,7 @@ final class ApplicationNavigation
 
                         return $item;
                     })->values()->all();
+                $group['items'] = $this->pruneEmptyHeadings($group['items']);
 
                 $group['active'] = collect($group['items'])->contains(
                     fn (array $item): bool => (bool) ($item['active'] ?? false) || (bool) ($item['children_active'] ?? false)
@@ -119,6 +123,34 @@ final class ApplicationNavigation
             ->values()->all();
 
         return $this->deduplicateDestinations($this->normalizeForRendering($groups, $locale));
+    }
+
+    /**
+     * A heading only makes sense when at least one real link follows it; drop headings
+     * (and duplicate separators) left empty by permission filtering.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function pruneEmptyHeadings(array $items): array
+    {
+        $kept = [];
+        $pending = null;
+        foreach ($items as $item) {
+            $type = $this->entryType($item, 'item');
+            if ($type === 'heading') {
+                $pending = $item;
+
+                continue;
+            }
+            if ($pending !== null) {
+                $kept[] = $pending;
+                $pending = null;
+            }
+            $kept[] = $item;
+        }
+
+        return $kept;
     }
 
     /**

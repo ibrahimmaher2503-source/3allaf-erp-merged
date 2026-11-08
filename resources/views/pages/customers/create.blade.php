@@ -81,6 +81,15 @@
                 </div>
             </section>
 
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+                <div class="border-b border-border pb-4"><flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الحساب والائتمان' : 'Account & credit' }}</flux:heading><flux:text class="mt-1 text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حدد هل العميل نقدي أو آجل وحد المديونية المسموح به. اترك الحد فارغًا لو بدون سقف.' : 'Choose whether the customer pays cash, on credit or both, and the allowed credit ceiling. Leave empty for no ceiling.' }}</flux:text></div>
+                <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                    <flux:select name="customer_type" :label="__('Customer payment type')"><flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير محدد' : 'Not set' }}</flux:select.option><flux:select.option value="cash" :selected="old('customer_type') === 'cash'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي فقط' : 'Cash only' }}</flux:select.option><flux:select.option value="credit" :selected="old('customer_type') === 'credit'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'آجل (ائتمان)' : 'Credit' }}</flux:select.option><flux:select.option value="both" :selected="old('customer_type') === 'both'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي وآجل' : 'Cash and credit' }}</flux:select.option></flux:select>
+                    <flux:input name="credit_limit" type="number" min="0" step="0.01" inputmode="decimal" :label="__('Credit limit')" :value="old('credit_limit')" dir="ltr" />
+                    <div class="sm:col-span-2"><flux:textarea name="notes" :label="__('Notes')" rows="2">{{ old('notes') }}</flux:textarea></div>
+                </div>
+            </section>
+
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <flux:text class="text-xs text-slate-500">{{ __('The selected selling store is') }}: <span class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}</span></flux:text>
                 <flux:button type="submit" variant="primary" :disabled="$consentPurposes === []">{{ __('Save') }}</flux:button>
