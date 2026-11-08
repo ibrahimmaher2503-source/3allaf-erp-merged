@@ -25,6 +25,21 @@
             </x-slot:actions>
         </x-page-header>
 
+        @if($canViewCustomerAccounts && $mode === 'accounts' || $canViewCustomerAccounts && ! in_array($mode, ['history', 'loyalty'], true))
+            @php
+                $pageAccounts = $customers->getCollection()->map(fn ($c) => $customerAccounts->get($c->id))->filter();
+                $debtors = $pageAccounts->filter(fn ($a) => bccomp((string) $a['balance'], '0', 4) > 0);
+                $debtTotal = $debtors->reduce(fn ($t, $a) => bcadd($t, (string) $a['balance'], 4), '0.0000');
+                $paidTotal = $pageAccounts->reduce(fn ($t, $a) => bcadd($t, (string) $a['paid'], 4), '0.0000');
+            @endphp
+            <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملخص العملاء' : 'Customer summary' }}">
+                <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إجمالي العملاء' : 'Total customers' }}</div><div class="mt-1 text-2xl font-black tabular-nums">{{ $customers->total() }}</div></div>
+                <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20"><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'عملاء عليهم مديونية (الصفحة الحالية)' : 'Customers with a balance (this page)' }}</div><div class="mt-1 text-2xl font-black tabular-nums">{{ $debtors->count() }}</div></div>
+                <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إجمالي المديونية (الصفحة الحالية)' : 'Outstanding (this page)' }}</div><div class="mt-1 text-2xl font-black tabular-nums" dir="ltr">{{ $debtTotal }} {{ $currencyCode }}</div></div>
+                <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إجمالي المدفوع (الصفحة الحالية)' : 'Payments received (this page)' }}</div><div class="mt-1 text-2xl font-black tabular-nums" dir="ltr">{{ $paidTotal }} {{ $currencyCode }}</div></div>
+            </section>
+        @endif
+
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
         @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>@endif
 
