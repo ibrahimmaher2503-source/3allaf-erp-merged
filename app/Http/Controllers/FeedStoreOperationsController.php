@@ -163,7 +163,7 @@ final class FeedStoreOperationsController extends Controller
             $customer = Customer::query()->visibleTo($actor)->findOrFail($data['customer_id']);
             $collectionStore = Store::query()->visibleTo($actor)->where('status', 'active')->findOrFail($data['collection_store_id']);
             $allocations = collect($data['allocations'] ?? [])->filter(fn ($value): bool => filled($value) && bccomp((string) $value, '0', 4) > 0)->all();
-            $action->execute($actor, $customer, PaymentMethod::query()->findOrFail($data['payment_method_id']), $data['amount'], $allocations, $data['idempotency_key'], $data['date'], $data['reference'] ?? null, $data['notes'] ?? null, $data['evidence_reference'] ?? null, $data['cash_account_id'] ?? null, $collectionStore, strtoupper($data['currency_code']));
+            $action->execute($actor, $customer, PaymentMethod::query()->findOrFail($data['payment_method_id']), $data['amount'], $allocations, $data['idempotency_key'], $data['date'], $data['reference'] ?? null, $data['notes'] ?? null, $data['evidence_reference'] ?? null, filled($data['cash_account_id'] ?? null) ? (int) $data['cash_account_id'] : null, $collectionStore, strtoupper($data['currency_code']));
 
             return back()->with('success', __('Customer receipt recorded successfully.'));
         } catch (Throwable $exception) {
@@ -199,7 +199,7 @@ final class FeedStoreOperationsController extends Controller
                 abort_unless($invoices->every(fn (PurchaseInvoice $invoice): bool => (int) $invoice->store()->value('company_id') === $companyId), 404);
             }
             $allocations = $requested->map(fn ($value, $id): array => ['purchase_invoice_id' => (int) $id, 'amount' => (string) $value])->values()->all();
-            $action->execute($actor, $supplier, PaymentMethod::query()->findOrFail($data['payment_method_id']), $data['amount'], $allocations, $data['idempotency_key'], $data['date'], currencyCode: strtoupper((string) ($data['currency_code'] ?? 'EGP')), cashAccountId: $data['cash_account_id'] ?? null, reference: $data['reference'] ?? null, evidenceReference: $data['evidence_reference'] ?? null, notes: $data['notes'] ?? null);
+            $action->execute($actor, $supplier, PaymentMethod::query()->findOrFail($data['payment_method_id']), $data['amount'], $allocations, $data['idempotency_key'], $data['date'], currencyCode: strtoupper((string) ($data['currency_code'] ?? 'EGP')), cashAccountId: filled($data['cash_account_id'] ?? null) ? (int) $data['cash_account_id'] : null, reference: $data['reference'] ?? null, evidenceReference: $data['evidence_reference'] ?? null, notes: $data['notes'] ?? null);
             return back()->with('success', __('Supplier payment recorded successfully.'));
         } catch (Throwable $exception) {
             return back()->withInput()->withErrors(['operation' => \App\Support\UserSafeError::message($exception)]);
