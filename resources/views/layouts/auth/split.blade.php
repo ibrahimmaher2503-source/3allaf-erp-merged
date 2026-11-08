@@ -12,7 +12,7 @@
                 <div class="absolute inset-0 bg-neutral-900"></div>
                 <a href="{{ route('home') }}" class="relative z-20 flex items-center text-lg font-medium" wire:navigate>
                     <span class="flex items-center justify-center">
-                        <img src="{{ asset('images/rajeh-logo.png') }}" alt="{{ __('Rajeh ERP') }}" class="h-12 w-auto max-w-40 rounded-md bg-white p-1 object-contain">
+                        <x-brand-lockup size="md" />
                     </span>
                     {{ config('app.name', '3allaf | علاف') }}
                 </a>
@@ -32,7 +32,7 @@
                 <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
                     <a href="{{ route('home') }}" class="z-20 flex flex-col items-center gap-2 font-medium lg:hidden" wire:navigate>
                         <span class="flex items-center justify-center">
-                            <img src="{{ asset('images/rajeh-logo.png') }}" alt="{{ __('Rajeh ERP') }}" class="h-12 w-auto max-w-44 rounded-md bg-white p-1 object-contain sm:h-14">
+                            <x-brand-lockup size="md" />
                         </span>
 
                         <span class="sr-only">{{ config('app.name', '3allaf | علاف') }}</span>

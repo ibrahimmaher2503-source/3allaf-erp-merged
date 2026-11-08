@@ -19,10 +19,6 @@ final class AuthenticatedLanding
             return route('pos');
         }
 
-        if (! $user->can('dashboard_reports.view') && $user->can('party_bookings_invoices.view')) {
-            return route('parties.bookings.index');
-        }
-
         return route('dashboard');
     }
 

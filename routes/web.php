@@ -60,8 +60,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->middleware('can:dashboard_reports.view')->name('dashboard');
     require __DIR__.'/retail.php';
     require __DIR__.'/customers.php';
-    require __DIR__.'/party.php';
-    require __DIR__.'/assets.php';
     require __DIR__.'/quotations.php';
     require __DIR__.'/reporting.php';
     require __DIR__.'/feed-store.php';

@@ -11,7 +11,7 @@
             <div class="flex w-full max-w-md flex-col gap-6">
                 <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
                     <span class="flex items-center justify-center">
-                        <img src="{{ asset('images/rajeh-logo.png') }}" alt="{{ __('Rajeh ERP') }}" class="h-12 w-auto max-w-44 rounded-md bg-white p-1 object-contain sm:h-14">
+                        <x-brand-lockup size="md" />
                     </span>
 
                     <span class="sr-only">{{ config('app.name', '3allaf | علاف') }}</span>

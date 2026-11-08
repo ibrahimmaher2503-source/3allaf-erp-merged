@@ -169,7 +169,7 @@ final class DecideApprovalSource
             'pos_shifts' => route('pos.shift-variance'),
             'pos_open_price' => route('pos'),
             'pos_discount' => route('pos'),
-            'asset_events' => route('party.assets.index'),
+            'asset_events' => route('admin.approvals'),
             default => route('admin.approvals'),
         };
     }

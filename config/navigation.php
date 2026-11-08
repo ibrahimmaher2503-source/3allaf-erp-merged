@@ -63,19 +63,6 @@ return [
         ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'scale', 'label' => ['ar' => 'اعتمادات الأسعار', 'en' => 'Price approvals']],
         ['route' => 'pricing.focus', 'parameters' => ['mode' => 'history'], 'permission' => 'pricing_labels.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل الأسعار', 'en' => 'Price history']],
     ]],
-    ['key' => 'parties', 'enabled' => false, 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
-        ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة والحجوزات', 'en' => 'Overview & bookings']],
-        ['route' => 'parties.calendar', 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'التقويم والأجندة', 'en' => 'Calendar & agenda']],
-        ['route' => 'parties.invoices.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير ومدفوعات الحفلات', 'en' => 'Party invoices & payments']],
-        ['route' => 'parties.orders.index', 'permission' => 'party_operating_orders_consumables.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'أوامر التشغيل', 'en' => 'Operating orders']],
-    ]],
-    ['key' => 'assets', 'enabled' => false, 'icon' => 'building-office-2', 'label' => ['ar' => 'الأصول والتأجير', 'en' => 'Assets & rental'], 'items' => [
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'dashboard'], 'permission' => 'rental_assets.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة على الأصول', 'en' => 'Assets overview']],
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'catalog'], 'permission' => 'rental_assets.view', 'icon' => 'archive-box', 'label' => ['ar' => 'سجل الأصول', 'en' => 'Asset catalog']],
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'calendar'], 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'الإتاحة والحجوزات', 'en' => 'Availability & reservations']],
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'returns'], 'permission' => 'rental_assets.view', 'icon' => 'arrow-uturn-left', 'label' => ['ar' => 'الإرجاع والحالة', 'en' => 'Returns & condition']],
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'history'], 'permission' => 'rental_assets.view', 'icon' => 'clock', 'label' => ['ar' => 'الصيانة وسجل الأحداث', 'en' => 'Maintenance & history']],
-    ]],
     ['key' => 'reports', 'icon' => 'chart-bar', 'label' => ['ar' => 'التقارير والتصدير', 'en' => 'Reports & exports'], 'items' => [
         ['route' => 'reports.index', 'permission' => 'dashboard_reports.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز التقارير والتصدير', 'en' => 'Reports and Export Center']],
         ['type' => 'heading', 'label' => ['ar' => 'تقارير المبيعات', 'en' => 'Sales reports']],

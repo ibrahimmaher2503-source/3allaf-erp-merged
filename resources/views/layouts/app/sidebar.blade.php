@@ -91,10 +91,10 @@
         <div class="app-topbar__identity">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-3" aria-label="{{ $isArabic ? 'فتح قائمة التنقل' : 'Open navigation' }}" />
             <div class="hidden min-w-0 sm:block">
-                <div class="flex items-center gap-1.5 text-[11px] font-medium text-text-muted"><span>{{ $activeGroup['label'] ?? ($isArabic ? 'نظام راجح' : 'Rajeh ERP') }}</span><flux:icon.chevron-left class="hidden size-3 rtl:block" /><flux:icon.chevron-right class="size-3 rtl:hidden" /></div>
+                <div class="flex items-center gap-1.5 text-[11px] font-medium text-text-muted"><span>{{ $activeGroup['label'] ?? ($isArabic ? 'علاف' : '3allaf') }}</span><flux:icon.chevron-left class="hidden size-3 rtl:block" /><flux:icon.chevron-right class="size-3 rtl:hidden" /></div>
                 <p class="truncate text-sm font-bold text-text-primary">{{ $activeItem['label'] ?? ($title ?? ($isArabic ? 'لوحة القيادة' : 'Dashboard')) }}</p>
             </div>
-            <span class="app-topbar__mobile-brand sm:hidden text-sm font-bold text-text-primary">{{ $isArabic ? 'نظام راجح' : 'Rajeh ERP' }}</span>
+            <span class="app-topbar__mobile-brand sm:hidden text-sm font-bold text-text-primary">{{ $isArabic ? 'علاف' : '3allaf' }}</span>
         </div>
         <button type="button" class="app-topbar__search" x-data x-on:click="$dispatch('open-navigation-search')" aria-label="{{ app()->isLocale('ar-EG') ? 'دوّر سريع في النظام' : ($isArabic ? 'بحث سريع في النظام' : 'Quick system search') }}"><flux:icon.magnifying-glass class="size-5" /><span>{{ app()->isLocale('ar-EG') ? 'ادوّر عن شاشة أو إجراء' : ($isArabic ? 'ابحث عن شاشة أو إجراء' : 'Search screens and actions') }}</span><kbd dir="ltr">Ctrl K</kbd></button>
         <div class="app-topbar__actions">

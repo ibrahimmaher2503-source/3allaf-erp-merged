@@ -1,7 +1,7 @@
 {
-  "name": "TOY & JOY Operational Platform",
-  "short_name": "TOY & JOY",
-  "description": "Arabic-first retail and party operations platform",
+  "name": "علاف - نظام إدارة محل الأعلاف",
+  "short_name": "علاف",
+  "description": "Arabic-first feed store operations platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
