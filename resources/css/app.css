@@ -1355,3 +1355,23 @@ body.app-layout :where(input[type="number"],input[inputmode="decimal"],input[inp
     font-variant-numeric: lining-nums tabular-nums;
 }
 body.app-layout :where(input[type="number"],input[inputmode="decimal"],input[inputmode="numeric"]) { text-align: right; }
+
+/*
+ * Filters and form controls written with only a color utility (e.g. `border-zinc-300`)
+ * had no border width, so they rendered as bare fields. Give them the system field style.
+ */
+:is(input, select, textarea):is([class*="border-zinc-"], [class*="border-gray-"], [class*="border-slate-"], [class*="border-neutral-"], [class*="border-stone-"]):not(.border-0, [type="checkbox"], [type="radio"], [type="hidden"], [type="range"], [type="file"], [type="color"], [type="submit"], [type="button"], [type="reset"], [type="image"]) {
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    min-height: 2.5rem;
+    padding-inline: 0.75rem;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+}
+:is(input, select, textarea):is([class*="border-zinc-"], [class*="border-gray-"], [class*="border-slate-"], [class*="border-neutral-"], [class*="border-stone-"]):not(.border-0, [type="checkbox"], [type="radio"], [type="hidden"], [type="range"], [type="file"], [type="color"], [type="submit"], [type="button"], [type="reset"], [type="image"]):focus {
+    border-color: var(--color-primary);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+    outline-offset: 0;
+}
