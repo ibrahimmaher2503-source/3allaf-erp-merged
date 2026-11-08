@@ -17,7 +17,7 @@ final class PurchaseInvoiceLine extends Model
     use GuardsApprovedParent;
 
     protected $fillable = [
-        'purchase_invoice_id', 'purchase_order_line_id', 'product_id', 'product_unit_id', 'entered_quantity', 'conversion_factor_snapshot', 'entered_unit_price', 'quantity', 'original_quantity', 'quantity_received',
+        'purchase_invoice_id', 'purchase_order_line_id', 'product_id', 'item_code_snapshot', 'name_ar_snapshot', 'name_en_snapshot', 'product_unit_id', 'entered_quantity', 'conversion_factor_snapshot', 'entered_unit_price', 'quantity', 'original_quantity', 'quantity_received',
         'unit_cost', 'base_consumer_price', 'previous_product_cost', 'previous_base_consumer_price', 'discount_type', 'discount_value', 'discount_amount', 'tax_rate', 'tax_code',
         'tax_inclusive', 'tax_amount', 'subtotal', 'line_total', 'allocated_charge_amount', 'inventory_unit_cost',
     ];
