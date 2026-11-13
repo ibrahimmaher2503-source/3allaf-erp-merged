@@ -375,7 +375,7 @@ final class ProductionSeeder extends Seeder
             ],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view'],
             'purchasing-officer' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change'],
-            'warehouse-manager' => ['inventory_stock_card.view', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.open', 'stock_counts.close'],
+            'warehouse-manager' => ['products_categories_brands.view', 'inventory_stock_card.view', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.open', 'stock_counts.close'],
             'pricing-officer' => [],
             'party-manager' => [],
             'stock-counter' => ['stock_counts.view', 'stock_counts.edit'],
