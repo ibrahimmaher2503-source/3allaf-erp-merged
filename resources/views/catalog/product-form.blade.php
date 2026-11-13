@@ -491,6 +491,13 @@ new #[Title('Product Card')] class extends Component
             'in' => 'القيمة المختارة في حقل :attribute غير صحيحة.',
         ] : [];
         $messages['productForm.preferred_supplier_id.required'] = __('Select an active supplier to generate the product code.');
+        $messages['productForm.product_units.*.unit_id.required'] = 'اختر وحدة للمنتج.';
+        $messages['productForm.product_units.*.unit_id.integer'] = 'وحدة المنتج غير صحيحة.';
+        $messages['productForm.product_units.*.unit_id.distinct'] = 'لا يمكن تكرار وحدة المنتج.';
+        $messages['productForm.product_units.*.unit_id.exists'] = 'الوحدة المختارة غير متاحة.';
+        $messages['productForm.product_units.*.conversion_factor.required'] = 'أدخل معامل تحويل الوحدة.';
+        $messages['productForm.product_units.*.conversion_factor.decimal'] = 'معامل التحويل يجب أن يكون رقمًا صحيحًا أو عشريًا صالحًا.';
+        $messages['productForm.product_units.*.conversion_factor.gt'] = 'يجب أن يكون معامل التحويل أكبر من صفر.';
         $messages['supplierBarcode.regex'] = str_starts_with(app()->getLocale(), 'ar') ? 'يجب أن يحتوي الكود الموجود على أرقام فقط.' : 'The existing code must contain digits only.';
 
         return $messages;
@@ -526,6 +533,8 @@ new #[Title('Product Card')] class extends Component
             'productForm.fractional_quantity' => 'نوع كمية المنتج', 'productForm.preferred_supplier_id' => 'المورد المفضل',
             'productForm.colour' => 'اللون', 'productForm.age_label_ids' => 'الفئات العمرية', 'productForm.age_label_ids.*' => 'الفئات العمرية',
             'productForm.character_ids' => 'الشخصيات', 'productForm.character_ids.*' => 'الشخصيات',
+            'productForm.product_units.*.unit_id' => 'وحدة المنتج',
+            'productForm.product_units.*.conversion_factor' => 'معامل تحويل الوحدة',
             'supplierBarcode' => 'الكود الموجود',
         ];
     }
@@ -621,7 +630,7 @@ new #[Title('Product Card')] class extends Component
                     @if($autoLocalCode && ($previewError = $this->localProductCodePreviewError()))<p class="text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</p>@endif
                     <flux:error name="productForm.item_code" />
                 </div>
-                <x-product-line-lookup :catalog="true" :placeholder="str_starts_with(app()->getLocale(), 'ar') ? 'اكتب هنا - يتم التحقق من التكرار تلقائيًا' : 'Type here - duplicates are checked automatically'" :label="str_starts_with(app()->getLocale(), 'ar') ? 'رقم الموديل / Item No' : 'Model / Item No'" :display="$productForm['model_number'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.model_number = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
+                <x-product-line-lookup :catalog="true" :placeholder="str_starts_with(app()->getLocale(), 'ar') ? 'اكتب هنا - يتم التحقق من التكرار تلقائيًا' : 'Type here - duplicates are checked automatically'" :label="str_starts_with(app()->getLocale(), 'ar') ? 'رقم الموديل / رقم الصنف' : 'Model / Item No'" :display="$productForm['model_number'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.model_number = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
                 <x-product-line-lookup :catalog="true" :placeholder="str_starts_with(app()->getLocale(), 'ar') ? 'اكتب هنا - يتم التحقق من التكرار تلقائيًا' : 'Type here - duplicates are checked automatically'" :label="__('Arabic product name')" :display="$productForm['name_ar'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.name_ar = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
                 <x-product-line-lookup :catalog="true" :placeholder="str_starts_with(app()->getLocale(), 'ar') ? 'اكتب هنا - يتم التحقق من التكرار تلقائيًا' : 'Type here - duplicates are checked automatically'" :label="__('English product name')" :display="$productForm['name_en'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.name_en = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
             </div>
