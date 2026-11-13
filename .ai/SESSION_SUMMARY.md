@@ -1617,3 +1617,140 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - **Scope:** Disabled the party menu and the party booking, operations, wallet and rental capabilities. Shared approval, reporting, export, alert and help entry points respect the removal. Historical records and schema remain available for retention.
 - **Verification:** Before editing, Chromium reproduced party URLs returning 200 and party links on shared screens. After editing, 32 local checks passed, including 403 responses for party URLs and representative writes and 200 responses for retail screens. PHP lint and diff checks passed.
 - **Delivery:** Local code only. No migration, deletion, commit, push or deployment.
+## 2026-11-08 — Connected-device settings, local worktree
+
+- Owner requested printer, network-scale, and barcode-scanner setup and authorized terminal hardware discovery. Work is isolated on `feature/device-settings` from `e2d710b3`; unrelated dirty changes in `fix/inventory-qa` were preserved.
+- Ethernet 2 captured broadcasts from MAC `00:23:f0:1b:15:77` and IP `192.168.0.150`. After the owner added temporary `192.168.0.151/24`, ping and TCP `33581` succeeded. A five-second TCP read yielded no unsolicited weight. One two-second TCP attempt timed out while ping remained successful; later TCP attempts succeeded, so the UI check allows ten seconds. The observed port pattern does not establish the scale model or a safe weight-read command.
+- Kept existing printer profiles and added a company-scoped scale address/status form, server-side TCP reachability check, and browser barcode-scanner test field. Added an additive scale-configuration migration with audit on save. No POS, sale, inventory, or printer-output behavior was changed.
+- PHP lint, Pint, Arabic JSON parsing, and diff hygiene passed. One default PHP lint invocation hit a local file-mapping error; the affected files passed with CLI opcache disabled. The scanner's previously observed USB ID was not present during this session. No database migration, browser check, physical weight/print/scan calibration, automated test, commit, push, deployment, or production change occurred. Migration and actual-device acceptance remain open.
+## 2026-11-08 — Full scale-management planning
+
+- Owner clarified product/price upload, key assignment, label configuration, price-update sending, and reception of product/weight/price; explicitly requested a complete plan before further implementation.
+- Added `docs/superpowers/plans/2026-11-08-scale-management.md` with capability-proof gate, existing pricing resolver reuse, direct/local-connector alternatives, proposed scoped schema, synchronization and acknowledgment rules, hardware acceptance, and Core Change boundary for sales integration. Earlier runtime edits are preserved as an incomplete prototype.
+- Read affected product/unit/pricing source and current worktree status. Documentation diff hygiene checked. No runtime code change, hardware command, migration, automated test, browser check, commit, push, or deployment in this planning turn. Next action: owner review of the proposed plan and then protocol proof.
+## 2026-11-08 — Scale plan execution, hardware gate
+
+- Owner requested execution of the complete plan. Verified ICMP reachability of `192.168.0.150` through Ethernet 2 (`192.168.0.151/24`). Recovered MScale EN3.1 from OCOM's product downloads into a temporary directory because the historic local package path was absent. Inspected the vendor files and opened Ethernet settings in the native utility.
+- Target entry was attempted in the temporary copy. Desktop capture returned `0x8007000E` and the native window binding became unavailable; the process still reported responsive. No successful Callback or recoverable backup was obtained. Resume with read-only Callback and export before trying a single test PLU.
+- No further application code, hardware writes, migrations, automated tests, browser checks, commits, pushes or deployment. Documentation diff checked.
+## 2026-11-08 — ERP-only scale workflow
+
+- Owner confirmed the scale is empty and clarified that all operations must be available directly from ERP. Updated the plan and active task accordingly. Vendor manual describes supported operations via its software but does not specify the command/acknowledgment contract. A third-party integration guide points to a Delphi SDK archive, whose interface and device compatibility remain unverified.
+- No hardware write, application code change, migration, browser check, automated test, commit, push, or deployment. Next gate: establish a documented or otherwise verified device command and response before writing a single test PLU.
+## 2026-11-08 — Direct scale protocol probe
+
+- Probed the physical scale directly over TCP without vendor UI. A clock query returned a framed time response. A read for PLU 1 returned a valid empty frame. The candidate SDK and vendor PLU attachments returned HTTP 401.
+- Replaced the ERP TCP-only success check with verification of the device's clock response and separate UI feedback for an unrecognized reply. No hardware writes, browser check, migration, automated suite, commit, push or deployment. PLU write payload, keys, label layouts and weight/sale data still require device evidence.
+## 2026-11-08 — Direct PLU proof and ERP lookup
+
+- Read the vendor sample MDB schema read-only. Directly verified PLU 3999 was empty, wrote one ERP TEST record at 12.34, and read it back. Rewrote only price to 13.57 and compared the complete returned product record. Test PLU remains on the scale.
+- Added permission-checked lookup from ERP for a saved active scale. Directly exercised the PHP service against populated PLU 3999 and empty PLU 1. PHP lint, targeted Pint, Arabic JSON parsing and diff hygiene passed.
+- ERP price upload and updates, keys, label layouts and live weight remain open. No migration, browser check, automated suite, commit, push or deployment.
+## 2026-11-08 — Verified ERP scale writer foundation
+
+- Added a weighted-PLU write method to the ERP transport. It reads the slot first, rejects a conflicting identity, preserves other fields on update, and requires readback after the write. The verified write format currently accepts an ASCII device label and positive prices representable at two decimal places.
+- Direct PHP service verification against the physical scale changed test PLU 3999 from 13.57 to 14.23 and restored 13.57. A conflicting identity was rejected and the final price was unchanged. Pint and diff hygiene passed. No database migration, browser check, automated suite, commit, push or deployment. Next: persistent outlet/unit mapping and preview/send through the settings screen.
+## 2026-11-08 — Outlet mapping and scale price preview/send
+
+- Added an additive migration for the selling outlet and unique scale PLU/product-unit mappings. The settings screen scopes the outlet and KG unit, previews the existing effective price, rechecks the preview on send, verifies device readback before storing confirmation, and retains an unverified status on protocol failure. Endpoint or outlet changes clear prior confirmation. Mappings are paginated.
+- PHP syntax, Pint, Arabic JSON and diff checks passed. No database migration, browser check, automated suite, new hardware write, commit, push or deployment. Next verify this workflow on authorized local MariaDB and extend status and batch support.
+
+## 2026-11-08 — Scale price batch, key layout, and label template persistence
+
+- Completed the ERP settings slice for bounded multi-item price previews and sequential sends. Each item is revalidated against the current outlet price immediately before sending; confirmed, changed, ineligible, and unverified outcomes remain separate, and a transport failure stops the remaining sequence without erasing prior results.
+- Added MariaDB migrations for scale key assignments and scale label-template drafts, with scoped uniqueness and foreign-key cleanup. Added permission-checked ERP forms to save layer/key positions and template dimensions, barcode type, and supported fields.
+- Verification actually run: PHP lint on changed PHP files, Arabic JSON parsing, targeted Pint, and `git diff --check`. No migration execution, browser/manual UI verification, automated tests, hardware key/template write, or commit/push/deployment occurred. The worktree has no local vendor directory, so Artisan could not boot from this checkout.
+- Remaining blockers: the physical device protocol for key files, label upload/Arabic rendering, and live weight/transaction reads is still unverified; those capabilities are intentionally shown as saved ERP configuration or unsupported rather than falsely marked as sent/live.
+- Refined preview output with product code/name, unit, and price-source identity; key assignment now selects from mappings already attached to the active device. Final local checks after this refinement: Blade PHP lint, Arabic JSON parse, Pint, and diff check.
+
+**2026-11-08 owner-authorized hardware integration script:** Added `scripts/scale-integration.php` for direct, non-UI verification. It reads the selected PLU, writes 12.34 then 13.57, confirms readback, rejects a conflicting identity, restores the original snapshot, reads the scale sales report, probes KEY/D0/D1, and validates unsafe endpoint rejection. Actual run passed TCP/PLU write/update/conflict/restore/report and found KEY/D0/D1 empty, so those asset-write capabilities remain blocked by missing verified frames. No UI or invoice/POS mutation was performed.
+
+## 2026-11-08 — Scale report field correction
+
+- Read-only `UPL REP -16` on `192.168.0.150:33581` returned 22 records. In every observed record field 7 equals field 2 (unit price) divided by 10 with three decimals (for example `3750,2` and `375,3`), so it is more likely a money total than a weight. The meaning of the report fields is not confirmed by any protocol document available locally.
+- `TmScaleConnection::readSalesReport()` no longer returns `weight` or a derived `total`; it returns `field_7` as received. The settings screen shows "Unverified field 7" with a note. Arabic strings added; `php -l`, JSON decode, and a live report read through the service passed. No device write, migration, browser check, or automated test was run in this step.
+
+## 2026-11-08 — Arabic settings UI check (scale)
+
+- Served this worktree on `http://127.0.0.1:18080` with a local-only prepend autoloader (the `vendor` junction points to the sibling checkout, so the new `App\` classes were not found) and copied the sibling's built `public/build` (gitignored). Logged in as the local QA administrator and switched to Arabic through the locale form.
+- Found and fixed a real defect: with no active scale, the shortcut-key card read `$activeScale->id` on null and `/admin/printers` returned 500. The card is now rendered only when an active scale exists.
+- Verified in Arabic RTL on the printers/devices tab: saved a scale configuration (`192.168.0.150:33581`, outlet MAIN-SALES); connection test reported the clock reply; PLU 3999 read returned `ERP TEST`, code `3999`, price `13.57`; the report read listed 22 records with the "Unverified field 7" column and note. At 375px width there was no horizontal overflow. No device write was performed. Shortcut-key save, label-template save, price preview/send, batch send, and English-locale checks were not run. No automated suite was run.
+- Observed once: the first `/dashboard` request on this server returned 500 with "Query budget exceeded: 101 queries (budget: 100)" (`QUERY_BUDGET_ENABLED=true`). It was not investigated or reproduced.
+
+## 2026-11-08 — Scale send, failure path, key and label save (Arabic UI)
+
+- Mapped product FEED-K1 to existing test PLU 3999 (`ERP TEST`) from the Arabic settings screen. The preview showed 14.00 per KG; sending from ERP wrote 14.00 and an independent read of the device returned `ERP TEST` / 14.00.
+- With the scale IP temporarily set to an unreachable address, the send reported "تعذر تأكيد تحديث الميزان", kept the item as needing update, and showed no success. IP restored to `192.168.0.150`; connection test passed again.
+- Restoring PLU 3999 to 13.57: one write was accepted by readback, yet reads moments later returned 12.34 (the value from the earlier integration script) and stayed there across three reads; cause not found. A second write of 13.57 was confirmed and stayed 13.57 across four reads over about 15 seconds. PLU 3999 now holds 13.57 `ERP TEST`.
+- Saved a shortcut-key row (layer 1, key 1, mapping 1) and an Arabic label template (58x40 EAN13) from the screen; rows verified in MariaDB. They are ERP definitions only; nothing was sent to the device keys or label memory.
+- UI findings left unfixed: the "Product code" label is untranslated in the Arabic UI and the price-source line shows the raw `outlet_price_list:...` string.
+- Not run: price change from ERP, batch partial success, English UI, automated tests, any label print.
+
+## 2026-11-08 — Additional scale integration scripts
+
+- Added `scripts/scale-device-inventory.php` for clock verification, bounded PLU inventory, report import, KEY/D0/D1 capability probes, JSON snapshot output, and endpoint errors.
+- Added `scripts/scale-batch-sync.php` for JSON preview mode and explicit apply mode with per-PLU readback results. A one-item apply run on PLU 3999 confirmed the batch path, then the original test price 13.57 was restored and read back.
+- Actual runs passed clock, PLU inventory, 22 report records, batch preview, batch apply, and readback. KEY/D0/D1 probes remained empty. PHP lint, Pint, and diff checks passed. UI was not exercised in this scope.
+
+## 2026-11-08 — ERP price change, stale flag and batch send (scale)
+
+- Added a per-row status on the mapped-product list: `checkScalePrices()` runs once through `wire:init` in its own request, compares the current outlet price with the last confirmed price, and stores `confirmed` / `needs_update` / `ineligible` in `$scaleStatuses`; `sendScalePrice()` updates the row status after each send. A first version resolved prices on every render and pushed Livewire requests over the 100-query budget, so it was replaced.
+- Found and fixed a batch defect: the "Send previewed prices" button was rendered only while more than one price was pending, so after the first confirmed item it was removed from the page and the loop stopped, leaving the remaining items unsent. The button now stays mounted while two or more previews exist and is disabled when fewer than two are pending.
+- Verified through the Arabic screen with a second mapped product (PLU 3998, `ERP TEST B`, TEST-FEED-001): changing a product price through the Product Card turned the row to "Needs update" on page load; a single send wrote the new price and the device read-back matched; a two-item batch wrote both prices and the device read-back matched (21.00 / 16.00). Before the fix a two-item batch confirmed the first item and left the second at its old device price with "Sending stopped".
+- Prices were restored through the Product Card (27 → 14.00, 28 → 19.25) and resent; the device holds 14.00 (PLU 3999) and 19.25 (PLU 3998, a new test PLU created by this session). English screen renders LTR with the same rows.
+- Not resolved: one earlier write to PLU 3999 read back as 12.34 later; not reproduced in the later sends. No key, template or label bytes were sent to the device. No automated test suite was run. The local `.env` query budget was raised to 400 temporarily and restored to 100.
+
+## 2026-11-08 — Scale UI fixes and write settle check
+
+- Arabic: "Product code" now translated (`رمز المنتج` in `ar.json`, same string in `ar-EG.json`). The 69 scale-related strings added to `ar.json` earlier were missing from `ar-EG.json`; they were copied there so the Egyptian locale no longer falls back to English for the scale section.
+- The preview's price source now shows the price list name (`price_label` from `EffectivePriceResolver`, for example "Base Consumer Price List") instead of the raw `outlet_price_list:1:6:14.0000:` identity string; the identity string is still used internally for the stale-snapshot comparison. The selling outlet option and the preview product name follow the active locale instead of always showing the Arabic name.
+- `TmScaleConnection::sendWeightedProduct()` now reads the PLU a second time after a 1.5 second pause and fails with "did not stay after the write" if the device returned a different value, because one confirmed write was once seen reverting to an older price. Two test writes on PLU 3999 (14.01 then 14.00) passed, each taking about 4-5 seconds; PLU 3999 holds 14.00.
+- Verified on `127.0.0.1:18080` in ar-EG and en: the scale section shows no untranslated English in ar-EG and no Arabic text apart from the stored outlet name fallback. Not run: automated tests.
+- Open: `/dashboard` on this worktree returned HTTP 500 "Query budget exceeded: 101 queries (budget: 100)" repeatedly while the same page on the main checkout (port 8010, same database) loaded; the changed files between the baseline and main do not touch the dashboard, so a cold cache is suspected but not tested. The device key, label-template and label-print protocols and the meaning of report field 7 remain unverified.
+
+- Additional protocol investigation used read-only asset probes and four isolated candidate KEY frames. Each device response only acknowledged via TIM, and repeated UPL KEY remained empty. The temporary vendor executable was started only to investigate protocol shape, then stopped immediately and is not part of the ERP workflow. No key or label payload was accepted by the device.
+
+## 2026-11-08 — Device protocol discovery (shortcut keys and label formats)
+
+- Searched for documentation: no vendor protocol document exists publicly; an unofficial reverse-engineering repository for a related device family (`kubuntugamer/dlx50-tms-editor`) confirmed the `UPL`/`DWL`/`END` framing and lists the section tags, but has no layouts for keys or labels. The vendor user manual (TM-xA) describes only on-scale operation and USB file transfer, not the network commands. No vendor software was downloaded or run.
+- Read-only `UPL` of every known tag on the device (`TM-xA UA006 V3.15D`, UTF-8) showed that the shortcut keys are the `SCP` section (`KEY`, `D0`, `D1` are empty and are not the key table) and that label print formats are the `LAB` section (factory PF-1 to PF-9 plus one custom clone), with barcode formats in `BAR`.
+- Reversible write test: `DWL SCP` for layer 0 key 2 = `3999` was confirmed by exact section read-back against a saved copy (only that row changed), then restored to `0` and confirmed byte-identical. Facts and the exact frame are recorded in `docs/scale-device-protocol.md`.
+- Not done: ERP code for key upload, decoding of `LAS` label elements, any label write or print, the meaning of report field 7. Nothing was committed.
+
+## 2026-11-08 — Shortcut key send from ERP
+
+- Added `TmScaleConnection::readShortcutKeys()` and `sendShortcutKey()` (SCP section, whole-section read-back), migration `2026_11_08_190000_add_sync_status_to_scale_key_assignments` (status, confirmed value and time; run on the local database and also on the `qa_rajh_m1_regression_20261007` test schema, schema only, no rows touched), `sendScaleKey()` in the settings screen with an audit event, a key list with status badges and a send button, validation of layer 0-2 and key 1-63, and Arabic strings in `ar.json` and `ar-EG.json`.
+- Verified from the English screen: saved layer 0 key 2 -> PLU 3998 and sent it together with the older layer 1 key 1 -> PLU 3999; both rows show confirmed, and an independent device read returns 3998 and 3999 at those positions, with layer 0 key 1 unchanged. Direct service calls also confirmed a send and clear of layer 0 key 3 and rejected layer 3.
+- The two test keys remain on the device for a physical press test; clearing them is a send with an empty mapping. Not run: key send with the device unreachable, automated tests. No commit.
+
+## 2026-11-08 — Physical key press report and overwrite test
+
+- Owner reported that the physical key assigned in ERP as layer 0 key 2 worked, while the key they expected to change did not. Direct service tests showed that overwriting an occupied key is accepted and confirmed by device read-back: layer 0 key 3 changed 3998 -> 3999, and layer 0 key 1 changed from the factory value 9001 to 3999 (confirmed). The earlier ERP send had set layer 1 key 1, not layer 0 key 1, so a plain press of key 1 was never expected to change; whether layer 1 is reached with Shift on this scale is unverified.
+- Left on the device for a physical press test: layer 0 key 1 = 3999 (factory value was 9001, must be restored), layer 0 key 2 = 3998, layer 1 key 1 = 3999. Layer 0 key 3 was cleared to 0 again.
+
+## 2026-11-08 — Sale-log fields decoded; POS reception reclassified
+
+- Owner confirmed the physical key press showed ERP TEST after layer 0 key 1 was set to 3999; the factory value 9001 was then restored and read back. Layer labels in the screen now say "Layer 0 (direct press)".
+- After the owner pressed Confirm on the scale, the log held 37 records. Total equals unit price times weight in all of them when field 2 is the total, field 7 the weight (kg) and field 15 the unit price; field 1 of the RES row is the line number and field 3 the item code. `readSalesReport()` now returns sequence, time, plu (from the item code), weight, unit price, total and a `consistent` flag, and the settings table shows weight, unit price, total and time. Documented in `docs/scale-device-protocol.md`.
+- The request to receive weight and price in the POS page on Confirm is a sensitive-domain (D3) change under `.ai/ERP_CHANGE_POLICY.md`; it was not started. Not verified: displayed weight against the physical weight, the settings screen in the browser after this edit (navigation to port 18080 was refused). No commit.
+
+## 2026-11-08 — POS weight reception from the scale (D3)
+
+- Reclassified as D3 (POS and sales). Added migration `2026_11_08_200000_create_scale_received_records_table` (unique scale + sequence), Livewire component `App\Livewire\Pos\ScaleReceiver` with view `livewire/pos/scale-receiver.blade.php`, one line in `pages/pos/index.blade.php`, and Arabic strings in `ar.json` and `ar-EG.json`. `PosCartAction`, pricing and sale posting are unchanged: the component reads the scale sale log on request, uses each record once, rejects inconsistent records or unmapped PLUs, adds the weight as the cart quantity in the mapped kilogram unit at ERP's price, and writes an audit event. The first use sets existing records aside as history (37 records, sequence 16 to 52, written as `baseline`).
+- First placement in the transaction column was hidden on narrow screens (the mobile layout shows the products tab first), so the owner could not find it; the component now sits at the top of the products zone.
+- Verified in the browser pane (ar-EG): the block and button render and the first click set the history aside. Not verified: a real Confirm press adding a cart line, the rejection paths, automatic polling, stock-shortage refusal, automated tests (not authorized in this task). No commit.
+
+## 2026-11-08 — POS reception: clearer messages and verification without the scale
+
+- Owner pressed Confirm several times and nothing appeared in the cart; the stored reasons show why: the weighed ERP TEST B (TEST-FEED-001) has 0 kg of stock in MAIN-SALES so the cart refused it, and the pickle record (PLU 9001) is not linked to an ERP product. Records 53 to 59 were all stored as `rejected` with their reasons. The old message ("the available quantity of this product is 0 only") did not say which product, which weight, or what to do.
+- `ScaleReceiver` now returns one line per weighed item: product name and weight, then the reason in plain language with the action to take (link the PLU in settings, receive stock first and weigh again, scale total mismatch), or on success the weight and the ERP price per kg, noting when the scale showed a different price. Stock is checked before the cart add. Arabic strings added to `ar.json` and `ar-EG.json`; English strings are the keys.
+- Verification without the scale (scale was unreachable at the time): a test double on the PC's LAN address served six synthetic records in the device's frame format and the real component ran against it in a database transaction that was rolled back (no rows, stock or cart lines kept; nothing sent to the scale). Results: unmapped PLU, no stock, inconsistent total and over-stock quantity were all refused with the new messages in Arabic and English; a second press found nothing new. The first two runs reported a generic failure only because the harness request had no session; with a session the cart add works. The success path (valid weight added to the cart with the right quantity) was NOT exercised in that harness run because the only valid record had been consumed; a real press is still needed.
+- Scale reachable again afterwards. Sent layer 0 key 3 = PLU 3999 (ERP TEST, 20.5 kg in stock) from the screen; device read-back returned 3999. Device keys now: L0 k1 9001, k2 3998, k3 3999, L1 k1 3999. No commit.
+
+## 2026-11-13 - Scale settings workspace redesign and barcode print settings
+
+- Task: reorganise the scale section inside the existing printers settings tab into a status bar and internal tabs (products and prices, shortcut keys, labels and barcode, operations), improve key assignment with a visual grid and picker, and add barcode print settings.
+- Work completed: new settings UI and Livewire methods in `resources/views/platform/admin/settings.blade.php`; `TmScaleConnection::readBarcodeFormats` (read-only `UPL BAR`); additive migration for `scale_configurations.barcode_settings`; model cast; 94 Arabic strings in `lang/ar.json` and `lang/ar-EG.json`. No route, page or Livewire component added.
+- Verification actually run: Blade compiled with a standalone compiler (component tags skipped) and the output passed `php -l` with balanced control structures; `php -l` on the service, model and migration; both lang files parse as JSON. `artisan view:cache` timed out. NOT run: the new migration, any browser or authenticated UI check, any hardware call, any automated suite (local MySQL was not accepting connections during this work).
+- Remaining: run the migration on an authorized local database, check the screen in the browser (RTL and LTR), confirm key grid behaviour against the device with read-only calls first, and verify whether the device accepts a barcode format upload.
+- Commit and push: see the git history of `feature/device-settings`.
