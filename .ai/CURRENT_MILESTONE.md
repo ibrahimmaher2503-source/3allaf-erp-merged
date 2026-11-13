@@ -1,10 +1,8 @@
-# Current Milestone — R2 Inventory Reports
+# Current Milestone — Connected Device Setup
 
-**Date:** 2026-09-18
-**Status:** COMPLETE locally; release remains unauthorized.
+**Date:** 2026-11-08
+**Status:** IN PROGRESS locally.
 
-Stock Movement Card and Inventory Valuation As Of Date are implemented with direct report/sidebar destinations, historical movement and cost snapshots, deterministic running balances, scoped drilldown, and CSV/XLSX/PDF exports through the existing reporting infrastructure.
+The settings page retains its printer-profile workflow. The current local slice adds a network-scale configuration and TCP reachability check and a browser-based keyboard scanner check. Physical weight reading, calibration, actual printer output, browser acceptance, migration execution, UAT, release, and production remain open. The preceding R2 Inventory Reports milestone was recorded complete locally and remains unreleased.
 
-Dedicated MariaDB `rajeh_r2_inventory_reports_20260918` passed focused and linked inventory tests. Existing movement indexes cover the report predicates; no migration was added for R2. Authenticated Arabic and English browser UAT passed on the local runtime.
-
-Production deployment, activation, commit, push, tag, and release packaging are outside this milestone.
+The local implementation now includes the bounded catalog-to-scale price workflow, partial-success handling, key-layout persistence, and label-template draft persistence. Device-specific key/template transfer, Arabic physical label acceptance, and live weight or transaction protocol remain open pending verified hardware frames; no unsupported operation is faked.

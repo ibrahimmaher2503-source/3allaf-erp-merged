@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductUnit;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\SaveListDisplayPreference;
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
 use App\Modules\Platform\Actions\SavePrintTemplateAction;
@@ -13,12 +16,16 @@ use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\PrintTemplate;
+use App\Modules\Platform\Models\ScaleConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Services\TmScaleConnection;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Platform\Support\DocumentTypeCatalog;
 use Flux\Flux;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -61,6 +68,69 @@ new #[Title('System Settings')] class extends Component
     public bool $sequenceModalOpen = false;
 
     public bool $printerModalOpen = false;
+
+    public array $scaleForm = ['name' => '', 'ip_address' => '', 'port' => 33581, 'status' => 'active', 'store_id' => null];
+
+    public array $scaleMapping = ['code' => '', 'plu' => '', 'label' => ''];
+
+    #[Locked]
+    public array $scalePricePreviews = [];
+
+    #[Locked]
+    public array $scaleSendResults = [];
+
+    public ?string $scaleConnectionResult = null;
+
+    public string $scaleProductNumber = '';
+
+    public ?array $scaleProduct = null;
+
+    public ?string $scaleProductResult = null;
+
+    public array $scaleReport = [];
+
+    public ?string $scaleReportResult = null;
+
+    /** @var array<int, string> mapping id => confirmed|needs_update|ineligible, filled by checkScalePrices() */
+    public array $scaleStatuses = [];
+
+    public array $scaleKeyForm = ['layer' => 0, 'key_number' => 1, 'mapping_id' => null];
+
+    /** @var array<int, string> key assignment id => confirmed|unverified, set by sendScaleKey() */
+    public array $scaleKeyResults = [];
+
+    public array $scaleLabelForm = ['name' => 'Default label', 'width_mm' => 58, 'height_mm' => 40, 'barcode_type' => 'EAN13', 'fields' => ['name', 'weight', 'unit_price', 'total', 'date']];
+
+    // Scale workspace (inside the printers tab): products | keys | labels | operations
+    public string $scaleTab = 'products';
+
+    public bool $scaleEditing = false;
+
+    public string $scaleProductSearch = '';
+
+    public string $scaleMappingSearch = '';
+
+    public int $scaleKeyLayer = 0;
+
+    public ?int $scaleKeySelected = null;
+
+    public string $scaleKeyPickerSearch = '';
+
+    /** @var array<int, array<int, int>>|null layer => key => PLU as read back from the device (read-only) */
+    public ?array $scaleDeviceKeys = null;
+
+    public ?string $scaleDeviceKeysResult = null;
+
+    /** Weight/price barcode printed on scale labels: saved ERP definition, device upload not verified. */
+    public array $scaleBarcodeForm = [
+        'symbology' => 'EAN13', 'prefix' => '20', 'item_source' => 'plu', 'item_digits' => 5,
+        'value_type' => 'weight', 'value_digits' => 5, 'value_decimals' => 3, 'print_human_readable' => true,
+    ];
+
+    /** @var list<string> */
+    public array $scaleDeviceBarcodeFormats = [];
+
+    public ?string $scaleDeviceBarcodeResult = null;
 
     public bool $templateModalOpen = false;
 
@@ -239,6 +309,12 @@ new #[Title('System Settings')] class extends Component
             $this->companyId = $company->id;
             $this->companyForm = array_merge($this->companyForm, $company->toArray());
             $this->companyForm['timezone'] = $this->companyForm['timezone'] ?: 'Africa/Cairo';
+            if ($scale = ScaleConfiguration::query()->where('company_id', $company->id)->first()) {
+                $this->scaleForm = $scale->only(['name', 'ip_address', 'port', 'status', 'store_id']);
+                $this->scaleBarcodeForm = array_replace($this->scaleBarcodeForm, array_intersect_key((array) $scale->barcode_settings, $this->scaleBarcodeForm));
+            } else {
+                $this->scaleEditing = true;
+            }
         }
 
         // No business defaults are seeded here. Payment, tax, numbering, and printer
@@ -592,6 +668,614 @@ new #[Title('System Settings')] class extends Component
         $this->sequenceOverride = ['sequence_id' => null, 'next_value' => null, 'expected_lock_version' => null, 'reason' => ''];
     }
 
+    /** @return array{name: string, ip_address: string, port: int, status: string} */
+    private function validatedScaleForm(): array
+    {
+        $data = $this->validate([
+            'scaleForm.name' => ['required', 'string', 'max:255'],
+            'scaleForm.ip_address' => ['required', 'ipv4'],
+            'scaleForm.port' => ['required', 'integer', 'between:1,65535'],
+            'scaleForm.status' => ['required', 'in:active,inactive'],
+        ])['scaleForm'];
+
+        if (! preg_match('/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/', $data['ip_address'])) {
+            throw ValidationException::withMessages(['scaleForm.ip_address' => __('Use a private network IP address for the scale.')]);
+        }
+
+        return $data;
+    }
+
+    public function saveScale(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $data = $this->validatedScaleForm();
+        $storeId = $this->validate(['scaleForm.store_id' => ['required', 'integer']])['scaleForm']['store_id'];
+        $data['store_id'] = $this->scaleOutlets()->findOrFail($storeId)->id;
+
+        DB::transaction(function () use ($data): void {
+            Company::query()->whereKey($this->companyId)->lockForUpdate()->firstOrFail();
+            $scale = ScaleConfiguration::query()->firstOrNew(['company_id' => $this->companyId]);
+            $before = $scale->exists ? $scale->getAttributes() : null;
+            $scale->fill($data);
+            if ($scale->exists && $scale->isDirty(['ip_address', 'port', 'store_id'])) {
+                DB::table('scale_product_mappings')->where('scale_configuration_id', $scale->id)
+                    ->update(['confirmed_price' => null, 'sync_status' => 'pending', 'updated_at' => now()]);
+            }
+            $scale->save();
+            app(RecordAuditEvent::class)->execute('master_data', $before ? 'update_scale_configuration' : 'create_scale_configuration', $scale, $before, $scale->getAttributes());
+        });
+
+        $this->scaleConnectionResult = null;
+        $this->scaleEditing = false;
+        $this->reset('scalePricePreviews', 'scaleSendResults');
+        Flux::toast(variant: 'success', text: __('Scale configuration saved.'));
+    }
+
+    private function scaleOutlets(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Store::query()->visibleTo(auth()->user())->where('company_id', $this->companyId)
+            ->where('type', 'selling')->where('status', 'active');
+    }
+
+    public function saveScaleMapping(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $data = $this->validate([
+            'scaleMapping.code' => ['required', 'string', 'max:100'],
+            'scaleMapping.plu' => ['required', 'integer', 'between:1,4000'],
+            'scaleMapping.label' => ['required', 'regex:/\A[ -~]{1,20}\z/'],
+        ])['scaleMapping'];
+
+        $mappingId = DB::transaction(function () use ($data): int {
+            $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->lockForUpdate()->firstOrFail();
+            $store = $this->scaleOutlets()->findOrFail($device->store_id);
+            $product = Product::query()->sellable()->availableToCompany($this->companyId, $store->branch_id, $store->id)
+                ->where('item_code', $data['code'])->first();
+            $unit = $product?->productUnits()->where('is_sale_unit', true)
+                ->whereHas('unit', fn ($query) => $query->where('code', 'KG')->where('dimension', 'weight')->where('status', 'active'))->first();
+            if ($unit === null) {
+                throw ValidationException::withMessages(['scaleMapping.code' => __('Select a sellable product with a kilogram sale unit.')]);
+            }
+
+            $mappings = DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id);
+            if ((clone $mappings)->where(fn ($query) => $query->where('plu', $data['plu'])->orWhere('product_unit_id', $unit->id))->exists()) {
+                throw ValidationException::withMessages(['scaleMapping.plu' => __('This PLU or product unit is already mapped on the scale.')]);
+            }
+
+            return DB::table('scale_product_mappings')->insertGetId([
+                'scale_configuration_id' => $device->id, 'product_unit_id' => $unit->id, 'plu' => $data['plu'],
+                'label' => trim($data['label']), 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        });
+
+        $this->reset('scaleMapping');
+        $this->previewScalePrice($mappingId, app(EffectivePriceResolver::class));
+    }
+
+    public function previewScalePrice(int $id, EffectivePriceResolver $prices): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        if (count($this->scalePricePreviews) >= 15 && ! isset($this->scalePricePreviews[$id])) {
+            throw ValidationException::withMessages(['scaleMapping.plu' => __('Preview up to 15 scale products at a time.')]);
+        }
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->firstOrFail();
+        $this->scalePricePreviews[$id] = $this->scalePriceSnapshot($device, $id, $prices);
+        unset($this->scaleSendResults[$id]);
+    }
+
+    /**
+     * Compares each mapped product's current outlet price with the last price confirmed on the scale.
+     * Runs in its own request (wire:init) so the per-row price resolution never inflates other requests.
+     */
+    public function checkScalePrices(): void
+    {
+        Gate::authorize('company_settings.edit');
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->first();
+        $this->scaleStatuses = [];
+        if (! $device) {
+            return;
+        }
+        $prices = app(EffectivePriceResolver::class);
+        foreach (DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->orderBy('plu')->limit(12)->get() as $mapping) {
+            try {
+                $snapshot = $this->scalePriceSnapshot($device, (int) $mapping->id, $prices);
+                $this->scaleStatuses[(int) $mapping->id] = $snapshot['status'] === 'confirmed' && $snapshot['confirmed'] === $snapshot['price'] ? 'confirmed' : 'needs_update';
+            } catch (ValidationException | \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                $this->scaleStatuses[(int) $mapping->id] = 'ineligible';
+            }
+        }
+    }
+
+    public function removeScalePreview(int $id): void
+    {
+        Gate::authorize('company_settings.edit');
+        unset($this->scalePricePreviews[$id], $this->scaleSendResults[$id]);
+    }
+
+    private function scalePriceSnapshot(ScaleConfiguration $device, int $id, EffectivePriceResolver $prices): array
+    {
+        $store = $this->scaleOutlets()->findOrFail($device->store_id);
+        $mapping = DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->where('id', $id)->first();
+        if (! $mapping) {
+            throw ValidationException::withMessages(['scaleMapping.plu' => __('Scale product is no longer eligible for sending.')]);
+        }
+        $unit = ProductUnit::query()->where('is_sale_unit', true)
+            ->whereHas('unit', fn ($query) => $query->where('code', 'KG')->where('dimension', 'weight')->where('status', 'active'))
+            ->whereHas('product', fn ($query) => $query->sellable()->availableToCompany($this->companyId, $store->branch_id, $store->id))
+            ->findOrFail($mapping->product_unit_id);
+        $price = $prices->resolve($unit->product_id, $store->id, productUnitId: $unit->id);
+        if ($price === null || $price->open_price_allowed || ! preg_match('/\A[0-9]{1,4}(?:\.[0-9]{1,2}0*)?\z/', (string) $price->amount)
+            || bccomp((string) $price->amount, '0', 2) <= 0) {
+            throw ValidationException::withMessages(['scaleMapping.plu' => __('No fixed outlet price compatible with the scale was found.')]);
+        }
+
+        return [
+            'id' => $id, 'device_id' => $device->id, 'endpoint' => $device->ip_address.':'.$device->port,
+            'store_id' => $store->id, 'plu' => (int) $mapping->plu, 'label' => $mapping->label,
+            'product_code' => $unit->product->item_code, 'product_name' => str_starts_with(app()->getLocale(), 'ar') ? $unit->product->name_ar : ($unit->product->name_en ?: $unit->product->name_ar),
+            'unit' => $unit->unit->code,
+            'price' => bcadd((string) $price->amount, '0', 2), 'source' => $prices->identity($price), 'source_label' => (string) $price->price_label,
+            'confirmed' => $mapping->confirmed_price, 'status' => $mapping->sync_status,
+        ];
+    }
+
+    public function sendScalePrice(int $id, EffectivePriceResolver $prices, TmScaleConnection $connection): string
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId && isset($this->scalePricePreviews[$id]), 403);
+        $status = DB::transaction(function () use ($id, $prices, $connection): string {
+            $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->lockForUpdate()->first();
+            if (! $device) {
+                return 'ineligible';
+            }
+            try {
+                $snapshot = $this->scalePriceSnapshot($device, $id, $prices);
+            } catch (ValidationException | \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                return 'ineligible';
+            }
+            if ($snapshot !== $this->scalePricePreviews[$id]) {
+                $this->scalePricePreviews[$id] = $snapshot;
+
+                return 'changed';
+            }
+
+            $query = DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->where('id', $snapshot['id']);
+            try {
+                $connection->sendWeightedProduct($device->ip_address, $device->port, $snapshot['plu'], (string) $snapshot['plu'], $snapshot['label'], $snapshot['price']);
+            } catch (RuntimeException) {
+                $query->update(['sync_status' => 'unverified', 'updated_at' => now()]);
+                $this->scalePricePreviews[$id] = array_replace($snapshot, ['status' => 'unverified']);
+
+                return 'unverified';
+            }
+
+            $query->update(['confirmed_price' => $snapshot['price'], 'sync_status' => 'confirmed', 'updated_at' => now()]);
+            app(RecordAuditEvent::class)->execute('master_data', 'confirm_scale_price', $device, null, [
+                'plu' => $snapshot['plu'], 'price' => $snapshot['price'], 'store_id' => $snapshot['store_id'],
+            ]);
+            $this->scalePricePreviews[$id] = array_replace($snapshot, ['confirmed' => $snapshot['price'], 'status' => 'confirmed']);
+
+            return 'confirmed';
+        });
+        $this->scaleSendResults[$id] = $status;
+        $this->scaleStatuses[$id] = match ($status) {
+            'confirmed' => 'confirmed',
+            'ineligible' => 'ineligible',
+            default => 'needs_update',
+        };
+
+        return $status;
+    }
+
+    public function testScaleConnection(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $data = $this->validatedScaleForm();
+        $connection = @stream_socket_client("tcp://{$data['ip_address']}:{$data['port']}", $errorCode, $errorMessage, 10);
+        $this->scaleConnectionResult = 'unreachable';
+        if ($connection === false) {
+            return;
+        }
+
+        $this->scaleConnectionResult = 'unrecognized';
+        try {
+            stream_set_timeout($connection, 3);
+            $request = "UPL\tTIM\t\r\n";
+            if (@fwrite($connection, $request) !== strlen($request)) {
+                return;
+            }
+
+            $response = '';
+            // A TM-series clock reply has at most four lines, including the leading blank line.
+            for ($line = 0; $line < 4 && ($part = @fgets($connection, 256)) !== false; $line++) {
+                $response .= $part;
+                if ($part === "END\tTIM\t\r\n") {
+                    break;
+                }
+            }
+
+            if (preg_match('/\A(?:\r\n)?DWL\tTIM\t\r\nTIM(?:\t[0-9]{1,4}){6}\t\r\nEND\tTIM\t\r\n\z/', $response) === 1) {
+                $this->scaleConnectionResult = 'connected';
+            }
+        } finally {
+            fclose($connection);
+        }
+    }
+
+    public function saveScaleKeyAssignment(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $data = $this->validate([
+            'scaleKeyForm.layer' => ['required', 'integer', 'between:0,2'],
+            'scaleKeyForm.key_number' => ['required', 'integer', 'between:1,63'],
+            'scaleKeyForm.mapping_id' => ['nullable', 'integer'],
+        ])['scaleKeyForm'];
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->firstOrFail();
+        if ($data['mapping_id'] !== null && ! DB::table('scale_product_mappings')->where('id', $data['mapping_id'])->where('scale_configuration_id', $device->id)->exists()) {
+            throw ValidationException::withMessages(['scaleKeyForm.mapping_id' => __('Select a product mapped to this scale.')]);
+        }
+        DB::table('scale_key_assignments')->updateOrInsert(
+            ['scale_configuration_id' => $device->id, 'layer' => $data['layer'], 'key_number' => $data['key_number']],
+            ['scale_product_mapping_id' => $data['mapping_id'], 'sync_status' => 'pending', 'confirmed_value' => null, 'confirmed_at' => null, 'updated_at' => now(), 'created_at' => now()]
+        );
+        // A reassigned key must not keep showing the previous send result.
+        $assignmentId = DB::table('scale_key_assignments')->where('scale_configuration_id', $device->id)
+            ->where('layer', $data['layer'])->where('key_number', $data['key_number'])->value('id');
+        unset($this->scaleKeyResults[(int) $assignmentId]);
+        Flux::toast(variant: 'success', text: __('Scale key layout saved.'));
+    }
+
+    public function sendScaleKey(int $id, TmScaleConnection $connection): string
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->first();
+        $assignment = $device ? DB::table('scale_key_assignments')->where('scale_configuration_id', $device->id)->where('id', $id)->first() : null;
+        if (! $assignment) {
+            return 'ineligible';
+        }
+        $value = 0;
+        if ($assignment->scale_product_mapping_id !== null) {
+            $mapping = DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->where('id', $assignment->scale_product_mapping_id)->first();
+            if (! $mapping) {
+                return 'ineligible';
+            }
+            $value = (int) $mapping->plu;
+        }
+
+        $query = DB::table('scale_key_assignments')->where('id', $assignment->id);
+        try {
+            $connection->sendShortcutKey($device->ip_address, $device->port, (int) $assignment->layer, (int) $assignment->key_number, $value);
+        } catch (RuntimeException) {
+            $query->update(['sync_status' => 'unverified', 'updated_at' => now()]);
+            $this->scaleKeyResults[$id] = 'unverified';
+
+            return 'unverified';
+        }
+
+        $query->update(['sync_status' => 'confirmed', 'confirmed_value' => $value, 'confirmed_at' => now(), 'updated_at' => now()]);
+        app(RecordAuditEvent::class)->execute('master_data', 'confirm_scale_key', $device, null, [
+            'layer' => (int) $assignment->layer, 'key' => (int) $assignment->key_number, 'plu' => $value,
+        ]);
+        $this->scaleKeyResults[$id] = 'confirmed';
+
+        return 'confirmed';
+    }
+
+    public function saveScaleLabelTemplate(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $data = $this->validate([
+            'scaleLabelForm.name' => ['required', 'string', 'max:100'],
+            'scaleLabelForm.width_mm' => ['required', 'integer', 'between:1,200'],
+            'scaleLabelForm.height_mm' => ['required', 'integer', 'between:1,200'],
+            'scaleLabelForm.barcode_type' => ['nullable', 'in:EAN13,Code128,none'],
+            'scaleLabelForm.fields' => ['required', 'array', 'min:1'],
+            'scaleLabelForm.fields.*' => ['in:name,weight,unit_price,total,date,plu,barcode'],
+        ])['scaleLabelForm'];
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->firstOrFail();
+        DB::table('scale_label_templates')->insert([
+            'scale_configuration_id' => $device->id, 'name' => $data['name'], 'width_mm' => $data['width_mm'],
+            'height_mm' => $data['height_mm'], 'fields' => json_encode($data['fields'], JSON_THROW_ON_ERROR),
+            'barcode_type' => $data['barcode_type'], 'status' => 'draft', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Flux::toast(variant: 'success', text: __('Scale label template saved for review.'));
+    }
+
+    public function deleteScaleLabelTemplate(int $id): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->firstOrFail();
+        $deleted = DB::table('scale_label_templates')->where('scale_configuration_id', $device->id)
+            ->where('id', $id)->where('status', 'draft')->delete();
+        if ($deleted) {
+            app(RecordAuditEvent::class)->execute('master_data', 'delete_scale_label_template', $device, ['template_id' => $id], null);
+            Flux::toast(variant: 'success', text: __('Scale label template deleted.'));
+        }
+    }
+
+    public function setScaleTab(string $tab): void
+    {
+        $this->scaleTab = in_array($tab, ['products', 'keys', 'labels', 'operations'], true) ? $tab : 'products';
+        $this->scaleKeySelected = null;
+    }
+
+    private function activeScaleDevice(): ?ScaleConfiguration
+    {
+        return $this->companyId
+            ? ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->first()
+            : null;
+    }
+
+    /** Sellable products with an active kilogram sale unit at the scale outlet, matching code or name (max 8). */
+    public function scaleProductMatches(): \Illuminate\Support\Collection
+    {
+        $term = trim($this->scaleProductSearch);
+        $device = $this->activeScaleDevice();
+        $store = $device ? $this->scaleOutlets()->find($device->store_id) : null;
+        if (mb_strlen($term) < 2 || ! $store) {
+            return collect();
+        }
+        $pattern = '%'.addcslashes($term, '%_\\').'%';
+
+        return Product::query()->sellable()->availableToCompany($this->companyId, $store->branch_id, $store->id)
+            ->whereHas('productUnits', fn ($query) => $query->where('is_sale_unit', true)
+                ->whereHas('unit', fn ($unit) => $unit->where('code', 'KG')->where('dimension', 'weight')->where('status', 'active')))
+            ->where(fn ($query) => $query->where('item_code', 'like', $pattern)->orWhere('name_ar', 'like', $pattern)->orWhere('name_en', 'like', $pattern))
+            ->orderBy('item_code')->limit(8)->get(['id', 'item_code', 'name_ar', 'name_en']);
+    }
+
+    /** Product ids already linked on the active scale, used to flag search results. */
+    public function scaleMappedProductIds(): array
+    {
+        $device = $this->activeScaleDevice();
+        if (! $device) {
+            return [];
+        }
+
+        return ProductUnit::query()->whereIn('id', DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->pluck('product_unit_id'))
+            ->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    public function pickScaleProduct(int $productId): void
+    {
+        Gate::authorize('company_settings.edit');
+        $device = $this->activeScaleDevice();
+        abort_unless($device, 403);
+        $store = $this->scaleOutlets()->findOrFail($device->store_id);
+        $product = Product::query()->sellable()->availableToCompany($this->companyId, $store->branch_id, $store->id)
+            ->whereHas('productUnits', fn ($query) => $query->where('is_sale_unit', true)
+                ->whereHas('unit', fn ($unit) => $unit->where('code', 'KG')->where('dimension', 'weight')->where('status', 'active')))
+            ->find($productId, ['id', 'item_code', 'name_ar', 'name_en']);
+        abort_unless($product, 404);
+
+        $label = trim(substr(preg_replace('/[^ -~]/', '', Str::ascii((string) ($product->name_en ?: $product->item_code))) ?? '', 0, 20));
+        $used = DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->pluck('plu')->map(fn ($plu) => (int) $plu)->flip();
+        $nextPlu = null;
+        for ($plu = 1; $plu <= 4000; $plu++) {
+            if (! $used->has($plu)) {
+                $nextPlu = $plu;
+                break;
+            }
+        }
+
+        $this->scaleMapping = ['code' => (string) $product->item_code, 'plu' => $nextPlu ?? '', 'label' => $label !== '' ? $label : (string) $product->item_code];
+        $this->scaleProductSearch = '';
+        $this->resetValidation('scaleMapping.*');
+    }
+
+    public function setScaleKeyLayer(int $layer): void
+    {
+        $this->scaleKeyLayer = max(0, min(2, $layer));
+        $this->scaleKeySelected = null;
+    }
+
+    public function selectScaleKey(int $key): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($key >= 1 && $key <= 63, 422);
+        $this->scaleKeySelected = $this->scaleKeySelected === $key ? null : $key;
+        $this->scaleKeyPickerSearch = '';
+    }
+
+    public function assignScaleKey(?int $mappingId = null): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->scaleKeySelected !== null, 422);
+        $this->scaleKeyForm = ['layer' => $this->scaleKeyLayer, 'key_number' => $this->scaleKeySelected, 'mapping_id' => $mappingId];
+        $this->saveScaleKeyAssignment();
+        $this->scaleKeySelected = null;
+        $this->scaleKeyPickerSearch = '';
+    }
+
+    /** Read-only: loads the shortcut-key table from the device so the grid can flag ERP/device differences. */
+    public function readScaleKeysFromDevice(TmScaleConnection $scale): void
+    {
+        Gate::authorize('company_settings.edit');
+        $device = $this->activeScaleDevice();
+        $this->scaleDeviceKeys = null;
+        if (! $device) {
+            $this->scaleDeviceKeysResult = 'inactive';
+
+            return;
+        }
+        try {
+            $this->scaleDeviceKeys = $scale->readShortcutKeys($device->ip_address, $device->port);
+            $this->scaleDeviceKeysResult = 'read';
+        } catch (RuntimeException) {
+            $this->scaleDeviceKeysResult = 'failed';
+        }
+    }
+
+    public function saveScaleBarcodeSettings(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $data = $this->validate([
+            'scaleBarcodeForm.symbology' => ['required', 'in:EAN13,Code128'],
+            'scaleBarcodeForm.prefix' => ['required', 'regex:/\A[0-9]{1,2}\z/'],
+            'scaleBarcodeForm.item_source' => ['required', 'in:plu,item_code'],
+            'scaleBarcodeForm.item_digits' => ['required', 'integer', 'between:4,7'],
+            'scaleBarcodeForm.value_type' => ['required', 'in:weight,price'],
+            'scaleBarcodeForm.value_digits' => ['required', 'integer', 'between:4,6'],
+            'scaleBarcodeForm.value_decimals' => ['required', 'integer', 'between:0,3'],
+            'scaleBarcodeForm.print_human_readable' => ['boolean'],
+        ])['scaleBarcodeForm'];
+        $data = array_replace($data, [
+            'item_digits' => (int) $data['item_digits'], 'value_digits' => (int) $data['value_digits'],
+            'value_decimals' => (int) $data['value_decimals'], 'print_human_readable' => (bool) ($data['print_human_readable'] ?? false),
+        ]);
+        if ($data['symbology'] === 'EAN13' && strlen($data['prefix']) + $data['item_digits'] + $data['value_digits'] !== 12) {
+            throw ValidationException::withMessages(['scaleBarcodeForm.value_digits' => __('EAN-13 needs prefix + item code + value digits to total 12; the 13th digit is the check digit.')]);
+        }
+        if ($data['value_decimals'] >= $data['value_digits']) {
+            throw ValidationException::withMessages(['scaleBarcodeForm.value_decimals' => __('Decimals must be fewer than the value digits.')]);
+        }
+
+        DB::transaction(function () use ($data): void {
+            $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->lockForUpdate()->firstOrFail();
+            $before = $device->barcode_settings;
+            $device->update(['barcode_settings' => $data]);
+            app(RecordAuditEvent::class)->execute('master_data', 'update_scale_barcode_settings', $device, ['barcode_settings' => $before], ['barcode_settings' => $data]);
+        });
+        $this->scaleBarcodeForm = $data;
+        Flux::toast(variant: 'success', text: __('Scale barcode settings saved.'));
+    }
+
+    /**
+     * Builds a sample label barcode from the current form (unsaved edits included) so the layout can be checked
+     * before saving: one segment per part, the final code, and an SVG when the code is encodable.
+     */
+    public function scaleBarcodePreview(): array
+    {
+        $form = $this->scaleBarcodeForm;
+        $prefix = preg_replace('/\D/', '', (string) $form['prefix']) ?? '';
+        $itemDigits = max(1, min(7, (int) $form['item_digits']));
+        $valueDigits = max(1, min(6, (int) $form['value_digits']));
+        $decimals = max(0, min(3, (int) $form['value_decimals']));
+        $isWeight = $form['value_type'] === 'weight';
+
+        $device = $this->activeScaleDevice();
+        $sample = $device ? DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->orderBy('plu')->first() : null;
+        $itemValue = (string) ($sample?->plu ?? 1);
+        if ($form['item_source'] === 'item_code' && $sample) {
+            $itemValue = (string) (ProductUnit::query()->with('product:id,item_code')->find($sample->product_unit_id)?->product?->item_code ?? $itemValue);
+        }
+        $itemOverflow = ! ctype_digit($itemValue) || strlen($itemValue) > $itemDigits;
+        $item = str_pad(substr(preg_replace('/\D/', '', $itemValue) ?: '1', -$itemDigits), $itemDigits, '0', STR_PAD_LEFT);
+
+        $sampleValue = $isWeight ? '1.250' : '31.25';
+        $raw = (string) (int) round((float) $sampleValue * (10 ** $decimals));
+        $valueOverflow = strlen($raw) > $valueDigits;
+        $value = str_pad(substr($raw, -$valueDigits), $valueDigits, '0', STR_PAD_LEFT);
+
+        $segments = [
+            ['key' => 'prefix', 'label' => __('Prefix'), 'digits' => $prefix],
+            ['key' => 'item', 'label' => $form['item_source'] === 'plu' ? __('PLU') : __('Item code'), 'digits' => $item],
+            ['key' => 'value', 'label' => $isWeight ? __('Weight') : __('Price'), 'digits' => $value],
+        ];
+        $body = $prefix.$item.$value;
+        $code = $body;
+        $valid = $prefix !== '';
+        if ($form['symbology'] === 'EAN13') {
+            $valid = $valid && strlen($body) === 12;
+            if ($valid) {
+                $sum = 0;
+                for ($i = 0; $i < 12; $i++) {
+                    $sum += (int) $body[$i] * ($i % 2 === 0 ? 1 : 3);
+                }
+                $check = (string) ((10 - ($sum % 10)) % 10);
+                $segments[] = ['key' => 'check', 'label' => __('Check digit'), 'digits' => $check];
+                $code = $body.$check;
+            }
+        }
+
+        $svg = null;
+        if ($valid) {
+            try {
+                $svg = app(\App\Modules\Pricing\Services\BarcodeSvgRenderer::class)->render($code, $form['symbology'] === 'EAN13' ? 'ean13' : 'code128', 56);
+            } catch (\InvalidArgumentException) {
+                $valid = false;
+            }
+        }
+
+        return [
+            'segments' => $segments, 'code' => $code, 'valid' => $valid, 'svg' => $svg,
+            'length' => strlen($body) + ($form['symbology'] === 'EAN13' ? 1 : 0),
+            'sample_value' => $sampleValue.' '.($isWeight ? 'kg' : ''), 'sample_item' => $itemValue,
+            'item_overflow' => $itemOverflow, 'value_overflow' => $valueOverflow,
+        ];
+    }
+
+    /** Read-only: shows the raw BAR section from the device. Its meaning is not verified, so it is never parsed. */
+    public function readScaleBarcodeFormats(TmScaleConnection $scale): void
+    {
+        Gate::authorize('company_settings.edit');
+        $device = $this->activeScaleDevice();
+        $this->scaleDeviceBarcodeFormats = [];
+        if (! $device) {
+            $this->scaleDeviceBarcodeResult = 'inactive';
+
+            return;
+        }
+        try {
+            $this->scaleDeviceBarcodeFormats = $scale->readBarcodeFormats($device->ip_address, $device->port);
+            $this->scaleDeviceBarcodeResult = $this->scaleDeviceBarcodeFormats === [] ? 'empty' : 'read';
+        } catch (RuntimeException) {
+            $this->scaleDeviceBarcodeResult = 'failed';
+        }
+    }
+
+    public function readScaleProduct(TmScaleConnection $scale): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $this->scaleProduct = null;
+        $this->scaleProductResult = null;
+        $validated = $this->validate(['scaleProductNumber' => ['required', 'integer', 'between:1,4000']]);
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->first();
+        if ($device === null) {
+            $this->scaleProductResult = 'inactive';
+
+            return;
+        }
+
+        try {
+            $this->scaleProduct = $scale->readProduct($device->ip_address, $device->port, (int) $validated['scaleProductNumber']);
+            $this->scaleProductResult = $this->scaleProduct === null ? 'empty' : 'read';
+        } catch (RuntimeException) {
+            $this->scaleProductResult = 'failed';
+        }
+    }
+
+    public function readScaleReport(TmScaleConnection $scale): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $this->scaleReport = [];
+        $this->scaleReportResult = null;
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->first();
+        if ($device === null) {
+            $this->scaleReportResult = 'inactive';
+
+            return;
+        }
+
+        try {
+            $this->scaleReport = $scale->readSalesReport($device->ip_address, $device->port);
+            $this->scaleReportResult = $this->scaleReport === [] ? 'empty' : 'read';
+        } catch (RuntimeException) {
+            $this->scaleReportResult = 'failed';
+        }
+    }
+
     /**
      * Save printer configuration.
      */
@@ -801,7 +1485,7 @@ $sectionMeta = [
     'payments' => [__('Payment Methods'), __('Payment names, evidence, and offline eligibility.')],
     'tax' => [__('Tax rules'), __('Tax treatment and price display defaults.')],
     'sequences' => [__('Document numbering'), __('Prefixes, counters, and reset timing.')],
-    'printers' => [__('Printers & Print Profiles'), __('Printer destinations and assigned layouts.')],
+    'printers' => [__('Printers and connected devices'), __('Printer, scale, and barcode scanner setup.')],
     'audit' => [__('Configuration Change History'), __('Read-only history of setting changes.')],
 ][$activeTab] ?? [__('Company Identity'), __('Company identity and contact details.')];
 ?>
@@ -1517,6 +2201,843 @@ $sectionMeta = [
                 <x-context-help :title="__('Printer and template help')" :label="__('Open printer and template help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Printer identifies the output device and connection.') }}</li><li>{{ __('Template controls document type, paper size, language, and layout.') }}</li><li>{{ __('Scope limits a printer to the company, a branch, or a point of sale. Relevant printers are active visible printers assigned to an active paper-compatible template.') }}</li></ul></x-context-help>
                 <div class="flex flex-wrap gap-2"><flux:button type="button" size="sm" variant="primary" icon="plus" wire:click="openPrinterModal">{{ __('Add printer') }}</flux:button><flux:button type="button" size="sm" variant="primary" icon="plus" wire:click="openPrintTemplateModal">{{ __('Add print template') }}</flux:button></div>
             </div>
+
+            @php
+                $scaleDevice = ScaleConfiguration::query()->where('company_id', $companyId)->first();
+                $activeScale = $scaleDevice && $scaleDevice->status === 'active' ? $scaleDevice : null;
+                $scaleOutlet = $scaleDevice?->store_id ? $this->scaleOutlets()->whereKey($scaleDevice->store_id)->first() : null;
+                $scaleReady = $activeScale && $scaleOutlet;
+                $scaleCounts = ['mapped' => 0, 'needs_update' => 0, 'keys' => 0, 'keys_pending' => 0, 'templates' => 0];
+                if ($scaleDevice) {
+                    $scaleCounts = [
+                        'mapped' => DB::table('scale_product_mappings')->where('scale_configuration_id', $scaleDevice->id)->count(),
+                        'needs_update' => DB::table('scale_product_mappings')->where('scale_configuration_id', $scaleDevice->id)->where('sync_status', '!=', 'confirmed')->count(),
+                        'keys' => DB::table('scale_key_assignments')->where('scale_configuration_id', $scaleDevice->id)->whereNotNull('scale_product_mapping_id')->count(),
+                        'keys_pending' => DB::table('scale_key_assignments')->where('scale_configuration_id', $scaleDevice->id)->where('sync_status', '!=', 'confirmed')->count(),
+                        'templates' => DB::table('scale_label_templates')->where('scale_configuration_id', $scaleDevice->id)->count(),
+                    ];
+                }
+                $outletName = $scaleOutlet ? $scaleOutlet->code.' · '.(str_starts_with(app()->getLocale(), 'ar') ? $scaleOutlet->name_ar : ($scaleOutlet->name_en ?: $scaleOutlet->name_ar)) : null;
+            @endphp
+
+            <section class="space-y-4" aria-labelledby="scale-workspace-heading" data-scale-workspace x-data="{ sending: false, interrupted: false }">
+                {{-- Status bar: device identity, connection state and counts; the settings form opens on demand. --}}
+                <flux:card class="space-y-4 border-s-4 {{ $activeScale ? 'border-s-emerald-500' : 'border-s-amber-500' }}">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-text-primary">
+                                <flux:icon.scale class="size-6" />
+                            </div>
+                            <div class="min-w-0 space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <flux:heading size="lg" id="scale-workspace-heading">{{ $scaleDevice?->name ?: __('Network scale') }}</flux:heading>
+                                    @if (! $scaleDevice)
+                                        <flux:badge size="sm" color="zinc">{{ __('Not configured') }}</flux:badge>
+                                    @elseif ($activeScale)
+                                        <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
+                                    @else
+                                        <flux:badge size="sm" color="amber">{{ __('Inactive') }}</flux:badge>
+                                    @endif
+                                    @if ($scaleConnectionResult === 'connected')
+                                        <flux:badge size="sm" color="green" icon="signal">{{ __('Connected') }}</flux:badge>
+                                    @elseif ($scaleConnectionResult === 'unrecognized')
+                                        <flux:badge size="sm" color="amber" icon="exclamation-triangle">{{ __('Reply not verified') }}</flux:badge>
+                                    @elseif ($scaleConnectionResult === 'unreachable')
+                                        <flux:badge size="sm" color="red" icon="signal-slash">{{ __('Unreachable') }}</flux:badge>
+                                    @elseif ($scaleDevice)
+                                        <flux:badge size="sm" color="zinc">{{ __('Connection not checked') }}</flux:badge>
+                                    @endif
+                                </div>
+                                @if ($scaleDevice)
+                                    <flux:text class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <span dir="ltr" class="font-mono">{{ $scaleDevice->ip_address }}:{{ $scaleDevice->port }}</span>
+                                        <span>{{ $outletName ?? __('No selling outlet') }}</span>
+                                    </flux:text>
+                                @else
+                                    <flux:text>{{ __('Add the scale address and selling outlet to start linking products, keys and labels.') }}</flux:text>
+                                @endif
+                            </div>
+                        </div>
+                        @can('company_settings.edit')
+                            <div class="flex flex-wrap gap-2">
+                                @if ($scaleDevice)
+                                    <flux:button type="button" size="sm" icon="signal" wire:click="testScaleConnection" wire:loading.attr="disabled" wire:target="testScaleConnection">{{ __('Check connection') }}</flux:button>
+                                @endif
+                                <flux:button type="button" size="sm" :variant="$scaleEditing ? 'primary' : 'subtle'" icon="cog-6-tooth" wire:click="$toggle('scaleEditing')" x-bind:disabled="sending">{{ $scaleEditing ? __('Close settings') : __('Scale settings') }}</flux:button>
+                            </div>
+                        @endcan
+                    </div>
+
+                    @if ($scaleDevice)
+                        <dl class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                            @foreach ([
+                                ['label' => __('Linked products'), 'value' => $scaleCounts['mapped'], 'tone' => 'text-text-primary'],
+                                ['label' => __('Prices need update'), 'value' => $scaleCounts['needs_update'], 'tone' => $scaleCounts['needs_update'] ? 'text-amber-600 dark:text-amber-400' : 'text-text-primary'],
+                                ['label' => __('Assigned keys'), 'value' => $scaleCounts['keys'], 'tone' => 'text-text-primary'],
+                                ['label' => __('Keys not confirmed'), 'value' => $scaleCounts['keys_pending'], 'tone' => $scaleCounts['keys_pending'] ? 'text-amber-600 dark:text-amber-400' : 'text-text-primary'],
+                                ['label' => __('Label templates'), 'value' => $scaleCounts['templates'], 'tone' => 'text-text-primary'],
+                            ] as $stat)
+                                <div class="rounded-lg border border-border-subtle bg-surface-muted/40 px-3 py-2">
+                                    <dt class="text-xs text-text-muted">{{ $stat['label'] }}</dt>
+                                    <dd class="text-lg font-semibold tabular-nums {{ $stat['tone'] }}">{{ number_format($stat['value']) }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    @endif
+
+                    @can('company_settings.edit')
+                        @if ($scaleEditing)
+                            <form wire:submit="saveScale" class="space-y-4 border-t border-border-subtle pt-4">
+                                <flux:text>{{ __('Save the scale address and check whether this application server can reach its TCP port. This does not read or verify weight.') }}</flux:text>
+                                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                                    <flux:input wire:model="scaleForm.name" :label="__('Scale name')" required />
+                                    <flux:input wire:model="scaleForm.ip_address" :label="__('Scale IP address')" placeholder="192.168.0.150" dir="ltr" required />
+                                    <flux:input wire:model="scaleForm.port" :label="__('TCP port')" type="number" min="1" max="65535" dir="ltr" required />
+                                    <flux:select wire:model="scaleForm.store_id" :label="__('Selling outlet')" required>
+                                        <option value="">{{ __('Select a selling outlet') }}</option>
+                                        @foreach ($this->scaleOutlets()->orderBy('code')->get() as $outlet)
+                                            <option value="{{ $outlet->id }}">{{ $outlet->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $outlet->name_ar : ($outlet->name_en ?: $outlet->name_ar) }}</option>
+                                        @endforeach
+                                    </flux:select>
+                                    <flux:select wire:model="scaleForm.status" :label="__('Status')"><option value="active">{{ __('Active') }}</option><option value="inactive">{{ __('Inactive') }}</option></flux:select>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <x-actions.loading-button type="submit" action="saveScale" :label="__('Save scale')" />
+                                    <flux:button type="button" variant="subtle" wire:click="testScaleConnection">{{ __('Check connection') }}</flux:button>
+                                    @if ($scaleConnectionResult === 'connected')
+                                        <flux:badge color="green">{{ __('The scale responded to a clock read request.') }}</flux:badge>
+                                    @elseif ($scaleConnectionResult === 'unrecognized')
+                                        <flux:badge color="amber">{{ __('The port opened, but the scale clock reply could not be verified.') }}</flux:badge>
+                                    @elseif ($scaleConnectionResult === 'unreachable')
+                                        <flux:badge color="red">{{ __('Scale TCP connection failed from the application server.') }}</flux:badge>
+                                    @endif
+                                </div>
+                                <flux:text class="text-xs">{{ __('Changing the address or outlet marks every linked price as needing an update.') }}</flux:text>
+                            </form>
+                        @endif
+                    @endcan
+                </flux:card>
+
+                @can('company_settings.edit')
+                    @if (! $scaleReady)
+                        @if ($scaleDevice)
+                            <flux:callout icon="information-circle" color="amber" :heading="__('Scale management is paused')" :text="__('Activate the scale and choose a selling outlet you can access to manage products, keys and labels.')" />
+                        @endif
+                    @else
+                        {{-- Internal tabs: server-side state; switching is blocked while a batch send is running. --}}
+                        <div role="tablist" aria-label="{{ __('Scale workspace') }}" class="flex gap-1 overflow-x-auto rounded-xl border border-border-subtle bg-surface-muted/40 p-1">
+                            @foreach ([
+                                'products' => [__('Products and prices'), 'tag', $scaleCounts['needs_update']],
+                                'keys' => [__('Shortcut keys'), 'squares-2x2', $scaleCounts['keys_pending']],
+                                'labels' => [__('Labels and barcode'), 'qr-code', 0],
+                                'operations' => [__('Operations'), 'arrow-path-rounded-square', 0],
+                            ] as $tabKey => [$tabLabel, $tabIcon, $tabCount])
+                                <button type="button" role="tab" id="scale-tab-{{ $tabKey }}" aria-controls="scale-panel" aria-selected="{{ $scaleTab === $tabKey ? 'true' : 'false' }}"
+                                    wire:click="setScaleTab('{{ $tabKey }}')" x-bind:disabled="sending" wire:key="scale-tab-{{ $tabKey }}"
+                                    @class([
+                                        'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50',
+                                        'bg-surface text-text-primary shadow-sm ring-1 ring-border-subtle' => $scaleTab === $tabKey,
+                                        'text-text-muted hover:bg-surface/60 hover:text-text-primary' => $scaleTab !== $tabKey,
+                                    ])>
+                                    <flux:icon :name="$tabIcon" class="size-4" />
+                                    <span>{{ $tabLabel }}</span>
+                                    @if ($tabCount > 0)
+                                        <span class="rounded-full bg-amber-100 px-1.5 text-xs font-semibold tabular-nums text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">{{ $tabCount }}</span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <div id="scale-panel" role="tabpanel" aria-labelledby="scale-tab-{{ $scaleTab }}" class="space-y-4">
+                            {{-- ───────────── Products and prices ───────────── --}}
+                            @if ($scaleTab === 'products')
+                                <div class="grid gap-4 xl:grid-cols-5">
+                                    <flux:card class="space-y-4 xl:col-span-2">
+                                        <div>
+                                            <flux:heading size="md">{{ __('Link a product to the scale') }}</flux:heading>
+                                            <flux:text class="mt-1">{{ __('Search sellable products that have a kilogram sale unit, pick one, then confirm the PLU and the label printed by the scale.') }}</flux:text>
+                                        </div>
+                                        <fieldset class="space-y-4" x-bind:disabled="sending">
+                                            <div class="relative">
+                                                <flux:input wire:model.live.debounce.300ms="scaleProductSearch" icon="magnifying-glass" :label="__('Find product')" :placeholder="__('Code or name, at least 2 characters')" clearable autocomplete="off" />
+                                                @if (mb_strlen(trim($scaleProductSearch)) >= 2)
+                                                    @php
+                                                        $productMatches = $this->scaleProductMatches();
+                                                        $mappedProductIds = $this->scaleMappedProductIds();
+                                                    @endphp
+                                                    <ul class="mt-2 max-h-72 divide-y divide-border-subtle overflow-y-auto rounded-lg border border-border-subtle bg-surface" role="listbox" aria-label="{{ __('Matching products') }}">
+                                                        @forelse ($productMatches as $match)
+                                                            @php
+                                                                $isMapped = in_array((int) $match->id, $mappedProductIds, true);
+                                                            @endphp
+                                                            <li wire:key="scale-match-{{ $match->id }}">
+                                                                <button type="button" role="option" wire:click="pickScaleProduct({{ $match->id }})" @disabled($isMapped)
+                                                                    class="flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-sm hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">
+                                                                    <span class="min-w-0">
+                                                                        <span class="block truncate font-medium text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $match->name_ar : ($match->name_en ?: $match->name_ar) }}</span>
+                                                                        <span class="block font-mono text-xs text-text-muted" dir="ltr">{{ $match->item_code }}</span>
+                                                                    </span>
+                                                                    @if ($isMapped)
+                                                                        <flux:badge size="sm" color="zinc">{{ __('Already linked') }}</flux:badge>
+                                                                    @else
+                                                                        <flux:icon.plus-circle class="size-5 shrink-0 text-text-muted" />
+                                                                    @endif
+                                                                </button>
+                                                            </li>
+                                                        @empty
+                                                            <li class="px-3 py-4 text-center text-sm text-text-muted">{{ __('No sellable product with a kilogram sale unit matches this search.') }}</li>
+                                                        @endforelse
+                                                    </ul>
+                                                @endif
+                                            </div>
+
+                                            <form wire:submit="saveScaleMapping" class="space-y-3 rounded-lg border border-dashed border-border-subtle p-3">
+                                                <div class="grid gap-3 sm:grid-cols-3">
+                                                    <flux:input wire:model="scaleMapping.code" :label="__('Product code')" dir="ltr" required />
+                                                    <flux:input wire:model="scaleMapping.plu" :label="__('Scale product number (PLU)')" type="number" min="1" max="4000" dir="ltr" required />
+                                                    <flux:input wire:model="scaleMapping.label" :label="__('Scale label (ASCII)')" maxlength="20" dir="ltr" required />
+                                                </div>
+                                                <flux:text class="text-xs">{{ __('The next free PLU is suggested automatically. The label is limited to 20 Latin characters because Arabic printing on the scale is not verified.') }}</flux:text>
+                                                <x-actions.loading-button type="submit" action="saveScaleMapping" :label="__('Link kilogram unit')" />
+                                            </form>
+                                        </fieldset>
+                                    </flux:card>
+
+                                    <flux:card class="space-y-4 xl:col-span-3">
+                                        <div class="flex flex-wrap items-end justify-between gap-3">
+                                            <div>
+                                                <flux:heading size="md">{{ __('Products on the scale') }}</flux:heading>
+                                                <flux:text class="mt-1">{{ __('Preview the current outlet price, then send. Each send is confirmed by reading the PLU back from the scale.') }}</flux:text>
+                                            </div>
+                                            <div class="w-full sm:w-64">
+                                                <flux:input wire:model.live.debounce.300ms="scaleMappingSearch" icon="magnifying-glass" :placeholder="__('Filter by PLU, label or product')" size="sm" clearable />
+                                            </div>
+                                        </div>
+                                        @php
+                                            $mappingTerm = trim($scaleMappingSearch);
+                                            $mappingPattern = '%'.addcslashes($mappingTerm, '%_\\').'%';
+                                            $scaleMappings = DB::table('scale_product_mappings as m')
+                                                ->join('product_units as pu', 'pu.id', '=', 'm.product_unit_id')
+                                                ->join('products as p', 'p.id', '=', 'pu.product_id')
+                                                ->where('m.scale_configuration_id', $activeScale->id)
+                                                ->when($mappingTerm !== '', fn ($query) => $query->where(fn ($inner) => $inner
+                                                    ->where('m.label', 'like', $mappingPattern)->orWhere('p.item_code', 'like', $mappingPattern)
+                                                    ->orWhere('p.name_ar', 'like', $mappingPattern)->orWhere('p.name_en', 'like', $mappingPattern)
+                                                    ->when(ctype_digit($mappingTerm), fn ($plu) => $plu->orWhere('m.plu', (int) $mappingTerm))))
+                                                ->orderBy('m.plu')
+                                                ->select('m.*', 'p.item_code', 'p.name_ar', 'p.name_en')
+                                                ->simplePaginate(15, ['*'], 'scaleMappingsPage');
+                                        @endphp
+                                        <div class="overflow-x-auto rounded-lg border border-border-subtle" wire:init="checkScalePrices">
+                                            <table class="min-w-full text-sm">
+                                                <thead class="bg-surface-muted/60 text-xs text-text-muted">
+                                                    <tr>
+                                                        <th class="px-3 py-2 text-start font-medium">{{ __('PLU') }}</th>
+                                                        <th class="px-3 py-2 text-start font-medium">{{ __('Product') }}</th>
+                                                        <th class="px-3 py-2 text-start font-medium">{{ __('Status') }}</th>
+                                                        <th class="px-3 py-2 text-end font-medium">{{ __('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-border-subtle">
+                                                    @forelse ($scaleMappings as $mapping)
+                                                        @php
+                                                            $listStatus = $scaleStatuses[(int) $mapping->id] ?? ($mapping->sync_status === 'confirmed' ? 'confirmed' : 'needs_update');
+                                                            $inPreview = isset($scalePricePreviews[(int) $mapping->id]);
+                                                        @endphp
+                                                        <tr wire:key="scale-mapping-{{ $mapping->id }}" @class(['bg-sky-50/60 dark:bg-sky-950/30' => $inPreview])>
+                                                            <td class="px-3 py-2 font-mono font-semibold" dir="ltr">{{ $mapping->plu }}</td>
+                                                            <td class="px-3 py-2">
+                                                                <div class="font-medium text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $mapping->name_ar : ($mapping->name_en ?: $mapping->name_ar) }}</div>
+                                                                <div class="font-mono text-xs text-text-muted" dir="ltr">{{ $mapping->item_code }} · {{ $mapping->label }}</div>
+                                                            </td>
+                                                            <td class="px-3 py-2">
+                                                                @if ($mapping->sync_status === 'unverified')
+                                                                    <flux:badge size="sm" color="red">{{ __('Not verified') }}</flux:badge>
+                                                                @elseif ($listStatus === 'confirmed')
+                                                                    <flux:badge size="sm" color="green">{{ __('Confirmed') }}</flux:badge>
+                                                                @elseif ($listStatus === 'ineligible')
+                                                                    <flux:badge size="sm" color="red">{{ __('Not eligible') }}</flux:badge>
+                                                                @else
+                                                                    <flux:badge size="sm" color="amber">{{ __('Needs update') }}</flux:badge>
+                                                                @endif
+                                                            </td>
+                                                            <td class="px-3 py-2 text-end">
+                                                                @if ($inPreview)
+                                                                    <flux:button type="button" size="xs" variant="subtle" icon="x-mark" wire:click="removeScalePreview({{ $mapping->id }})" x-bind:disabled="sending">{{ __('Remove preview') }}</flux:button>
+                                                                @else
+                                                                    <flux:button type="button" size="xs" icon="eye" wire:click="previewScalePrice({{ $mapping->id }})" x-bind:disabled="sending">{{ __('Preview price') }}</flux:button>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @empty
+                                                        <tr><td colspan="4" class="px-3 py-8 text-center text-text-muted">{{ $mappingTerm !== '' ? __('No linked product matches this filter.') : __('No products are linked to this scale yet.') }}</td></tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {{ $scaleMappings->links() }}
+                                    </flux:card>
+                                </div>
+
+                                @if ($scalePricePreviews !== [])
+                                    @php
+                                        $pendingScaleIds = [];
+                                    @endphp
+                                    <flux:card class="space-y-4">
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <flux:heading size="md">{{ __('Price preview before sending') }}</flux:heading>
+                                            <flux:text class="text-xs">{{ __('Prices are checked again at send time; a changed price stops that item.') }}</flux:text>
+                                        </div>
+                                        <fieldset class="grid gap-3 md:grid-cols-2 xl:grid-cols-3" x-bind:disabled="sending">
+                                            @foreach ($scalePricePreviews as $preview)
+                                                @php
+                                                    $result = $scaleSendResults[$preview['id']] ?? null;
+                                                    $pending = $result !== 'ineligible' && ($preview['status'] !== 'confirmed' || $preview['confirmed'] !== $preview['price']);
+                                                    if ($pending) {
+                                                        $pendingScaleIds[] = $preview['id'];
+                                                    }
+                                                @endphp
+                                                <div wire:key="scale-preview-{{ $preview['id'] }}" class="space-y-2 rounded-lg border border-border-subtle p-3">
+                                                    <div class="flex items-start justify-between gap-2">
+                                                        <div class="min-w-0">
+                                                            <div class="truncate font-medium text-text-primary">{{ $preview['product_name'] }}</div>
+                                                            <div class="font-mono text-xs text-text-muted" dir="ltr">PLU {{ $preview['plu'] }} · {{ $preview['product_code'] }} · {{ $preview['label'] }}</div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="text-lg font-semibold tabular-nums" dir="ltr">{{ $preview['price'] }}</div>
+                                                            <div class="text-xs text-text-muted" dir="ltr">/ {{ $preview['unit'] }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-xs text-text-muted">{{ __('Price source') }}: {{ $preview['source_label'] }}@if ($preview['confirmed'] !== null) · {{ __('On scale') }}: <span dir="ltr">{{ $preview['confirmed'] }}</span>@endif</div>
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        @if ($pending)
+                                                            <flux:badge size="sm" color="amber">{{ __('Needs update') }}</flux:badge>
+                                                            <x-actions.loading-button type="button" size="sm" :action="'sendScalePrice('.$preview['id'].')'" :label="__('Send to scale')" />
+                                                        @elseif ($result !== 'ineligible')
+                                                            <flux:badge size="sm" color="green">{{ __('Price confirmed on the scale') }}</flux:badge>
+                                                        @endif
+                                                        <flux:button type="button" size="xs" variant="ghost" icon="x-mark" wire:click="removeScalePreview({{ $preview['id'] }})" :aria-label="__('Remove preview')" />
+                                                    </div>
+                                                    @if ($result === 'changed')
+                                                        <p role="status" class="text-xs text-amber-700 dark:text-amber-300">{{ __('Scale data changed. Review the new preview before sending.') }}</p>
+                                                    @elseif ($result === 'unverified')
+                                                        <p role="status" class="text-xs text-red-700 dark:text-red-300">{{ __('Scale update could not be verified.') }}</p>
+                                                    @elseif ($result === 'ineligible')
+                                                        <p role="status" class="text-xs text-red-700 dark:text-red-300">{{ __('Scale product is no longer eligible for sending.') }}</p>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </fieldset>
+                                        @if (count($scalePricePreviews) > 1)
+                                            {{-- Keep the button mounted while a run is in progress; it used to vanish after the first confirmed item and abort the batch. --}}
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                <flux:button type="button" variant="primary" icon="paper-airplane" x-bind:disabled="sending || {{ count($pendingScaleIds) < 2 ? 'true' : 'false' }}"
+                                                    x-on:click="
+                                                        const ids = @js($pendingScaleIds);
+                                                        sending = true;
+                                                        interrupted = false;
+                                                        try {
+                                                            for (const id of ids) {
+                                                                const result = await $wire.sendScalePrice(id);
+                                                                if (! ['confirmed', 'changed', 'ineligible'].includes(result)) {
+                                                                    interrupted = true;
+                                                                    break;
+                                                                }
+                                                            }
+                                                        } catch {
+                                                            interrupted = true;
+                                                        } finally {
+                                                            sending = false;
+                                                        }
+                                                    "
+                                                >{{ __('Send previewed prices') }} ({{ count($pendingScaleIds) }})</flux:button>
+                                                <p role="status" x-show="sending" x-cloak class="text-sm text-text-muted">{{ __('Sending prices to the scale…') }}</p>
+                                                <p role="status" x-show="interrupted" x-cloak class="text-sm text-amber-700 dark:text-amber-300">{{ __('Sending stopped. Review the results before retrying.') }}</p>
+                                            </div>
+                                        @endif
+                                    </flux:card>
+                                @endif
+                            @endif
+
+                            {{-- ───────────── Shortcut keys ───────────── --}}
+                            @if ($scaleTab === 'keys')
+                                @php
+                                    $keyRows = DB::table('scale_key_assignments as k')
+                                        ->leftJoin('scale_product_mappings as m', 'm.id', '=', 'k.scale_product_mapping_id')
+                                        ->where('k.scale_configuration_id', $activeScale->id)
+                                        ->get(['k.*', 'm.plu as mapping_plu', 'm.label as mapping_label']);
+                                    $keyGrid = [];
+                                    foreach ($keyRows as $row) {
+                                        $keyGrid[(int) $row->layer][(int) $row->key_number] = $row;
+                                    }
+                                    $pendingKeyIds = $keyRows->filter(fn ($row) => ($scaleKeyResults[$row->id] ?? $row->sync_status) !== 'confirmed')->pluck('id')->values()->all();
+                                    $layerAssigned = collect($keyGrid[$scaleKeyLayer] ?? [])->filter(fn ($row) => $row->scale_product_mapping_id !== null)->count();
+                                    $selectedRow = $scaleKeySelected !== null ? ($keyGrid[$scaleKeyLayer][$scaleKeySelected] ?? null) : null;
+                                    $deviceLayer = $scaleDeviceKeys[$scaleKeyLayer] ?? null;
+                                @endphp
+                                <flux:card class="space-y-4">
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <flux:heading size="md">{{ __('Shortcut key layout') }}</flux:heading>
+                                            <flux:text class="mt-1">{{ __('Click a key to assign a linked product or clear it. Changes are saved in ERP first, then sent and confirmed by reading the key table back from the scale.') }}</flux:text>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <flux:button type="button" size="sm" icon="arrow-down-tray" wire:click="readScaleKeysFromDevice" wire:loading.attr="disabled" wire:target="readScaleKeysFromDevice" x-bind:disabled="sending">{{ __('Compare with scale') }}</flux:button>
+                                            <flux:button type="button" size="sm" variant="primary" icon="paper-airplane" x-bind:disabled="sending || {{ $pendingKeyIds === [] ? 'true' : 'false' }}"
+                                                x-on:click="
+                                                    const ids = @js($pendingKeyIds);
+                                                    sending = true;
+                                                    interrupted = false;
+                                                    try {
+                                                        for (const id of ids) {
+                                                            const result = await $wire.sendScaleKey(id);
+                                                            if (! ['confirmed', 'ineligible'].includes(result)) {
+                                                                interrupted = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    } catch {
+                                                        interrupted = true;
+                                                    } finally {
+                                                        sending = false;
+                                                    }
+                                                "
+                                            >{{ __('Send unconfirmed keys') }} ({{ count($pendingKeyIds) }})</flux:button>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                        <div class="inline-flex rounded-lg border border-border-subtle bg-surface-muted/40 p-1" role="group" aria-label="{{ __('Key layer') }}">
+                                            @foreach ([0, 1, 2] as $layer)
+                                                <button type="button" wire:click="setScaleKeyLayer({{ $layer }})" x-bind:disabled="sending" aria-pressed="{{ $scaleKeyLayer === $layer ? 'true' : 'false' }}"
+                                                    @class([
+                                                        'rounded-md px-3 py-1.5 text-sm font-medium transition disabled:opacity-50',
+                                                        'bg-surface text-text-primary shadow-sm' => $scaleKeyLayer === $layer,
+                                                        'text-text-muted hover:text-text-primary' => $scaleKeyLayer !== $layer,
+                                                    ])>{{ $layer === 0 ? __('Layer 0 (direct press)') : __('Layer').' '.$layer }}</button>
+                                            @endforeach
+                                        </div>
+                                        <flux:text class="text-xs">{{ __(':count of 63 keys assigned on this layer', ['count' => $layerAssigned]) }}</flux:text>
+                                    </div>
+
+                                    <div role="status" x-show="sending" x-cloak class="text-sm text-text-muted">{{ __('Sending keys to the scale…') }}</div>
+                                    <div role="status" x-show="interrupted" x-cloak class="text-sm text-amber-700 dark:text-amber-300">{{ __('Sending stopped. Review the results before retrying.') }}</div>
+                                    @if ($scaleDeviceKeysResult === 'failed')
+                                        <flux:callout color="red" icon="exclamation-triangle" :text="__('Could not read the key table from the scale.')" />
+                                    @elseif ($scaleDeviceKeysResult === 'read')
+                                        <flux:text class="text-xs">{{ __('Keys marked with a red corner differ between ERP and the scale.') }}</flux:text>
+                                    @endif
+
+                                    <div class="grid gap-4 lg:grid-cols-3">
+                                        <div class="lg:col-span-2">
+                                            <div class="grid grid-cols-4 gap-2 sm:grid-cols-7 xl:grid-cols-9" dir="ltr" aria-label="{{ __('Shortcut keys') }}">
+                                                @for ($key = 1; $key <= 63; $key++)
+                                                    @php
+                                                        $cell = $keyGrid[$scaleKeyLayer][$key] ?? null;
+                                                        $cellState = $cell ? ($scaleKeyResults[$cell->id] ?? $cell->sync_status) : null;
+                                                        $erpValue = $cell && $cell->mapping_plu !== null ? (int) $cell->mapping_plu : 0;
+                                                        $differs = $deviceLayer !== null && isset($deviceLayer[$key]) && (int) $deviceLayer[$key] !== $erpValue;
+                                                        $isSelected = $scaleKeySelected === $key;
+                                                    @endphp
+                                                    <button type="button" wire:key="scale-key-cell-{{ $scaleKeyLayer }}-{{ $key }}" wire:click="selectScaleKey({{ $key }})" x-bind:disabled="sending"
+                                                        aria-pressed="{{ $isSelected ? 'true' : 'false' }}"
+                                                        aria-label="{{ __('Key number') }} {{ $key }}{{ $cell && $cell->mapping_plu !== null ? ' · PLU '.$cell->mapping_plu.' '.$cell->mapping_label : ' · '.__('Empty key') }}"
+                                                        @class([
+                                                            'relative flex aspect-square min-h-16 flex-col justify-between overflow-hidden rounded-lg border p-1.5 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60',
+                                                            'border-primary bg-primary/10 ring-2 ring-primary' => $isSelected,
+                                                            'border-border-subtle bg-surface hover:border-primary/60 hover:shadow-sm' => ! $isSelected && $cell && $cell->mapping_plu !== null,
+                                                            'border-dashed border-border-subtle bg-surface-muted/30 text-text-muted hover:border-primary/60' => ! $isSelected && ! ($cell && $cell->mapping_plu !== null),
+                                                        ])>
+                                                        <span class="flex items-center justify-between">
+                                                            <span class="font-mono text-[11px] font-semibold text-text-muted">{{ $key }}</span>
+                                                            @if ($cell)
+                                                                <span @class([
+                                                                    'size-2 rounded-full',
+                                                                    'bg-emerald-500' => $cellState === 'confirmed',
+                                                                    'bg-red-500' => $cellState === 'unverified',
+                                                                    'bg-amber-500' => ! in_array($cellState, ['confirmed', 'unverified'], true),
+                                                                ]) title="{{ $cellState === 'confirmed' ? __('Confirmed') : ($cellState === 'unverified' ? __('Not verified') : __('Not sent yet')) }}"></span>
+                                                            @endif
+                                                        </span>
+                                                        @if ($cell && $cell->mapping_plu !== null)
+                                                            <span class="min-w-0">
+                                                                <span class="block font-mono text-sm font-bold leading-tight text-text-primary">{{ $cell->mapping_plu }}</span>
+                                                                <span class="block truncate text-[10px] leading-tight text-text-muted">{{ $cell->mapping_label }}</span>
+                                                            </span>
+                                                        @else
+                                                            <span class="text-center text-lg leading-none text-text-muted/60">+</span>
+                                                        @endif
+                                                        @if ($differs)
+                                                            <span class="absolute end-0 top-0 size-0 border-s-[10px] border-t-[10px] border-s-transparent border-t-red-500" title="{{ __('Scale has PLU :plu on this key', ['plu' => (int) $deviceLayer[$key]]) }}"></span>
+                                                        @endif
+                                                    </button>
+                                                @endfor
+                                            </div>
+                                            <div class="mt-3 flex flex-wrap gap-4 text-xs text-text-muted">
+                                                <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-emerald-500"></span>{{ __('Confirmed') }}</span>
+                                                <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-amber-500"></span>{{ __('Not sent yet') }}</span>
+                                                <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-red-500"></span>{{ __('Not verified') }}</span>
+                                                <span>{{ __('Key numbering follows the scale table; the physical keyboard arrangement may differ.') }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="rounded-xl border border-border-subtle bg-surface-muted/30 p-4">
+                                            @if ($scaleKeySelected === null)
+                                                <div class="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
+                                                    <flux:icon.cursor-arrow-rays class="size-8 text-text-muted" />
+                                                    <flux:text>{{ __('Select a key from the grid to assign a product.') }}</flux:text>
+                                                </div>
+                                            @else
+                                                @php
+                                                    $pickerTerm = trim($scaleKeyPickerSearch);
+                                                    $pickerPattern = '%'.addcslashes($pickerTerm, '%_\\').'%';
+                                                    $pickerMappings = DB::table('scale_product_mappings')->where('scale_configuration_id', $activeScale->id)
+                                                        ->when($pickerTerm !== '', fn ($query) => $query->where(fn ($inner) => $inner->where('label', 'like', $pickerPattern)
+                                                            ->when(ctype_digit($pickerTerm), fn ($plu) => $plu->orWhere('plu', 'like', $pickerTerm.'%'))))
+                                                        ->orderBy('plu')->limit(40)->get(['id', 'plu', 'label']);
+                                                    $selectedState = $selectedRow ? ($scaleKeyResults[$selectedRow->id] ?? $selectedRow->sync_status) : null;
+                                                @endphp
+                                                <div class="space-y-3">
+                                                    <div class="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <flux:heading size="sm">{{ __('Key number') }} {{ $scaleKeySelected }} · {{ $scaleKeyLayer === 0 ? __('Layer 0 (direct press)') : __('Layer').' '.$scaleKeyLayer }}</flux:heading>
+                                                            <flux:text class="text-xs">
+                                                                {{ __('Current') }}:
+                                                                @if ($selectedRow && $selectedRow->mapping_plu !== null)
+                                                                    <span dir="ltr" class="font-mono">{{ $selectedRow->mapping_plu }} · {{ $selectedRow->mapping_label }}</span>
+                                                                @else
+                                                                    {{ __('Empty key') }}
+                                                                @endif
+                                                            </flux:text>
+                                                        </div>
+                                                        <flux:button type="button" size="xs" variant="ghost" icon="x-mark" wire:click="selectScaleKey({{ $scaleKeySelected }})" :aria-label="__('Close')" />
+                                                    </div>
+                                                    @if ($selectedRow && $selectedState !== 'confirmed')
+                                                        <div class="flex items-center gap-2">
+                                                            <x-actions.loading-button type="button" size="sm" :action="'sendScaleKey('.$selectedRow->id.')'" :label="__('Send key to scale')" />
+                                                            @if ($selectedState === 'unverified')
+                                                                <flux:badge size="sm" color="red">{{ __('Not verified') }}</flux:badge>
+                                                            @endif
+                                                        </div>
+                                                    @elseif ($selectedState === 'confirmed')
+                                                        <flux:badge size="sm" color="green">{{ __('Key confirmed on the scale') }}</flux:badge>
+                                                    @endif
+                                                    <flux:input wire:model.live.debounce.250ms="scaleKeyPickerSearch" icon="magnifying-glass" size="sm" :placeholder="__('Search PLU or label')" clearable autocomplete="off" />
+                                                    <div class="max-h-80 space-y-1 overflow-y-auto">
+                                                        <button type="button" wire:click="assignScaleKey(null)" class="flex w-full items-center gap-2 rounded-md border border-dashed border-border-subtle px-2 py-1.5 text-start text-sm text-text-muted hover:bg-surface">
+                                                            <flux:icon.no-symbol class="size-4" /> {{ __('Empty key') }}
+                                                        </button>
+                                                        @forelse ($pickerMappings as $option)
+                                                            @php
+                                                                $isCurrent = $selectedRow && (int) $selectedRow->scale_product_mapping_id === (int) $option->id;
+                                                            @endphp
+                                                            <button type="button" wire:key="scale-key-option-{{ $option->id }}" wire:click="assignScaleKey({{ $option->id }})"
+                                                                @class([
+                                                                    'flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-start text-sm transition',
+                                                                    'bg-primary/10 font-semibold text-text-primary' => $isCurrent,
+                                                                    'hover:bg-surface' => ! $isCurrent,
+                                                                ])>
+                                                                <span class="truncate" dir="ltr"><span class="font-mono font-semibold">{{ $option->plu }}</span> · {{ $option->label }}</span>
+                                                                @if ($isCurrent)<flux:icon.check class="size-4 shrink-0" />@endif
+                                                            </button>
+                                                        @empty
+                                                            <p class="px-2 py-3 text-center text-xs text-text-muted">{{ $pickerTerm !== '' ? __('No linked product matches this filter.') : __('Link products in the Products and prices tab first.') }}</p>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </flux:card>
+                            @endif
+
+                            {{-- ───────────── Labels and barcode ───────────── --}}
+                            @if ($scaleTab === 'labels')
+                                @php
+                                    $barcodePreview = $this->scaleBarcodePreview();
+                                    $segmentTone = [
+                                        'prefix' => 'bg-sky-100 text-sky-900 ring-sky-300 dark:bg-sky-900/40 dark:text-sky-100 dark:ring-sky-700',
+                                        'item' => 'bg-violet-100 text-violet-900 ring-violet-300 dark:bg-violet-900/40 dark:text-violet-100 dark:ring-violet-700',
+                                        'value' => 'bg-emerald-100 text-emerald-900 ring-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:ring-emerald-700',
+                                        'check' => 'bg-zinc-100 text-zinc-800 ring-zinc-300 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600',
+                                    ];
+                                    $savedBarcode = (array) ($scaleDevice->barcode_settings ?? []);
+                                @endphp
+                                <flux:card class="space-y-5">
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <flux:heading size="md">{{ __('Barcode print settings') }}</flux:heading>
+                                            <flux:text class="mt-1">{{ __('Define the weight or price barcode the scale prints on each label, so the point of sale can read the item and value from it.') }}</flux:text>
+                                        </div>
+                                        @if ($savedBarcode === [])
+                                            <flux:badge size="sm" color="amber">{{ __('Not saved yet') }}</flux:badge>
+                                        @elseif (array_intersect_key($scaleBarcodeForm, $savedBarcode) != $savedBarcode)
+                                            <flux:badge size="sm" color="amber">{{ __('Unsaved changes') }}</flux:badge>
+                                        @else
+                                            <flux:badge size="sm" color="green">{{ __('Saved in ERP') }}</flux:badge>
+                                        @endif
+                                    </div>
+
+                                    <div class="grid gap-6 xl:grid-cols-2">
+                                        <form wire:submit="saveScaleBarcodeSettings" class="space-y-4">
+                                            <div class="grid gap-4 sm:grid-cols-2">
+                                                <flux:select wire:model.live="scaleBarcodeForm.symbology" :label="__('Barcode type')">
+                                                    <option value="EAN13">EAN-13</option>
+                                                    <option value="Code128">Code 128</option>
+                                                </flux:select>
+                                                <flux:input wire:model.live.debounce.300ms="scaleBarcodeForm.prefix" :label="__('Prefix')" maxlength="2" inputmode="numeric" dir="ltr" :description="__('Usually 20–29 for in-store weight labels.')" />
+                                                <flux:select wire:model.live="scaleBarcodeForm.item_source" :label="__('Item identifier')">
+                                                    <option value="plu">{{ __('Scale PLU') }}</option>
+                                                    <option value="item_code">{{ __('ERP product code') }}</option>
+                                                </flux:select>
+                                                <flux:input wire:model.live.debounce.300ms="scaleBarcodeForm.item_digits" :label="__('Item digits')" type="number" min="4" max="7" dir="ltr" />
+                                                <flux:select wire:model.live="scaleBarcodeForm.value_type" :label="__('Embedded value')">
+                                                    <option value="weight">{{ __('Weight') }}</option>
+                                                    <option value="price">{{ __('Total price') }}</option>
+                                                </flux:select>
+                                                <flux:input wire:model.live.debounce.300ms="scaleBarcodeForm.value_digits" :label="__('Value digits')" type="number" min="4" max="6" dir="ltr" />
+                                                <flux:input wire:model.live.debounce.300ms="scaleBarcodeForm.value_decimals" :label="__('Decimal places')" type="number" min="0" max="3" dir="ltr" :description="$scaleBarcodeForm['value_type'] === 'weight' ? __('3 means grams (1.250 kg → 01250).') : __('2 means piasters (31.25 → 03125).')" />
+                                                <div class="flex items-end pb-2">
+                                                    <flux:switch wire:model.live="scaleBarcodeForm.print_human_readable" :label="__('Print digits under the bars')" />
+                                                </div>
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                <x-actions.loading-button type="submit" action="saveScaleBarcodeSettings" :label="__('Save barcode settings')" />
+                                                <flux:text class="text-xs">{{ __('Saved in ERP only. Uploading this format to the scale is not verified yet, so set the same layout on the scale.') }}</flux:text>
+                                            </div>
+                                        </form>
+
+                                        <div class="space-y-4 rounded-xl border border-border-subtle bg-surface-muted/30 p-4">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <flux:heading size="sm">{{ __('Live preview') }}</flux:heading>
+                                                <span class="text-xs text-text-muted">{{ __('Sample') }}: <span dir="ltr">{{ $barcodePreview['sample_item'] }} · {{ $barcodePreview['sample_value'] }}</span></span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-1.5" dir="ltr">
+                                                @foreach ($barcodePreview['segments'] as $segment)
+                                                    <div class="flex flex-col items-center gap-1">
+                                                        <span class="rounded-md px-2 py-1 font-mono text-base font-semibold tracking-widest ring-1 {{ $segmentTone[$segment['key']] }}">{{ $segment['digits'] !== '' ? $segment['digits'] : '—' }}</span>
+                                                        <span class="text-[11px] text-text-muted">{{ $segment['label'] }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                            <div class="flex flex-col items-center gap-1 rounded-lg bg-white p-3 text-black">
+                                                @if ($barcodePreview['valid'] && $barcodePreview['svg'])
+                                                    <div class="w-full max-w-xs [&>svg]:h-auto [&>svg]:w-full">{!! $barcodePreview['svg'] !!}</div>
+                                                    @if ($scaleBarcodeForm['print_human_readable'])
+                                                        <span class="font-mono text-sm tracking-[0.2em]" dir="ltr">{{ $barcodePreview['code'] }}</span>
+                                                    @endif
+                                                @else
+                                                    <span class="py-6 text-sm text-red-700">{{ __('This layout cannot produce a valid barcode.') }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="space-y-1 text-xs">
+                                                <div class="text-text-muted">{{ __('Length') }}: <span dir="ltr" class="font-mono">{{ $barcodePreview['length'] }}</span>@if ($scaleBarcodeForm['symbology'] === 'EAN13') / 13 @endif</div>
+                                                @if ($scaleBarcodeForm['symbology'] === 'EAN13' && $barcodePreview['length'] !== 13)
+                                                    <p class="text-red-700 dark:text-red-300">{{ __('EAN-13 needs prefix + item code + value digits to total 12; the 13th digit is the check digit.') }}</p>
+                                                @endif
+                                                @if ($barcodePreview['item_overflow'])
+                                                    <p class="text-amber-700 dark:text-amber-300">{{ __('The sample item identifier does not fit the item digits and would be cut.') }}</p>
+                                                @endif
+                                                @if ($barcodePreview['value_overflow'])
+                                                    <p class="text-amber-700 dark:text-amber-300">{{ __('The sample value does not fit the value digits and would be cut.') }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2 border-t border-border-subtle pt-4">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <flux:button type="button" size="sm" icon="arrow-down-tray" wire:click="readScaleBarcodeFormats" wire:loading.attr="disabled" wire:target="readScaleBarcodeFormats">{{ __('Read barcode format from scale') }}</flux:button>
+                                            <flux:text class="text-xs">{{ __('Read-only. The scale format is shown as received because its fields are not decoded yet.') }}</flux:text>
+                                        </div>
+                                        @if ($scaleDeviceBarcodeResult === 'read')
+                                            <div class="flex flex-wrap gap-2" dir="ltr">
+                                                @foreach ($scaleDeviceBarcodeFormats as $format)
+                                                    <code class="rounded bg-surface-muted px-2 py-1 text-xs">{{ $format }}</code>
+                                                @endforeach
+                                            </div>
+                                        @elseif ($scaleDeviceBarcodeResult === 'empty')
+                                            <p role="status" class="text-sm text-text-muted">{{ __('The scale returned no barcode formats.') }}</p>
+                                        @elseif ($scaleDeviceBarcodeResult === 'failed')
+                                            <p role="status" class="text-sm text-red-700 dark:text-red-300">{{ __('Could not read the barcode format from the scale.') }}</p>
+                                        @endif
+                                    </div>
+                                </flux:card>
+
+                                @php
+                                    $labelFieldOptions = ['name' => __('Product name'), 'weight' => __('Weight'), 'unit_price' => __('Unit price'), 'total' => __('Total'), 'date' => __('Date'), 'plu' => __('PLU'), 'barcode' => __('Barcode')];
+                                    $labelSamples = ['name' => 'TOMATO', 'weight' => '1.250 kg', 'unit_price' => '25.00 /kg', 'total' => '31.25', 'date' => now()->format('d/m/Y'), 'plu' => 'PLU 12'];
+                                    $labelWidth = max(1, (int) $scaleLabelForm['width_mm']);
+                                    $labelHeight = max(1, (int) $scaleLabelForm['height_mm']);
+                                    $labelTemplates = DB::table('scale_label_templates')->where('scale_configuration_id', $activeScale->id)->orderByDesc('id')->limit(20)->get();
+                                @endphp
+                                <flux:card class="space-y-5">
+                                    <div>
+                                        <flux:heading size="md">{{ __('Scale label template') }}</flux:heading>
+                                        <flux:text class="mt-1">{{ __('Save dimensions and supported fields. Upload and physical print confirmation stay disabled until the device label protocol is verified.') }}</flux:text>
+                                    </div>
+                                    <div class="grid gap-6 xl:grid-cols-2">
+                                        <form wire:submit="saveScaleLabelTemplate" class="space-y-4">
+                                            <div class="grid gap-4 sm:grid-cols-2">
+                                                <flux:input wire:model="scaleLabelForm.name" :label="__('Template name')" required class="sm:col-span-2" />
+                                                <flux:input wire:model.live.debounce.300ms="scaleLabelForm.width_mm" :label="__('Width (mm)')" type="number" min="1" max="200" dir="ltr" required />
+                                                <flux:input wire:model.live.debounce.300ms="scaleLabelForm.height_mm" :label="__('Height (mm)')" type="number" min="1" max="200" dir="ltr" required />
+                                                <flux:select wire:model.live="scaleLabelForm.barcode_type" :label="__('Barcode')" required>
+                                                    <option value="EAN13">EAN-13</option>
+                                                    <option value="Code128">Code 128</option>
+                                                    <option value="none">{{ __('None') }}</option>
+                                                </flux:select>
+                                            </div>
+                                            <fieldset class="space-y-2">
+                                                <legend class="text-sm font-medium text-text-primary">{{ __('Fields on the label') }}</legend>
+                                                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                                    @foreach ($labelFieldOptions as $fieldKey => $fieldLabel)
+                                                        <flux:checkbox wire:model.live="scaleLabelForm.fields" value="{{ $fieldKey }}" :label="$fieldLabel" wire:key="scale-label-field-{{ $fieldKey }}" />
+                                                    @endforeach
+                                                </div>
+                                                <flux:error name="scaleLabelForm.fields" />
+                                            </fieldset>
+                                            <x-actions.loading-button type="submit" action="saveScaleLabelTemplate" :label="__('Save label template')" />
+                                        </form>
+
+                                        <div class="space-y-2">
+                                            <flux:heading size="sm">{{ __('Label preview') }} <span class="font-normal text-text-muted" dir="ltr">({{ $labelWidth }} × {{ $labelHeight }} mm)</span></flux:heading>
+                                            <div class="flex justify-center rounded-xl border border-border-subtle bg-surface-muted/30 p-4">
+                                                <div class="flex w-full max-w-xs flex-col justify-between gap-1 overflow-hidden rounded-md border border-zinc-300 bg-white p-2 font-mono text-[11px] text-black shadow-sm" style="aspect-ratio: {{ $labelWidth }} / {{ $labelHeight }}" dir="ltr">
+                                                    @foreach (['name', 'plu', 'date', 'weight', 'unit_price', 'total'] as $fieldKey)
+                                                        @if (in_array($fieldKey, $scaleLabelForm['fields'], true))
+                                                            <div @class(['flex justify-between gap-2', 'text-sm font-bold' => in_array($fieldKey, ['name', 'total'], true)])>
+                                                                <span class="truncate">{{ $fieldKey === 'name' ? $labelSamples['name'] : $labelFieldOptions[$fieldKey] }}</span>
+                                                                @if ($fieldKey !== 'name')<span>{{ $labelSamples[$fieldKey] }}</span>@endif
+                                                            </div>
+                                                        @endif
+                                                    @endforeach
+                                                    @if (in_array('barcode', $scaleLabelForm['fields'], true) && $scaleLabelForm['barcode_type'] !== 'none')
+                                                        <div class="mt-auto [&>svg]:h-8 [&>svg]:w-full">
+                                                            @if ($barcodePreview['valid'] && $barcodePreview['svg'])
+                                                                {!! $barcodePreview['svg'] !!}
+                                                            @else
+                                                                <div class="h-8 bg-[repeating-linear-gradient(90deg,#000_0_2px,transparent_2px_4px)]"></div>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <flux:text class="text-xs">{{ __('The preview shows field order and proportions only; the scale controls the final layout.') }}</flux:text>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2 border-t border-border-subtle pt-4">
+                                        <flux:heading size="sm">{{ __('Saved label templates') }}</flux:heading>
+                                        @forelse ($labelTemplates as $template)
+                                            <div wire:key="scale-label-template-{{ $template->id }}" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2">
+                                                <div class="min-w-0">
+                                                    <div class="font-medium text-text-primary">{{ $template->name }}</div>
+                                                    <div class="text-xs text-text-muted" dir="ltr">{{ $template->width_mm }} × {{ $template->height_mm }} mm · {{ $template->barcode_type ?: '—' }} · {{ collect(json_decode($template->fields, true) ?: [])->map(fn ($field) => $labelFieldOptions[$field] ?? $field)->implode(', ') }}</div>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <flux:badge size="sm" :color="$template->status === 'draft' ? 'zinc' : 'green'">{{ $template->status === 'draft' ? __('Draft') : __($template->status) }}</flux:badge>
+                                                    @if ($template->status === 'draft')
+                                                        <flux:button type="button" size="xs" variant="ghost" icon="trash" wire:click="deleteScaleLabelTemplate({{ $template->id }})" wire:confirm="{{ __('Delete this label template draft?') }}" :aria-label="__('Delete')" />
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <p class="text-sm text-text-muted">{{ __('No label templates saved yet.') }}</p>
+                                        @endforelse
+                                    </div>
+                                </flux:card>
+                            @endif
+
+                            {{-- ───────────── Operations ───────────── --}}
+                            @if ($scaleTab === 'operations')
+                                <div class="grid gap-4 lg:grid-cols-2">
+                                    <flux:card class="space-y-4">
+                                        <div>
+                                            <flux:heading size="md">{{ __('Read a product from the scale') }}</flux:heading>
+                                            <flux:text class="mt-1">{{ __('Read-only check of what is stored at a PLU on the device.') }}</flux:text>
+                                        </div>
+                                        <form wire:submit="readScaleProduct" class="flex flex-wrap items-end gap-3">
+                                            <flux:input wire:model="scaleProductNumber" :label="__('Scale product number (PLU)')" type="number" min="1" max="4000" dir="ltr" required />
+                                            <x-actions.loading-button type="submit" action="readScaleProduct" :label="__('Read product')" />
+                                        </form>
+                                        <div role="status">
+                                            @if ($scaleProductResult === 'read' && $scaleProduct)
+                                                <dl class="grid grid-cols-3 gap-2 rounded-lg border border-border-subtle p-3 text-sm">
+                                                    <div><dt class="text-xs text-text-muted">{{ __('Product') }}</dt><dd class="font-medium" dir="ltr">{{ $scaleProduct['name'] }}</dd></div>
+                                                    <div><dt class="text-xs text-text-muted">{{ __('Code') }}</dt><dd class="font-mono" dir="ltr">{{ $scaleProduct['code'] }}</dd></div>
+                                                    <div><dt class="text-xs text-text-muted">{{ __('Unit price') }}</dt><dd class="font-mono" dir="ltr">{{ $scaleProduct['price'] }}</dd></div>
+                                                </dl>
+                                            @elseif ($scaleProductResult === 'empty')
+                                                <p class="text-sm text-text-muted">{{ __('No product is stored at this PLU.') }}</p>
+                                            @elseif ($scaleProductResult === 'inactive')
+                                                <p class="text-sm text-amber-700 dark:text-amber-300">{{ __('Save an active scale configuration first.') }}</p>
+                                            @elseif ($scaleProductResult === 'failed')
+                                                <p class="text-sm text-red-700 dark:text-red-300">{{ __('Could not verify the product reply from the scale.') }}</p>
+                                            @endif
+                                        </div>
+                                    </flux:card>
+
+                                    <flux:card class="space-y-4">
+                                        <div>
+                                            <flux:heading size="md">{{ __('Connection') }}</flux:heading>
+                                            <flux:text class="mt-1">{{ __('Checks that this application server can reach the scale and read its clock.') }}</flux:text>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <x-actions.loading-button type="button" action="testScaleConnection" :label="__('Check connection')" />
+                                            @if ($scaleConnectionResult === 'connected')
+                                                <flux:badge color="green">{{ __('The scale responded to a clock read request.') }}</flux:badge>
+                                            @elseif ($scaleConnectionResult === 'unrecognized')
+                                                <flux:badge color="amber">{{ __('The port opened, but the scale clock reply could not be verified.') }}</flux:badge>
+                                            @elseif ($scaleConnectionResult === 'unreachable')
+                                                <flux:badge color="red">{{ __('Scale TCP connection failed from the application server.') }}</flux:badge>
+                                            @endif
+                                        </div>
+                                    </flux:card>
+                                </div>
+
+                                <flux:card class="space-y-4">
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <flux:heading size="md">{{ __('Scale transaction records') }}</flux:heading>
+                                            <flux:text class="mt-1">{{ __('These values are imported from the scale report and are shown as a transaction record. They do not create an invoice or change stock.') }}</flux:text>
+                                        </div>
+                                        <form wire:submit="readScaleReport">
+                                            <x-actions.loading-button type="submit" action="readScaleReport" :label="__('Read scale report')" />
+                                        </form>
+                                    </div>
+                                    @if ($scaleReportResult === 'read')
+                                        <div class="overflow-x-auto rounded-lg border border-border-subtle">
+                                            <table class="min-w-full text-sm">
+                                                <thead class="bg-surface-muted/60 text-xs text-text-muted"><tr><th class="px-3 py-2 text-start">{{ __('PLU') }}</th><th class="px-3 py-2 text-start">{{ __('Code') }}</th><th class="px-3 py-2 text-start">{{ __('Product') }}</th><th class="px-3 py-2 text-start">{{ __('Weight') }}</th><th class="px-3 py-2 text-start">{{ __('Unit price') }}</th><th class="px-3 py-2 text-start">{{ __('Total') }}</th><th class="px-3 py-2 text-start">{{ __('Recorded at') }}</th></tr></thead>
+                                                <tbody class="divide-y divide-border-subtle">
+                                                    @foreach ($scaleReport as $record)
+                                                        <tr wire:key="scale-report-{{ $loop->index }}"><td class="px-3 py-2" dir="ltr">{{ $record['plu'] }}</td><td class="px-3 py-2" dir="ltr">{{ $record['code'] }}</td><td class="px-3 py-2">{{ $record['name'] }}</td><td class="px-3 py-2" dir="ltr">{{ $record['weight'] }} kg</td><td class="px-3 py-2" dir="ltr">{{ $record['unit_price'] }}</td><td class="px-3 py-2" dir="ltr">{{ $record['total'] }}@unless ($record['consistent']) <flux:badge size="sm" color="amber">{{ __('Total does not match price times weight') }}</flux:badge>@endunless</td><td class="px-3 py-2" dir="ltr">{{ $record['recorded_at'] }}</td></tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @elseif ($scaleReportResult === 'empty')
+                                        <p role="status" class="text-sm text-text-muted">{{ __('The scale returned no transaction records.') }}</p>
+                                    @elseif ($scaleReportResult === 'inactive')
+                                        <p role="status" class="text-sm text-amber-700 dark:text-amber-300">{{ __('Save an active scale configuration first.') }}</p>
+                                    @elseif ($scaleReportResult === 'failed')
+                                        <p role="status" class="text-sm text-red-700 dark:text-red-300">{{ __('Could not verify the scale report.') }}</p>
+                                    @endif
+                                </flux:card>
+                            @endif
+                        </div>
+                    @endif
+                @endcan
+            </section>
+
+            <flux:card class="space-y-4" x-data="{ scanned: '' }" x-on:barcode:scanned.window="scanned = $event.detail.code">
+                <div>
+                    <flux:heading size="lg">{{ __('Barcode scanner') }}</flux:heading>
+                    <flux:subheading>{{ __('USB keyboard scanners need no driver or saved port. Scan a barcode here to verify the code received by this browser.') }}</flux:subheading>
+                </div>
+                <flux:input data-scan-target x-model="scanned" :label="__('Last scanned barcode')" autocomplete="off" dir="ltr" />
+            </flux:card>
 
             <?php if (true) { ?>
             <flux:card id="printer-profiles" class="scroll-mt-24 space-y-6">
