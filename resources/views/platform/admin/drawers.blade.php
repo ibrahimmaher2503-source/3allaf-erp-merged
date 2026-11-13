@@ -548,7 +548,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                     <input type="search" class="mb-2 w-full rounded-lg border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-900" placeholder="{{ __('Search cashiers') }}" x-model="cashierSearch">
                     <div class="max-h-36 overflow-y-auto rounded-lg border border-zinc-300 p-2 dark:border-zinc-600">
                         @foreach($users as $u)
-                            <label data-cashier-option x-show="!cashierSearch || $el.textContent.toLowerCase().includes(cashierSearch.toLowerCase())" class="flex items-center gap-2 p-1 text-sm"><input type="checkbox" wire:model="drawerForm.eligible_cashier_ids" value="{{ $u->id }}">{{ $u->name }} ({{ $u->username ?? $u->email }})</label>
+                            <label data-cashier-option x-show="!cashierSearch || $el.textContent.toLowerCase().includes(cashierSearch.toLowerCase())" class="flex items-center gap-2 p-1 text-sm"><input type="checkbox" wire:model="drawerForm.eligible_cashier_ids" value="{{ $u->id }}">{{ __($u->name) }} ({{ $u->username ?? $u->email }})</label>
                         @endforeach
                     </div>
                 </div>
@@ -558,7 +558,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 >
                     <option value="">{{ __('Unassigned / Any Cashier') }}</option>
                     @foreach($users as $u)
-                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->username ?? $u->email }})</option>
+                        <option value="{{ $u->id }}">{{ __($u->name) }} ({{ $u->username ?? $u->email }})</option>
                     @endforeach
                 </flux:select>
 

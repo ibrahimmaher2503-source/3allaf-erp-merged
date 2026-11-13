@@ -7127,5 +7127,8 @@
     "Purchase": "شراء",
     "Remove unit": "إزالة الوحدة",
     "Conversion is product-specific: one bag can equal 25, 40, or 50 KG depending on this product.": "التحويل خاص بالمنتج: قد يساوي الكيس 25 أو 40 أو 50 كجم حسب هذا المنتج.",
-    "Select exactly one base product unit.": "اختر وحدة أساسية واحدة فقط للمنتج."
+    "Select exactly one base product unit.": "اختر وحدة أساسية واحدة فقط للمنتج.",
+    "Treasury cash account": "حساب الخزينة النقدي",
+    "Select treasury cash account": "اختر حساب الخزينة النقدي",
+    "Local Administrator": "مدير النظام المحلي"
 }
