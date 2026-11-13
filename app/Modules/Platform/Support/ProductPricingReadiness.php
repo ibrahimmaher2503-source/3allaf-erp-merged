@@ -22,7 +22,7 @@ final class ProductPricingReadiness
             return request()->attributes->get($requestKey);
         }
 
-        $version = (int) Cache::get('setup-readiness-version', 1);
+        $version = SetupReadinessCache::version();
         $cacheKey = sprintf('product-pricing-readiness:optional-model:v%d:c%d:l%s:n%d', $version, $companyId, app()->getLocale(), $displayLimit);
         $snapshot = Cache::remember($cacheKey, now()->addMinutes(10), fn (): array => $this->buildSnapshot($companyId, $displayLimit));
 

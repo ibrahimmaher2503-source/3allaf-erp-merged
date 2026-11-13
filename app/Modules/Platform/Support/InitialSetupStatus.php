@@ -53,7 +53,7 @@ final class InitialSetupStatus
             : (int) Company::query()->where('status', 'active')->value('id');
         $permissions = $actor instanceof User ? array_keys(app(RequestPermissionLookup::class)->for($actor)) : [];
         sort($permissions);
-        $version = (int) Cache::get('setup-readiness-version', 1);
+        $version = SetupReadinessCache::version();
         $key = sprintf('setup-ready:v%d:c%d:u%d:p%s:l%s', $version, $companyId, (int) ($actor?->id ?? 0), hash('xxh3', implode('|', $permissions)), app()->getLocale());
         $this->requestSnapshot = Cache::remember($key, now()->addMinutes(10), fn (): array => $this->buildSnapshot($companyId));
         if (app()->bound('request')) {
@@ -65,11 +65,29 @@ final class InitialSetupStatus
 
     private function buildSnapshot(int $activeCompanyId): array
     {
+        // One conditional-aggregate query per table instead of a separate
+        // count() plus one or more exists() probes against the same rows.
+        $branches = $this->tally(Branch::query(), ['active' => "status = 'active'"]);
+        $stores = $this->storeTally();
+        $paymentMethods = $this->tally(PaymentMethod::query(), ['active' => "status = 'active'"]);
+        $taxes = $this->tally(TaxSetting::query()->forCompany($activeCompanyId), ['active' => "status = 'active'"]);
+        $documentSequences = $this->tally(DocumentSequence::query(), ['active' => "status = 'active'"]);
+        $printers = $this->tally(PrinterConfiguration::query(), [
+            'active' => "status = 'active'",
+            'templated' => "status = 'active' and template_name is not null and template_name <> ''",
+        ]);
+        $categories = $this->tally(Category::query(), ['active' => "status = 'active'"]);
+        $brands = $this->tally(Brand::query(), ['active' => "status = 'active'"]);
+        $openingDocuments = $this->tally(OpeningInventoryDocument::query()->where('company_id', $activeCompanyId), [
+            'approved' => "status = 'approved' and reversal_of_id is null",
+        ]);
+
         $companyReady = $this->companyReady();
-        $branchesReady = $this->branchesReady();
-        $branchStoreSetupReady = $this->branchesAndStoresReady();
+        $branchesReady = $branches['active'] > 0;
+        $sellingOutletReady = $stores['selling_ready'] > 0;
+        $branchStoreSetupReady = $branchesReady && $stores['active_with_branch'] > 0 && $sellingOutletReady;
         $productPricing = app(ProductPricingReadiness::class)->snapshot($activeCompanyId);
-        $catalogReady = $this->catalogReady($productPricing);
+        $catalogReady = $this->catalogReady($productPricing, $categories['active'] > 0);
         $activeCustomerGroups = CustomerGroup::query()->forCompany($activeCompanyId)->active()->count();
         $activeSupplierGroups = SupplierGroup::query()->forCompany($activeCompanyId)->active()->count();
         $activeProductOptionGroups = ProductOptionGroup::query()
@@ -81,29 +99,23 @@ final class InitialSetupStatus
             : collect();
 
         $suppliersReady = $this->suppliersReady();
-        $pricesReady = $this->pricesReady($productPricing);
-        $pricingReadinessReason = $this->pricingReadinessReason($productPricing, $pricesReady);
-        $paymentMethodsCount = PaymentMethod::query()->count();
-        $taxesCount = TaxSetting::query()->forCompany($activeCompanyId)->count();
-        $documentSequencesCount = DocumentSequence::query()->count();
-        $printersCount = PrinterConfiguration::query()->count();
-        $printTemplatesCount = PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->count();
-        $categoriesCount = Category::query()->count();
-        $brandsCount = Brand::query()->count();
+        $pricing = $this->pricingState($productPricing, $activeCompanyId);
+        $pricesReady = $pricing['ready'];
+        $pricingReadinessReason = $pricing['reason'];
 
         $steps = [
             $this->step('company', $companyReady, Company::query()->count()),
-            $this->step('branches-stores', $branchesReady, Branch::query()->count()),
-            $this->step('warehouses', $this->warehousesReady() && Store::query()->where('type','selling')->where('status','active')->whereNotNull('branch_id')->exists(), Store::query()->whereIn('type',['warehouse','selling'])->count()),
+            $this->step('branches-stores', $branchesReady, $branches['total']),
+            $this->step('warehouses', $stores['warehouse_ready'] > 0 && $sellingOutletReady, $stores['typed']),
             $this->step('cash-drawers', $this->cashDrawersReady(), CashDrawer::query()->count()),
             $this->step('users-scopes', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
-            $this->step('payment-methods', $this->paymentMethodsReady(), $paymentMethodsCount),
-            $this->step('taxes', $this->taxesReady($activeCompanyId), $taxesCount),
-            $this->step('document-sequences', $this->documentSequencesReady(), $documentSequencesCount),
-            $this->step('printers', $this->printersReady(), $printersCount),
-            $this->step('print-templates', $printTemplatesCount > 0, $printTemplatesCount),
-            $this->step('categories', Category::query()->where('status', 'active')->exists(), $categoriesCount),
-            $this->step('brands', Brand::query()->where('status', 'active')->exists(), $brandsCount),
+            $this->step('payment-methods', $paymentMethods['active'] > 0, $paymentMethods['total']),
+            $this->step('taxes', $taxes['active'] > 0, $taxes['total']),
+            $this->step('document-sequences', $documentSequences['active'] > 0, $documentSequences['total']),
+            $this->step('printers', $printers['active'] > 0, $printers['total']),
+            $this->step('print-templates', $printers['templated'] > 0, $printers['templated']),
+            $this->step('categories', $categories['active'] > 0, $categories['total']),
+            $this->step('brands', $brands['active'] > 0, $brands['total']),
             $this->step('customer-groups', $activeCustomerGroups > 0, $activeCustomerGroups),
             $this->step('customers', $customerConsentPolicyRecords === 3, $customerConsentPolicyRecords),
             $this->step('supplier-groups', $activeSupplierGroups > 0, $activeSupplierGroups),
@@ -111,7 +123,7 @@ final class InitialSetupStatus
             $this->step('product-options', $activeProductOptionGroups > 0, $activeProductOptionGroups),
             $this->step('product-masters', $catalogReady, Product::query()->where('status', 'active')->count(), $this->productReadinessReason($productPricing), $productPricing),
             $this->step('prices', $pricesReady, PriceList::query()->count(), $pricingReadinessReason, $productPricing),
-            $this->step('opening-configuration', $this->openingInventoryReady($activeCompanyId), OpeningInventoryDocument::query()->where('company_id', $activeCompanyId)->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
+            $this->step('opening-configuration', $openingDocuments['approved'] > 0 || OpeningInventoryZeroDecision::query()->where('company_id', $activeCompanyId)->exists(), $openingDocuments['total'],$branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
         $steps = array_map(function (array $step) use ($latestDecisions): array {
@@ -166,21 +178,37 @@ final class InitialSetupStatus
         return Company::query()->where('status', 'active')->whereNotIn('code', ['', 'TBD'])->whereNotNull('name_ar')->where('name_ar', '!=', '')->whereNotNull('name_en')->where('name_en', '!=', '')->whereNotIn('currency_code', ['', 'TBD'])->whereNotIn('currency_symbol', ['', 'TBD'])->whereNotNull('timezone')->where('timezone', '!=', '')->exists();
     }
 
-    private function branchesAndStoresReady(): bool
+    /**
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @param  array<string, string>  $conditions  alias => trusted SQL condition
+     * @return array<string, int>
+     */
+    private function tally(Builder $query, array $conditions): array
     {
-        return Branch::query()->where('status', 'active')->exists()
-            && Store::query()->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists()
-            && Store::query()->where('type','selling')->where('status','active')->whereNotNull('branch_id')->exists();
+        $columns = ['count(*) as total'];
+        foreach ($conditions as $alias => $condition) {
+            $columns[] = "coalesce(sum(case when {$condition} then 1 else 0 end), 0) as {$alias}";
+        }
+
+        $row = $query->toBase()->selectRaw(implode(', ', $columns))->first();
+
+        return array_map(static fn (mixed $value): int => (int) $value, (array) $row);
     }
 
-    private function branchesReady(): bool
+    /** @return array{typed: int, selling_ready: int, active_with_branch: int, warehouse_ready: int} */
+    private function storeTally(): array
     {
-        return Branch::query()->where('status', 'active')->exists();
-    }
+        $row = Store::query()->toBase()
+            ->leftJoin('branches as readiness_branches', 'readiness_branches.id', '=', 'stores.branch_id')
+            ->selectRaw(implode(', ', [
+                "coalesce(sum(case when stores.type in ('warehouse', 'selling') then 1 else 0 end), 0) as typed",
+                "coalesce(sum(case when stores.type = 'selling' and stores.status = 'active' and stores.branch_id is not null then 1 else 0 end), 0) as selling_ready",
+                "coalesce(sum(case when stores.status = 'active' and readiness_branches.status = 'active' then 1 else 0 end), 0) as active_with_branch",
+                "coalesce(sum(case when stores.type = 'warehouse' and stores.status = 'active' and readiness_branches.status = 'active' then 1 else 0 end), 0) as warehouse_ready",
+            ]))
+            ->first();
 
-    private function warehousesReady(): bool
-    {
-        return Store::query()->where('type', 'warehouse')->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
+        return array_map(static fn (mixed $value): int => (int) $value, (array) $row);
     }
 
     private function cashDrawersReady(): bool
@@ -193,34 +221,6 @@ final class InitialSetupStatus
                 ->where('type', 'selling')
                 ->whereColumn('stores.branch_id', 'cash_drawers.branch_id'))
             ->exists();
-    }
-
-    private function paymentMethodsReady(): bool
-    {
-        return PaymentMethod::query()->where('status', 'active')->exists();
-    }
-
-    private function taxesReady(int $companyId): bool
-    {
-        return TaxSetting::query()->forCompany($companyId)->where('status', 'active')->exists();
-    }
-
-    private function documentSequencesReady(): bool
-    {
-        return DocumentSequence::query()->where('status', 'active')->exists();
-    }
-
-    private function printersReady(): bool
-    {
-        return PrinterConfiguration::query()->where('status', 'active')->exists();
-    }
-
-    private function printTemplatesReady(): bool
-    {
-        $activePrinters = PrinterConfiguration::query()->where('status', 'active');
-
-        return $activePrinters->exists()
-            && ! (clone $activePrinters)->whereDoesntHave('printTemplate', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
     }
 
     /** @return list<array<string, mixed>> */
@@ -276,11 +276,13 @@ final class InitialSetupStatus
     }
 
     /** @param array<string,mixed> $productPricing */
-    private function catalogReady(array $productPricing): bool
+    private function catalogReady(array $productPricing, bool $activeCategoryExists): bool
     {
-        $broken = Product::query()->whereNull('parent_product_id')->where('has_variations', true)->where('status', 'active')->whereDoesntHave('variants', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
+        if (! $activeCategoryExists || ! $productPricing['product_cards_complete']) {
+            return false;
+        }
 
-        return Category::query()->where('status', 'active')->exists() && $productPricing['product_cards_complete'] && ! $broken;
+        return ! Product::query()->whereNull('parent_product_id')->where('has_variations', true)->where('status', 'active')->whereDoesntHave('variants', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
     }
 
     private function suppliersReady(): bool
@@ -292,28 +294,33 @@ final class InitialSetupStatus
             ->exists();
     }
 
-    /** @param array<string,mixed> $productPricing */
-    private function pricesReady(array $productPricing): bool
+    /**
+     * Readiness of the active company's base list and outlet assignments,
+     * loaded once and shared by the step status and its reason text.
+     *
+     * @param  array<string,mixed>  $productPricing
+     * @return array{ready: bool, reason: ?string}
+     */
+    private function pricingState(array $productPricing, int $companyId): array
     {
-        $companyId = (int) Company::query()->where('status', 'active')->value('id');
-        $base = PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first();
-        if (! $productPricing['pricing_prerequisite_complete'] || ! $base?->isEffective()) return false;
-        return ! Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')->with(['priceList','branch.defaultPriceList'])->get()->contains(fn (Store $outlet): bool => ! app(PriceListResolver::class)->assignmentIsValid($outlet));
-    }
+        $baseEffective = (bool) PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first()?->isEffective();
+        $resolver = app(PriceListResolver::class);
+        $invalidOutlets = Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')
+            ->with(['priceList', 'branch.defaultPriceList'])->get()
+            ->filter(fn (Store $outlet): bool => ! $resolver->assignmentIsValid($outlet))
+            ->count();
 
-    /** @param array<string,mixed> $productPricing */
-    private function pricingReadinessReason(array $productPricing, ?bool $ready = null): ?string
-    {
-        if (($ready ?? $this->pricesReady($productPricing)) === true) return null;
-        $companyId = (int) Company::query()->where('status', 'active')->value('id');
+        if ($productPricing['pricing_prerequisite_complete'] && $baseEffective && $invalidOutlets === 0) {
+            return ['ready' => true, 'reason' => null];
+        }
+
         $reasons = [];
-        $base = PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first();
-        if (! $base?->isEffective()) $reasons[] = __('Create and activate Base Price List 0.');
+        if (! $baseEffective) $reasons[] = __('Create and activate Base Price List 0.');
         $missing = (int) $productPricing['invalid_price_count'];
         if ($missing) $reasons[] = __('Sellable Product Cards needing a positive base consumer price: :count', ['count' => $missing]);
-        $invalid = Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')->with(['priceList','branch.defaultPriceList'])->get()->filter(fn (Store $outlet): bool => ! app(PriceListResolver::class)->assignmentIsValid($outlet))->count();
-        if ($invalid) $reasons[] = __('Active Sales Outlets needing a valid active price list: :count', ['count' => $invalid]);
-        return implode(' ', $reasons);
+        if ($invalidOutlets) $reasons[] = __('Active Sales Outlets needing a valid active price list: :count', ['count' => $invalidOutlets]);
+
+        return ['ready' => false, 'reason' => implode(' ', $reasons)];
     }
 
     /** @param array<string,mixed> $productPricing */
@@ -322,12 +329,6 @@ final class InitialSetupStatus
         if ($productPricing['product_cards_complete']) return null;
         $count = (int) $productPricing['affected_count'];
         return __('Sellable Product Cards requiring completion: :count', ['count' => $count]);
-    }
-
-    private function openingInventoryReady(int $companyId): bool
-    {
-        return OpeningInventoryDocument::query()->where('company_id', $companyId)->where('status', 'approved')->whereNull('reversal_of_id')->exists()
-            || OpeningInventoryZeroDecision::query()->where('company_id', $companyId)->exists();
     }
 
     private function customerConsentPolicyRecords(): int

@@ -539,6 +539,26 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame($movementCount, StockMovement::query()->count());
     }
 
+    public function test_invalid_allocation_renders_validation_error_and_preserves_input(): void
+    {
+        $this->withoutVite();
+        $createUrl = route('inventory.transfers.create');
+        $movementCount = StockMovement::query()->count();
+
+        $this->from($createUrl)->post(route('inventory.transfers.store'), [
+            'source_store_id' => $this->source->id,
+            'destination_store_ids' => [$this->destinationA->id, $this->destinationB->id],
+            'reason_code' => 'replenishment',
+            'lines' => [['product_id' => $this->product->id, 'allocations' => [$this->destinationA->id => 'abc', $this->destinationB->id => '']]],
+        ])->assertRedirect($createUrl)->assertSessionHasErrors('lines.0.allocations.'.$this->destinationA->id);
+
+        $this->get($createUrl)->assertOk()
+            ->assertSee('name="lines[0][allocations]['.$this->destinationA->id.']" value="abc"', false)
+            ->assertSee('name="lines[0][allocations]['.$this->destinationB->id.']" value=""', false);
+        self::assertSame(0, StockTransfer::query()->where('reason_code', 'replenishment')->count());
+        self::assertSame($movementCount, StockMovement::query()->count());
+    }
+
     public function test_failed_dispatch_rolls_back_earlier_lines_and_leaves_approved_document(): void
     {
         $unavailableProduct = Product::factory()->create(['status' => 'active', 'item_code' => 'QA-UNAVAILABLE-'.uniqid(), 'name_ar' => 'منتج غير متوفر', 'sale_price' => 20]);

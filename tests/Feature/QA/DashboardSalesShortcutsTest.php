@@ -57,6 +57,16 @@ final class DashboardSalesShortcutsTest extends TestCase
         $this->assertSame('/sales/invoices/create', parse_url(route('sales.invoices.create'), PHP_URL_PATH));
     }
 
+    public function test_sales_index_renders_the_top_products_section(): void
+    {
+        $user = $this->userWith('sales-index', ['pos_sales.view']);
+        $this->withSession(['locale' => 'en']);
+        $this->actingAs($user)->get(route('sales.index'))
+            ->assertOk()
+            ->assertSee('Top products')
+            ->assertDontSee('@forelse');
+    }
+
     public function test_ordinary_invoice_draft_is_scoped_idempotent_and_does_not_post_stock(): void
     {
         $user = $this->userWith('invoice-draft', ['sales_invoices.create']);

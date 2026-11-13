@@ -13,6 +13,7 @@ use App\Modules\Platform\Support\ApprovalInboxAccess;
 use App\Modules\Platform\Support\InitialSetupStatus;
 use App\Modules\Platform\Support\ProductPricingReadiness;
 use App\Modules\Platform\Support\RequestPermissionLookup;
+use App\Modules\Platform\Support\SetupReadinessCache;
 use App\Modules\Platform\Support\TranslationOverrideLoader;
 use App\Modules\Platform\Support\UserManagementScope;
 use App\Modules\Platform\Support\WorkContext;
@@ -21,7 +22,6 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -83,11 +83,11 @@ class AppServiceProvider extends ServiceProvider
             }
         });
         foreach (['saved', 'deleted', 'restored'] as $event) {
-            Event::listen("eloquent.{$event}: *", static function (): void {
-                if (! Cache::add('setup-readiness-version', 1)) {
-                    Cache::increment('setup-readiness-version');
-                }
-            });
+            foreach (SetupReadinessCache::MODELS as $model) {
+                Event::listen("eloquent.{$event}: {$model}", static function (Model $record): void {
+                    SetupReadinessCache::handleModelEvent($record);
+                });
+            }
         }
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(ApprovalRecord::class, ApprovalRecordPolicy::class);
