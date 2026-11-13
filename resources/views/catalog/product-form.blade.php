@@ -123,6 +123,18 @@ new #[Title('Product Card')] class extends Component
     {
         unset($this->productForm['product_units'][$index]);
         $this->productForm['product_units'] = array_values($this->productForm['product_units']);
+
+        if ($this->productForm['product_units'] !== [] && ! collect($this->productForm['product_units'])->contains('is_base_unit', true)) {
+            $this->productForm['product_units'][0]['is_base_unit'] = true;
+        }
+    }
+
+    public function setBaseProductUnit(int $index): void
+    {
+        foreach ($this->productForm['product_units'] as $rowIndex => &$row) {
+            $row['is_base_unit'] = $rowIndex === $index;
+        }
+        unset($row);
     }
 
     public function localProductCodePreview(): ?string
@@ -715,12 +727,12 @@ new #[Title('Product Card')] class extends Component
                             @foreach ($units as $unit)<flux:select.option :value="$unit->id">{{ $unit->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $unit->name_ar : $unit->name_en }}</flux:select.option>@endforeach
                         </flux:select>
                         <flux:input wire:model="productForm.product_units.{{ $index }}.conversion_factor" type="number" min="0.000001" step="0.000001" :label="__('Base-unit factor')" />
-                        <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_base_unit" :label="__('Base')" />
+                        <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_base_unit" wire:click="setBaseProductUnit({{ $index }})" :label="__('Base')" />
                         <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_purchase_unit" :label="__('Purchase')" />
                         <div class="flex items-center gap-2"><flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_sale_unit" :label="__('Sale')" /><flux:button type="button" size="sm" variant="ghost" icon="trash" wire:click="removeProductUnit({{ $index }})" :aria-label="__('Remove unit')" /></div>
                     </div>
                 @endforeach
-                <flux:text class="text-xs text-text-muted">{{ __('Conversion is product-specific: one bag can equal 25, 40, or 50 KG depending on this product.') }}</flux:text>
+                <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حدد وحدة أساسية واحدة فقط. معامل الوحدة الأساسية هو عدد هذه الوحدات الذي يساوي وحدة المخزون الأساسية؛ مثال: شيكارة 25 كجم = 25.' : __('Conversion is product-specific: one bag can equal 25, 40, or 50 KG depending on this product.') }}</p>
             </div>
         </flux:card>
 
