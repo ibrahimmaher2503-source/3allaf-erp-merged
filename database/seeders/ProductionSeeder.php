@@ -113,6 +113,8 @@ final class ProductionSeeder extends Seeder
             ['code' => 'transfers.dispatch', 'module' => 'transfers', 'action' => 'dispatch'],
             ['code' => 'transfers.receive', 'module' => 'transfers', 'action' => 'receive'],
             ['code' => 'transfers.difference', 'module' => 'transfers', 'action' => 'difference'],
+            ['code' => 'stock_counts.open', 'module' => 'stock_counts', 'action' => 'open'],
+            ['code' => 'stock_counts.close', 'module' => 'stock_counts', 'action' => 'close'],
             ['code' => 'stock_counts.reconcile', 'module' => 'stock_counts', 'action' => 'reconcile'],
             ['code' => 'drawers_payments_tax_numbering_printers.override', 'module' => 'drawers_payments_tax_numbering_printers', 'action' => 'override'],
             ['code' => 'pos_sales.apply_tax', 'module' => 'pos_sales', 'action' => 'apply_tax'],
