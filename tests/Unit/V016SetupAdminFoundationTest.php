@@ -46,6 +46,14 @@ final class V016SetupAdminFoundationTest extends TestCase
         self::assertSame('warehouses', (new InitialSetupRouteMap)->resolve($request));
     }
 
+    public function test_production_seeder_does_not_create_demo_company_over_existing_company(): void
+    {
+        $source = file_get_contents(__DIR__.'/../../database/seeders/ProductionSeeder.php');
+
+        self::assertIsString($source);
+        self::assertStringContainsString("if (! Company::query()->exists())", $source);
+    }
+
     public function test_warehouse_manager_can_open_catalog_needed_by_inventory_workflows(): void
     {
         $permissions = ProductionSeeder::productionSafeRolePermissions()['warehouse-manager'];

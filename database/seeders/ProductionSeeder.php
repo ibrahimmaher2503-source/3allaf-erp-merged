@@ -28,7 +28,9 @@ final class ProductionSeeder extends Seeder
         DB::transaction(function (): void {
             $this->seedAuthorization();
             $this->seedBootstrapAdministrator();
-            $this->seedOperationalBaseline();
+            if (! Company::query()->exists()) {
+                $this->seedOperationalBaseline();
+            }
         });
 
         if (config('production-seeding.setup_data.enabled') === true) {
