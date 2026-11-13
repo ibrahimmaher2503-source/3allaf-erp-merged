@@ -319,7 +319,7 @@ final class CheckoutPanel extends Component
         $order = $orders->active(request(), $user, $context, ! is_numeric(request()->session()->get('pos.completed_sale_id')));
         $data = $snapshot->build($context);
         $orders->updateTotals($order, $data['preview'] ?? null);
-        $methods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->limit(100)->get();
+        $methods = PaymentMethod::query()->where('status', 'active')->where('type', '!=', 'gift_card')->orderBy('code')->limit(100)->get();
         $cashMethod = $methods->first(fn (PaymentMethod $method): bool => $method->isCash());
         $electronicMethods = $methods->reject(fn (PaymentMethod $method): bool => $method->isCash() || (string) $method->type === 'gift_card')->values();
         $invoiceTotal = (string) (($data['preview']['total'] ?? null) ?: '0.00');
@@ -345,7 +345,7 @@ final class CheckoutPanel extends Component
 
     private function prepareMode(string $mode): void
     {
-        $methods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->limit(100)->get();
+        $methods = PaymentMethod::query()->where('status', 'active')->where('type', '!=', 'gift_card')->orderBy('code')->limit(100)->get();
         $cash = $methods->first(fn (PaymentMethod $method): bool => $method->isCash());
         $card = $methods->first(fn (PaymentMethod $method): bool => ! $method->isCash() && (string) $method->type !== 'gift_card');
         if ($mode === 'credit') {

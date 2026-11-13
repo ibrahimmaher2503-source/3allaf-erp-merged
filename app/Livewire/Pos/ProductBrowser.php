@@ -11,7 +11,6 @@ use App\Modules\Catalog\Models\ProductImage;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Actions\PosCartAction;
-use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
@@ -47,12 +46,6 @@ final class ProductBrowser extends Component
     {
         $term = trim($this->search);
         if ($term === '') {
-            return;
-        }
-        if (GiftCard::query()->where('identifier', $term)->exists() || str_starts_with(strtoupper($term), 'GC-')) {
-            $this->dispatch('pos-gift-card-scanned', identifier: $term);
-            $this->search = '';
-
             return;
         }
         $matches = Product::query()->sellable()
