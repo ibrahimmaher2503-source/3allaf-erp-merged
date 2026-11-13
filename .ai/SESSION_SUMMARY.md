@@ -1754,3 +1754,11 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Verification actually run: Blade compiled with a standalone compiler (component tags skipped) and the output passed `php -l` with balanced control structures; `php -l` on the service, model and migration; both lang files parse as JSON. `artisan view:cache` timed out. NOT run: the new migration, any browser or authenticated UI check, any hardware call, any automated suite (local MySQL was not accepting connections during this work).
 - Remaining: run the migration on an authorized local database, check the screen in the browser (RTL and LTR), confirm key grid behaviour against the device with read-only calls first, and verify whether the device accepts a barcode format upload.
 - Commit and push: see the git history of `feature/device-settings`.
+
+## 2026-11-13 - Pack-size SKUs and open-a-bag reason selector
+
+- Task: owner needs one feed product held in several pack sizes (25 kg bag, 50 kg bag, loose kg) with a per-pack stock breakdown. Decision: separate SKUs per pack (existing product options and variations), not a per-unit breakdown on one SKU, which would change protected Core stock behaviour.
+- Finding: `product_units` allows one `BAG` unit per product and stock is kept in base-unit kg, so a per-pack breakdown on one SKU is not possible. Inventory documents already support the `exchange` type and the `opened_bag` reason.
+- Change: in `resources/views/inventory/index.blade.php` the adjustment reason was a free-text box validated against fixed codes; it is now a dropdown with Arabic and English labels, and the `exchange` movement type is labelled as converting between SKUs (open a bag).
+- Verification run: the edited reason-select markup compiled with the standalone Blade compiler and passed `php -l`. NOT run: browser check, tests, any database operation (local MariaDB was down). The standalone lint of the whole file reports the same error on the committed version, so it could not be used for that file.
+- Not committed or pushed.
