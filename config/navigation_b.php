@@ -44,6 +44,7 @@ return [
     ]),
     $group('inventory', 'archive-box', 'المخزون', 'Inventory', [
         $item('inventory.index', 'نظرة عامة عن المخزون', 'Inventory overview'),
+        $item('inventory.opening.index', 'الرصيد الافتتاحي', 'Opening inventory'),
         $item('inventory.transfers', 'التحويلات', 'Transfers'),
         $additional('inventory.transfers.receiving-inbox', 'transfers.receive', 'inbox-arrow-down', 'التحويلات الواردة', 'Incoming transfers'),
         $item('inventory.adjustments.create', 'إذن إضافة', 'Stock addition', ['type' => 'entry']),

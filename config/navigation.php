@@ -36,6 +36,7 @@ return [
         ['type' => 'heading', 'label' => ['ar' => 'المخزون', 'en' => 'Stock']],
         ['route' => 'inventory.index', 'permission' => 'inventory_stock_card.view', 'icon' => 'chart-bar', 'label' => ['ar' => 'نظرة عامة على المخزون', 'en' => 'Inventory overview']],
         ['route' => 'inventory.balances', 'permission' => 'inventory_stock_card.view', 'icon' => 'archive-box', 'label' => ['ar' => 'الأرصدة وحركة المخزون', 'en' => 'Balances & movements']],
+        ['route' => 'inventory.opening.index', 'permission' => 'inventory_stock_card.create', 'icon' => 'circle-stack', 'label' => ['ar' => 'الرصيد الافتتاحي', 'en' => 'Opening inventory']],
         ['route' => 'inventory.counts', 'permission' => 'inventory_stock_card.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'الجرد والتسويات', 'en' => 'Counts & adjustments']],
         ['type' => 'heading', 'label' => ['ar' => 'التحويلات', 'en' => 'Transfers']],
         ['route' => 'inventory.transfers', 'permission' => 'transfers.view', 'icon' => 'arrows-right-left', 'label' => ['ar' => 'التحويلات', 'en' => 'Stock transfers']],
