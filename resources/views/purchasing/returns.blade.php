@@ -287,7 +287,7 @@ new #[Title('Supplier Returns')] class extends Component
         return [
             'purchase_invoice_line_id' => (string) $line->id,
             'quantity' => bccomp($available, '1', 6) < 0 ? $available : '1',
-            'unit_cost' => (string) $line->unit_cost,
+            'unit_cost' => $line->netReturnUnitCost(),
             'available' => $available,
             'product' => str_starts_with(app()->getLocale(), 'ar') ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id),
         ];

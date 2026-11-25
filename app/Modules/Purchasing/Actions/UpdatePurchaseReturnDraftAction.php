@@ -119,7 +119,7 @@ final class UpdatePurchaseReturnDraftAction
                 if (bccomp($quantity, $remaining, 6) > 0 || $balance === null || bccomp($quantity, $onHand, 6) > 0) {
                     throw new InvalidArgumentException(__('Return quantity exceeds eligible source quantity or current on-hand.'));
                 }
-                $cost = $this->decimal($source->unit_cost);
+                $cost = $this->decimal($source->netReturnUnitCost());
                 $total = bcmul($quantity, $cost, 4);
                 $subtotal = bcadd($subtotal, $total, 4);
                 $normalized[] = ['purchase_invoice_line_id' => $source->id, 'product_id' => $source->product_id, 'quantity' => $quantity, 'unit_cost' => $cost, 'total_cost' => $total];

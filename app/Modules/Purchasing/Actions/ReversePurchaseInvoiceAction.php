@@ -76,7 +76,10 @@ final class ReversePurchaseInvoiceAction
             foreach ($invoice->lines as $line) {
                 if ($line->purchase_order_line_id) {
                     $poLine = $purchaseOrderLines[$line->id];
-                    $poLine->mutateApprovedParentLine(['quantity_received' => $this->subtract($poLine->quantity_received, $line->quantity, 6)]);
+                    $poLine->mutateApprovedParentLine([
+                        'quantity_received' => $this->subtract($poLine->quantity_received, $line->paidQuantity(), 6),
+                        'bonus_quantity_received' => $this->subtract($poLine->bonus_quantity_received ?? '0', $line->bonus_quantity ?? '0', 6),
+                    ]);
                 }
                 $product = Product::query()->lockForUpdate()->findOrFail($line->product_id);
                 $hasLaterApproval = PurchaseInvoiceLine::query()->where('product_id', $line->product_id)->whereHas('invoice', fn ($query) => $query->where('status', 'approved')->where('id', '<>', $invoice->id)->where('approved_at', '>=', $invoice->approved_at))->exists();
@@ -183,7 +186,7 @@ final class ReversePurchaseInvoiceAction
             if ((int) $poLine->product_id !== (int) $line->product_id) {
                 throw new InvalidArgumentException(__('The invoice line product does not match the selected purchase-order line.'));
             }
-            $this->subtract($poLine->quantity_received, $line->quantity, 6);
+            $this->subtract($poLine->quantity_received, $line->paidQuantity(), 6);
             $purchaseOrderLines[$line->id] = $poLine;
         }
 

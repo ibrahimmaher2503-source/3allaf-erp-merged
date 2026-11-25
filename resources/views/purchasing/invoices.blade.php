@@ -46,6 +46,9 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public array $receivedQuantities = [];
 
+    /** Accepted free bonus quantity per invoice line (base units). */
+    public array $receivedBonusQuantities = [];
+
     public string $search = '';
 
     public string $statusFilter = 'all';
@@ -302,6 +305,13 @@ new #[Title('Purchase Invoices')] class extends Component
                     && bccomp($enteredQuantity, bcadd($enteredQuantity, '0', $precision), 6) === 0
                     && bccomp(bcmul($enteredQuantity, $factor, 6), $remainingQuantity, 6) === 0;
 
+                $remainingBonus = bcsub((string) ($line->bonus_quantity ?? '0'), (string) ($line->bonus_quantity_received ?? '0'), 6);
+                if (bccomp($remainingBonus, '0', 6) < 0) {
+                    $remainingBonus = '0.000000';
+                }
+                $enteredBonus = bcdiv($remainingBonus, $factor, 6);
+                $useOrderUnit = $useOrderUnit && bccomp($enteredBonus, bcadd($enteredBonus, '0', $precision), 6) === 0;
+
                 $discountValue = $line->discount_type === 'amount' && bccomp((string) $line->quantity_ordered, '0', 6) > 0
                     ? bcdiv(bcmul((string) $line->discount_amount, $remainingQuantity, 10), (string) $line->quantity_ordered, 4)
                     : (string) $line->discount_value;
@@ -311,6 +321,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     'product_unit_id' => $useOrderUnit ? (string) $line->product_unit_id : '',
                     'purchase_order_line_id' => (string) $line->id,
                     'quantity' => $useOrderUnit ? $enteredQuantity : $remainingQuantity,
+                    'bonus_quantity' => \App\Support\ProductQuantity::format($useOrderUnit ? $enteredBonus : $remainingBonus),
                     'unit_cost' => (string) ($useOrderUnit ? $line->entered_unit_price : $line->unit_cost),
                     'base_consumer_price' => (string) ($line->product?->sale_price ?? 0),
                     'price_source' => 'approved_purchase_order_cost',
@@ -377,6 +388,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'base_consumer_price' => (string) ($line->base_consumer_price ?? $line->product?->sale_price ?? 0),
             'discount_type' => $line->discount_type ?: '',
             'discount_value' => (string) $line->discount_value,
+            'bonus_quantity' => \App\Support\ProductQuantity::format(bcdiv((string) ($line->bonus_quantity ?? '0'), (string) (($line->conversion_factor_snapshot ?? 0) > 0 ? $line->conversion_factor_snapshot : '1'), 6)),
             'price_source' => 'saved_draft_cost',
             'price_date' => '',
             'price_currency' => $invoice->currency_code ?: '',
@@ -689,6 +701,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'lineItems.*.base_consumer_price' => 'required|numeric|gte:0',
             'lineItems.*.discount_type' => 'nullable|in:percentage,amount',
             'lineItems.*.discount_value' => 'nullable|numeric|gte:0',
+            'lineItems.*.bonus_quantity' => 'nullable|decimal:0,6|gte:0',
         ]);
 
         try {
@@ -747,7 +760,8 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->resetValidation();
         $this->editingInvoiceId = $invoice->id;
         $this->invoiceForm['lock_version'] = $invoice->lock_version;
-        $this->receivedQuantities = $invoice->lines->mapWithKeys(fn ($line) => [$line->id => \App\Support\ProductQuantity::format($line->quantity)])->all();
+        $this->receivedQuantities = $invoice->lines->mapWithKeys(fn ($line) => [$line->id => \App\Support\ProductQuantity::format($line->paidQuantity())])->all();
+        $this->receivedBonusQuantities = $invoice->lines->mapWithKeys(fn ($line) => [$line->id => \App\Support\ProductQuantity::format($line->bonus_quantity ?? 0)])->all();
         $this->showDistribution = false;
         $this->showReceiving = true;
     }
@@ -764,7 +778,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     $version = (int) $this->invoiceForm['lock_version'];
                 }
                 if ($this->showReceiving && (int) $this->editingInvoiceId === $id && $invoice->status !== 'approved') {
-                    $invoice = app(\App\Modules\Purchasing\Actions\SavePurchaseReceivingAction::class)->execute($id, $this->receivedQuantities, $version);
+                    $invoice = app(\App\Modules\Purchasing\Actions\SavePurchaseReceivingAction::class)->execute($id, $this->receivedQuantities, $version, $this->receivedBonusQuantities);
                     $version = $invoice->lock_version;
                 }
                 $action->execute($id, $version);
@@ -915,17 +929,19 @@ new #[Title('Purchase Invoices')] class extends Component
             'base_consumer_price' => '0',
             'discount_type' => '',
             'discount_value' => '0',
+            'bonus_quantity' => '0',
             'price_source' => 'none',
             'price_date' => '',
             'price_currency' => '',
         ];
     }
 
-    /** @return array{lines: array<int, string>, subtotal: string, discount: string, total: string} */
+    /** @return array{lines: array<int, string>, unitCosts: array<int, string>, subtotal: string, discount: string, total: string} */
     private function invoicePreview(): array
     {
         $calculator = app(PurchaseInvoiceCalculator::class);
         $lines = [];
+        $unitCosts = [];
         $subtotal = '0.0000';
         $discount = '0.0000';
         $total = '0.0000';
@@ -953,6 +969,10 @@ new #[Title('Purchase Invoices')] class extends Component
                 }
                 $calculated = $calculator->calculateLine($line);
                 $lines[$index] = $calculated['line_total'];
+                // Net cost per stock unit after discount and free bonus (before landed charges).
+                if (bccomp((string) $calculated['discount_amount'], '0', 4) > 0 || bccomp((string) $calculated['bonus_quantity'], '0', 6) > 0) {
+                    $unitCosts[$index] = bcdiv((string) $calculated['subtotal'], (string) $calculated['quantity'], 4);
+                }
                 $subtotal = bcadd($subtotal, $calculated['subtotal'], 4);
                 $discount = bcadd($discount, $calculated['discount_amount'], 4);
                 $total = bcadd($total, $calculated['line_total'], 4);
@@ -961,7 +981,7 @@ new #[Title('Purchase Invoices')] class extends Component
             }
         }
 
-        return compact('lines', 'subtotal', 'discount', 'total');
+        return compact('lines', 'unitCosts', 'subtotal', 'discount', 'total');
     }
 };
 ?>
@@ -1164,12 +1184,12 @@ new #[Title('Purchase Invoices')] class extends Component
                         <p class="text-sm text-amber-700 dark:text-amber-300">{{ __('Purchase cost editing is unavailable for your role.') }} {{ __('Ask a System Administrator to grant purchase cost editing in role permissions.') }}</p>
                     @endcannot
                     <div class="max-h-[32rem] overflow-auto rounded-lg border border-border" data-invoice-lines-scroll>
-                        <div class="sticky top-0 z-20 hidden grid-cols-[minmax(14rem,1fr)_4.5rem_8rem_7rem_6.5rem_6rem_6rem_2.5rem] gap-1.5 border-b border-border bg-zinc-100 px-2 py-1.5 text-[10px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
-                            <span>{{ __('Product') }}</span><span>{{ __('Quantity') }}</span><span>{{ __('Purchase unit cost (tax-inclusive)') }}</span><span>{{ __('Base Consumer Price List 0') }}</span><span>{{ __('Discount type') }}</span><span>{{ __('Discount') }}</span><span>{{ __('Line total') }}</span><span></span>
+                        <div class="sticky top-0 z-20 hidden grid-cols-[minmax(10rem,1fr)_5rem_4.5rem_4.5rem_7rem_6rem_6rem_5.5rem_7rem_2.5rem] gap-1.5 border-b border-border bg-zinc-100 px-2 py-1.5 text-[10px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
+                            <span>{{ __('Product') }}</span><span>{{ __('Unit') }}</span><span>{{ __('Quantity') }}</span><span>{{ __('Bonus (free)') }}</span><span>{{ __('Purchase unit cost (tax-inclusive)') }}</span><span>{{ __('Base Consumer Price List 0') }}</span><span>{{ __('Discount type') }}</span><span>{{ __('Discount') }}</span><span>{{ __('Line total') }}</span><span></span>
                         </div>
                         <div class="space-y-1.5 p-1.5">
                             @foreach ($lineItems as $index => $line)
-                            <div class="grid grid-cols-12 items-start gap-1.5 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(14rem,1fr)_4.5rem_8rem_7rem_6.5rem_6rem_6rem_2.5rem] dark:bg-zinc-800/40" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] ?? '' }}">
+                            <div class="grid grid-cols-12 items-start gap-1.5 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(10rem,1fr)_5rem_4.5rem_4.5rem_7rem_6rem_6rem_5.5rem_7rem_2.5rem] dark:bg-zinc-800/40" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] ?? '' }}">
                                 <div class="col-span-12 min-w-0 lg:col-auto">
                                     @php($lineProduct=$lineProducts->get((int)($line['product_id'] ?? 0)))
                                     <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :label-visually-hidden="true" result-presentation="name-code" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
@@ -1183,14 +1203,17 @@ new #[Title('Purchase Invoices')] class extends Component
                                             @endforeach
                                         </select>
                                     </div>
+                                @else
+                                    <div class="hidden lg:block" aria-hidden="true"></div>
                                 @endif
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model.live.debounce.150ms="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="0.000001" step="any" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
+                                <div class="col-span-4 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only" for="invoice-line-bonus-{{ $index }}">{{ __('Bonus (free)') }}</label><input id="invoice-line-bonus-{{ $index }}" wire:model.live.debounce.150ms="lineItems.{{ $index }}.bonus_quantity" data-line-step type="number" min="0" step="any" title="{{ __('Free units from the supplier: they raise stock without raising the invoice total.') }}" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" /></div>
                                 <div class="col-span-4 min-w-[7.5rem] sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Purchase unit cost') }}</label><input wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" data-line-price data-price-kind="cost" data-purchase-cost-input type="number" min="0" step="0.0001" placeholder="{{ __('Enter cost') }}" inputmode="decimal" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_cost')) required /></div>
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Base Consumer Price List 0') }}</label><input wire:model.live.debounce.300ms="lineItems.{{ $index }}.base_consumer_price" data-line-step type="number" min="0" step="0.001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_list0_price')) required /></div>
-                                <div class="col-span-6 sm:col-span-3 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount type') }}</label><select wire:model.live="lineItems.{{ $index }}.discount_type" data-line-discount-type data-line-step class="mt-1 h-10 w-full rounded-lg border-zinc-300 bg-white text-sm dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">{{ __('Percentage') }}</option><option value="amount">{{ __('Amount') }}</option></select></div>
-                                <div class="col-span-3 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount') }}</label><input wire:model.live="lineItems.{{ $index }}.discount_value" data-line-discount data-line-step type="number" min="0" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" /></div>
+                                <div class="col-span-6 sm:col-span-3 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount type') }}</label><select wire:model.live="lineItems.{{ $index }}.discount_type" data-line-discount-type data-line-step @disabled(filled($line['purchase_order_line_id'] ?? '')) title="{{ filled($line['purchase_order_line_id'] ?? '') ? __('Discount comes from the purchase order.') : '' }}" class="mt-1 h-10 w-full rounded-lg border-zinc-300 bg-white text-sm disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">{{ __('Percentage') }}</option><option value="amount">{{ __('Amount') }}</option></select></div>
+                                <div class="col-span-3 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount') }}</label><input wire:model.live="lineItems.{{ $index }}.discount_value" data-line-discount data-line-step type="number" min="0" step="0.0001" @disabled(filled($line['purchase_order_line_id'] ?? '')) class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900" />@if (filled($line['purchase_order_line_id'] ?? ''))<small class="mt-0.5 block text-[10px] leading-tight text-text-muted">{{ __('From the purchase order') }}</small>@endif</div>
 
-                                <div class="col-span-10 sm:col-span-2 lg:col-auto"><span class="block text-xs font-semibold lg:sr-only">{{ __('Line total') }}</span><output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-2 font-mono text-sm dark:bg-zinc-900" data-line-total data-raw-total="{{ $invoicePreview['lines'][$index] ?? '0.0000' }}">{{ number_format((float) ($invoicePreview['lines'][$index] ?? 0), 2) }}</output></div>
+                                <div class="col-span-10 sm:col-span-2 lg:col-auto"><span class="block text-xs font-semibold lg:sr-only">{{ __('Line total') }}</span><output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-2 font-mono text-sm dark:bg-zinc-900" data-line-total data-raw-total="{{ $invoicePreview['lines'][$index] ?? '0.0000' }}">{{ number_format((float) ($invoicePreview['lines'][$index] ?? 0), 2) }}</output>@isset($invoicePreview['unitCosts'][$index])<small class="mt-0.5 block text-end text-[10px] leading-tight text-emerald-700 dark:text-emerald-400">{{ __('Net unit cost') }}<span class="block font-mono" dir="ltr">{{ number_format((float) $invoicePreview['unitCosts'][$index], 4) }}</span></small>@endisset</div>
                                 <div class="col-span-2 pt-1 text-end lg:col-auto">@can('purchase_invoices.print_labels')<flux:button type="button" size="xs" variant="ghost" icon="printer" title="{{ __('Print barcode labels') }}" aria-label="{{ __('Print barcode labels') }}" x-on:click="window.purchaseLabelWindow = window.open('about:blank', '_blank')" wire:click="printLineLabels({{ $index }})" />@endcan @if(count($lineItems)>1)<flux:button type="button" size="xs" variant="ghost" icon="trash" class="text-rose-600" wire:click="removeLine({{ $index }})" />@endif @error('lineItems.'.$index.'.labels')<small class="text-rose-600">{{ $message }}</small>@enderror</div>
                             </div>
                             @endforeach
@@ -1231,9 +1254,9 @@ new #[Title('Purchase Invoices')] class extends Component
             <p>{{ __('Receiving store') }}: {{ \App\Support\HumanName::name($receivingInvoice->store) }}</p>
             <p class="text-sm text-text-muted">{{ __('Verify accepted quantities before approval. Undistributed stock stays in this receiving store.') }}</p>
             <div class="space-y-4">
-                <div class="overflow-x-auto"><table class="data-table w-full"><thead><tr><th>{{ __('Product') }}</th><th>{{ __('Original quantity') }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'سعر البيع' : 'Selling price' }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'الكمية المستلمة فعليًا' : 'Accepted quantity' }}</th></tr></thead><tbody>
+                <div class="overflow-x-auto"><table class="data-table w-full"><thead><tr><th>{{ __('Product') }}</th><th>{{ __('Original quantity') }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'سعر البيع' : 'Selling price' }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'الكمية المستلمة فعليًا' : 'Accepted quantity' }}</th><th>{{ __('Accepted bonus (free)') }}</th></tr></thead><tbody>
                     @foreach($receivingInvoice->lines as $line)
-                        <tr wire:key="receiving-line-{{ $line->id }}"><td>{{ \App\Support\HumanName::name($line->product) }}<small class="block" dir="ltr">{{ $line->product?->item_code }}</small></td><td><x-product-quantity :value="$line->original_quantity ?? $line->quantity" /></td><td><x-money :amount="$line->product?->sale_price" :currency="$receivingInvoice->currency_code" /></td><td class="min-w-32"><flux:input wire:model="receivedQuantities.{{ $line->id }}" type="number" min="0" step="1" :aria-label="__('Accepted quantity')" required /><flux:error name="receivedQuantities.{{ $line->id }}" /></td></tr>
+                        <tr wire:key="receiving-line-{{ $line->id }}"><td>{{ \App\Support\HumanName::name($line->product) }}<small class="block" dir="ltr">{{ $line->product?->item_code }}</small></td><td><x-product-quantity :value="bcsub((string) ($line->original_quantity ?? $line->quantity), (string) ($line->original_bonus_quantity ?? $line->bonus_quantity ?? 0), 6)" />@if (bccomp((string) ($line->original_bonus_quantity ?? $line->bonus_quantity ?? 0), '0', 6) > 0)<small class="block text-emerald-700 dark:text-emerald-400">+ <x-product-quantity :value="$line->original_bonus_quantity ?? $line->bonus_quantity" /> {{ __('bonus') }}</small>@endif</td><td><x-money :amount="$line->product?->sale_price" :currency="$receivingInvoice->currency_code" /></td><td class="min-w-32"><flux:input wire:model="receivedQuantities.{{ $line->id }}" type="number" min="0" step="1" :aria-label="__('Accepted quantity')" required /><flux:error name="receivedQuantities.{{ $line->id }}" /></td><td class="min-w-28"><flux:input wire:model="receivedBonusQuantities.{{ $line->id }}" type="number" min="0" step="1" :aria-label="__('Accepted bonus (free)')" /><flux:error name="receivedBonusQuantities.{{ $line->id }}" /></td></tr>
                     @endforeach
                 </tbody></table></div>
                 <flux:error name="receivedQuantities" />

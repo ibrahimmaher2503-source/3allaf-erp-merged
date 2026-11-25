@@ -7105,5 +7105,20 @@
     "Total price": "السعر الإجمالي",
     "Unreachable": "غير متاح",
     "Usually 20–29 for in-store weight labels.": "عادة 20–29 لملصقات الوزن داخل المحل.",
-    "Value digits": "خانات القيمة"
+    "Value digits": "خانات القيمة",
+    "Discount percentage cannot exceed 100.": "نسبة الخصم لا يمكن أن تزيد على 100.",
+    "Bonus quantity cannot exceed the remaining bonus on the purchase order.": "كمية البونص لا يمكن أن تزيد على البونص المتبقي في أمر الشراء.",
+    "Bonus units need at least one accepted paid unit on the same line.": "البونص يحتاج كمية مدفوعة مستلمة واحدة على الأقل في نفس السطر.",
+    "Bonus quantity (free)": "كمية البونص (مجانًا)",
+    "Bonus (free)": "بونص (مجانًا)",
+    "Accepted bonus (free)": "البونص المستلم (مجانًا)",
+    "Including bonus (free)": "منها بونص (مجانًا)",
+    "bonus": "بونص",
+    "Before discount": "قبل الخصم",
+    "Supplier discount": "خصم المورد",
+    "Net unit cost": "صافي تكلفة الوحدة",
+    "Free units from the supplier: they raise stock without raising the invoice total.": "وحدات مجانية من المورد: تزيد المخزون من غير ما تزيد إجمالي الفاتورة.",
+    "Discount comes from the purchase order.": "الخصم منقول من أمر الشراء.",
+    "From the purchase order": "من أمر الشراء",
+    "Stock in": "يدخل المخزن"
 }

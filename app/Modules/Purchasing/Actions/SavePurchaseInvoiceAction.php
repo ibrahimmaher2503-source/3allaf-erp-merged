@@ -201,8 +201,13 @@ final class SavePurchaseInvoiceAction
                 }
                 $purchaseOrderLine = $purchaseOrderLines->get($purchaseOrderLineId);
                 $remaining = bcsub((string) $purchaseOrderLine->quantity_ordered, (string) $purchaseOrderLine->quantity_received, 6);
-                if (bccomp((string) $calculatedLine['quantity'], $remaining, 6) > 0) {
+                $paidQuantity = bcsub((string) $calculatedLine['quantity'], (string) $calculatedLine['bonus_quantity'], 6);
+                if (bccomp($paidQuantity, $remaining, 6) > 0) {
                     throw new InvalidArgumentException(__('Invoice quantity cannot exceed the remaining purchase-order quantity.'));
+                }
+                $remainingBonus = bcsub((string) $purchaseOrderLine->bonus_quantity, (string) $purchaseOrderLine->bonus_quantity_received, 6);
+                if (bccomp((string) $calculatedLine['bonus_quantity'], $remainingBonus, 6) > 0) {
+                    throw new InvalidArgumentException(__('Bonus quantity cannot exceed the remaining bonus on the purchase order.'));
                 }
             }
             $attributes = [
@@ -246,6 +251,7 @@ final class SavePurchaseInvoiceAction
                     'name_en_snapshot' => $product->name_en,
                     'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
                     'original_quantity' => $line['quantity'],
+                    'original_bonus_quantity' => $line['bonus_quantity'],
                     'quantity_received' => 0,
                 ];
                 $existingLine = $existingLines->get($product->id);

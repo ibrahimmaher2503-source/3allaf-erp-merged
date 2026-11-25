@@ -157,3 +157,13 @@
 - The owner confirmed one operating branch, one warehouse, and one selling outlet. Operational screens therefore resolve the sole active record visible to the signed-in user and use it automatically instead of asking for a redundant selection.
 - This is a reversible UI and defaulting rule, not a destructive data-model rewrite: existing company, branch, store, permission, audit, and historical document references remain intact. If more than one active visible record of a required type exists later, the relevant selector returns automatically.
 - Warehouse-versus-selling-outlet choices remain visible where they are the business operation itself, especially stock balances, adjustments, counts, and transfer source/destination. Those are distinct stock locations, not competing branches.
+
+## 2026-11-23 — Owner-authorized Core change: supplier quantity discounts and bonus quantity
+
+- Status: Approved by owner (Core change authorized in chat, 2026-11-23).
+- Old behavior: new purchase-order lines forced discount to zero (Hotfix48, 2026-09-27); no free/bonus quantity existed; the receiving review kept the full fixed-amount discount when accepted quantity was cut; supplier returns from an invoice credited the gross `unit_cost`.
+- New behavior: purchase-order and purchase-invoice lines accept a percentage or amount discount and a free `bonus_quantity`. Stock receives paid + bonus units, while the supplier payable stays paid quantity × price − discount, so the inventory unit cost falls. PO-linked invoice lines inherit the PO discount and draw bonus against the remaining PO bonus (`bonus_quantity_received`). The receiving review accepts paid and bonus separately and prorates a fixed-amount discount to the accepted paid quantity. Supplier returns credit the net paid goods cost per received unit (`subtotal / quantity`, landed charges excluded).
+- Unchanged: the WAC formula, stock-movement posting, idempotency, landed-charge allocation, payable posting and supplier approved-price history (still the gross supplier price). Tax remains a zero legacy snapshot.
+- Migration: additive `2026_11_23_090000_add_bonus_quantity_to_purchase_lines` (`purchase_order_lines.bonus_quantity`, `bonus_quantity_received`; `purchase_invoice_lines.bonus_quantity`, `original_bonus_quantity`), default 0 / nullable. Rollback: revert code; drop the columns only before any bonus line is approved.
+- Regression scope: PO save/approve/PDF, invoice save/receive/approve/reverse, WAC, supplier payable, distribution transfers, supplier returns, landed charges.
+- Not yet covered: tiered price breaks by quantity (phase 2) and bonus lines with zero paid quantity (a free item of a different product).

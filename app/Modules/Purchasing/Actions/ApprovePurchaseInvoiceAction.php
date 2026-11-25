@@ -7,10 +7,9 @@ namespace App\Modules\Purchasing\Actions;
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Inventory\Actions\AllocateStockTransferNumberAction;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\StockTransfer;
-use App\Modules\Platform\Actions\AllocateDocumentNumber;
-use App\Modules\Inventory\Actions\AllocateStockTransferNumberAction;
 use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Enums\ApprovalState;
@@ -333,11 +332,13 @@ final class ApprovePurchaseInvoiceAction
             if (! $poLine) {
                 throw new InvalidArgumentException(__('The invoice line is not linked to the selected purchase order.'));
             }
-            $newReceived = $this->add($poLine->quantity_received, $line->quantity, 6);
-            if ($this->compare($newReceived, $poLine->quantity_ordered) > 0) {
+            // Paid units count against the ordered quantity; free bonus units against the ordered bonus.
+            $newReceived = $this->add($poLine->quantity_received, $line->paidQuantity(), 6);
+            $newBonusReceived = $this->add($poLine->bonus_quantity_received ?? '0', $line->bonus_quantity ?? '0', 6);
+            if ($this->compare($newReceived, $poLine->quantity_ordered) > 0 || $this->compare($newBonusReceived, $poLine->bonus_quantity ?? '0') > 0) {
                 throw new InvalidArgumentException(__('Over-receipt is not allowed by the approved policy.'));
             }
-            $poLine->mutateApprovedParentLine(['quantity_received' => $newReceived]);
+            $poLine->mutateApprovedParentLine(['quantity_received' => $newReceived, 'bonus_quantity_received' => $newBonusReceived]);
         }
         $allReceived = $order->lines()->whereColumn('quantity_received', '<', 'quantity_ordered')->doesntExist();
         $someReceived = $order->lines()->where('quantity_received', '>', 0)->exists();
@@ -380,8 +381,9 @@ final class ApprovePurchaseInvoiceAction
             if ((int) $poLine->product_id !== (int) $line->product_id) {
                 throw new InvalidArgumentException(__('The invoice line product does not match the selected purchase-order line.'));
             }
-            $newReceived = $this->add($poLine->quantity_received, $line->quantity, 6);
-            if ($this->compare($newReceived, $poLine->quantity_ordered) > 0) {
+            $newReceived = $this->add($poLine->quantity_received, $line->paidQuantity(), 6);
+            $newBonusReceived = $this->add($poLine->bonus_quantity_received ?? '0', $line->bonus_quantity ?? '0', 6);
+            if ($this->compare($newReceived, $poLine->quantity_ordered) > 0 || $this->compare($newBonusReceived, $poLine->bonus_quantity ?? '0') > 0) {
                 throw new InvalidArgumentException(__('Over-receipt is not allowed by the approved policy.'));
             }
         }

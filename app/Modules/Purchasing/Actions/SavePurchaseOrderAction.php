@@ -5,14 +5,14 @@ namespace App\Modules\Purchasing\Actions;
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductUnit;
-use App\Modules\Catalog\Services\ConvertProductQuantity;
-use App\Support\ProductQuantity;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Services\ConvertProductQuantity;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Services\PurchaseOrderCalculator;
+use App\Support\ProductQuantity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -117,9 +117,21 @@ class SavePurchaseOrderAction
                 $unitCost = bcdiv((string) $enteredPrice, (string) $factor, 4);
 
                 $existingLine = $existingLines->get($product->id);
+                // Owner-authorized 2026-11-23: supplier line discounts and bonus quantity are entered on the
+                // order again (reverses the Hotfix48 zero-discount rule for orders). Tax stays a legacy snapshot.
                 $legacyCommercialSnapshot = $existingLine === null
-                    ? ['discount_type' => null, 'discount_value' => '0.0000', 'tax_rate' => '0.0000', 'tax_code' => null, 'tax_inclusive' => false]
-                    : ['discount_type' => $existingLine->discount_type, 'discount_value' => (string) $existingLine->discount_value, 'tax_rate' => (string) $existingLine->tax_rate, 'tax_code' => $existingLine->tax_code, 'tax_inclusive' => (bool) $existingLine->tax_inclusive];
+                    ? ['tax_rate' => '0.0000', 'tax_code' => null, 'tax_inclusive' => false]
+                    : ['tax_rate' => (string) $existingLine->tax_rate, 'tax_code' => $existingLine->tax_code, 'tax_inclusive' => (bool) $existingLine->tax_inclusive];
+                $discountType = in_array($line['discount_type'] ?? null, ['percentage', 'amount'], true) ? (string) $line['discount_type'] : null;
+                $discountValue = $discountType === null ? '0.0000' : $this->decimal($line['discount_value'] ?? '0', 4, 'Discount', true);
+                if ($discountType === 'percentage' && bccomp((string) $discountValue, '100', 4) > 0) {
+                    throw new InvalidArgumentException(__('Discount percentage cannot exceed 100.'));
+                }
+                $enteredBonus = (string) ProductQuantity::normalize(filled($line['bonus_quantity'] ?? null) ? $line['bonus_quantity'] : '0', "lineItems.$index.bonus_quantity", true, decimalPlaces: $precision);
+                $bonusQuantity = $productUnit && bccomp($enteredBonus, '0', 6) > 0
+                    ? (string) app(ConvertProductQuantity::class)->execute($product, $productUnit, $enteredBonus)
+                    : $enteredBonus;
+                $legacyCommercialSnapshot += ['discount_type' => $discountType, 'discount_value' => (string) $discountValue, 'bonus_quantity' => $bonusQuantity, 'bonus_quantity_received' => '0.000000'];
 
                 $validatedLines[] = [
                     'product_id' => $product->id,

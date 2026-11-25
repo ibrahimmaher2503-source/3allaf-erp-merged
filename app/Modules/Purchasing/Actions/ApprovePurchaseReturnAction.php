@@ -128,7 +128,7 @@ final class ApprovePurchaseReturnAction
                     if ($sourceLine === null || $sourceLine->purchase_invoice_id !== $invoice->id || $returnLine->product_id !== $sourceLine->product_id) {
                         throw new InvalidArgumentException(__('Every supplier return line must reference a line from the source invoice.'));
                     }
-                    if ($this->compare($returnLine->unit_cost, $sourceLine->unit_cost) !== 0) {
+                    if ($this->compare($returnLine->unit_cost, $sourceLine->netReturnUnitCost()) !== 0) {
                         throw new InvalidArgumentException(__('Supplier return cost must equal the original purchase invoice line cost.'));
                     }
                     $alreadyReturned = $this->decimal((string) PurchaseReturnLine::query()

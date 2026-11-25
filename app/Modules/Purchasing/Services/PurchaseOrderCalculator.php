@@ -16,6 +16,8 @@ final class PurchaseOrderCalculator
     public function calculateLine(array $line): array
     {
         $quantity = bcadd((string) ProductQuantity::normalize($line['quantity_ordered'] ?? null, decimalPlaces: 6), '0', 6);
+        // Free supplier bonus units (base unit). They are received into stock but never priced.
+        $bonusQuantity = bcadd((string) ProductQuantity::normalize(filled($line['bonus_quantity'] ?? null) ? $line['bonus_quantity'] : '0', 'bonus_quantity', true, decimalPlaces: 6), '0', 6);
         $unitCost = $this->decimal($line['unit_cost'] ?? null, 4, __('Unit cost'));
         $discountType = filled($line['discount_type'] ?? null) ? (string) $line['discount_type'] : null;
         $discountValue = $this->decimal($line['discount_value'] ?? 0, 4, __('Discount'));
@@ -61,6 +63,7 @@ final class PurchaseOrderCalculator
 
         return [
             'quantity_ordered' => bcadd($quantity, '0', 6),
+            'bonus_quantity' => $bonusQuantity,
             'unit_cost' => bcadd($unitCost, '0', 4),
             'discount_type' => $discountType,
             'discount_value' => bcadd($discountValue, '0', 4),

@@ -25,7 +25,7 @@ final class PurchaseInvoiceCalculator
      * compatibility snapshots and are always zero for newly saved invoices.
      *
      * @param  array<string, mixed>  $line
-     * @return array{quantity: numeric-string, unit_cost: numeric-string, discount_type: null|string, discount_value: numeric-string, discount_amount: numeric-string, tax_rate: numeric-string, tax_code: null|string, tax_inclusive: bool, tax_amount: numeric-string, subtotal: numeric-string, line_total: numeric-string}
+     * @return array<string, mixed>
      */
     public function calculateLine(array $line): array
     {
@@ -40,6 +40,12 @@ final class PurchaseInvoiceCalculator
         $enteredQuantity = bcadd((string) ProductQuantity::normalize($line['entered_quantity'] ?? $line['quantity'] ?? null, decimalPlaces: $decimalPlaces), '0', 6);
         $factor = $productUnit instanceof ProductUnit ? (string) $productUnit->conversion_factor : '1.000000';
         $quantity = $productUnit instanceof ProductUnit ? $this->converter->execute($product, $productUnit, $enteredQuantity) : $enteredQuantity;
+        // Supplier bonus ("buy X get Y free"): free units raise stock quantity but not the payable,
+        // so the inventory cost basis per unit falls. Entered in the same unit as the paid quantity.
+        $enteredBonus = bcadd((string) ProductQuantity::normalize(filled($line['bonus_quantity'] ?? null) ? $line['bonus_quantity'] : '0', 'bonus_quantity', true, decimalPlaces: $decimalPlaces), '0', 6);
+        $bonusQuantity = $productUnit instanceof ProductUnit && bccomp($enteredBonus, '0', 6) > 0
+            ? $this->converter->execute($product, $productUnit, $enteredBonus)
+            : $enteredBonus;
         $enteredUnitPrice = $this->decimal($line['entered_unit_price'] ?? $line['unit_cost'] ?? null, 4, 'Unit cost');
         $unitCost = bcdiv($enteredUnitPrice, $factor, 4);
         $discountType = ($line['discount_type'] ?? '') !== '' ? ($line['discount_type'] ?? null) : null;
@@ -78,7 +84,8 @@ final class PurchaseInvoiceCalculator
             'entered_quantity' => $enteredQuantity,
             'conversion_factor_snapshot' => bcadd($factor, '0', 6),
             'entered_unit_price' => $enteredUnitPrice,
-            'quantity' => bcadd($quantity, '0', 6),
+            'quantity' => bcadd($quantity, (string) $bonusQuantity, 6),
+            'bonus_quantity' => bcadd((string) $bonusQuantity, '0', 6),
             'unit_cost' => bcadd($unitCost, '0', 4),
             'discount_type' => $discountType,
             'discount_value' => bcadd($discountValue, '0', 4),

@@ -215,7 +215,9 @@ final class CreatePurchaseReturnDraftAction
                     throw new InvalidArgumentException(__('Return quantity exceeds current on-hand stock for the selected product and store.'));
                 }
 
-                $unitCost = $this->decimal($sourceLine->unit_cost);
+                // Owner-authorized 2026-11-23: credit the supplier at the net paid goods cost per received unit
+                // (after line discount and spread over free bonus units), never the gross list price.
+                $unitCost = $this->decimal($sourceLine->netReturnUnitCost());
                 $totalCost = bcmul($quantity, $unitCost, 4);
                 $subtotal = bcadd($subtotal, $totalCost, 4);
                 $normalized[] = [

@@ -211,6 +211,7 @@ new #[Title('Purchase Orders')] class extends Component
                 'unit_cost' => (string) ($line->entered_unit_price ?? $line->unit_cost),
                 'discount_type' => $line->discount_type ?: '',
                 'discount_value' => (string) $line->discount_value,
+                'bonus_quantity' => \App\Support\ProductQuantity::format(bcdiv((string) ($line->bonus_quantity ?? '0'), (string) (($line->conversion_factor_snapshot ?? 0) > 0 ? $line->conversion_factor_snapshot : '1'), 6)),
                 'tax_rate' => (string) $line->tax_rate,
                 'tax_code' => $line->tax_code ?: '',
                 'tax_inclusive' => (bool) $line->tax_inclusive,
@@ -443,6 +444,7 @@ new #[Title('Purchase Orders')] class extends Component
             'lineItems.*.unit_cost' => 'required|numeric|gte:0',
             'lineItems.*.discount_type' => 'nullable|in:percentage,amount',
             'lineItems.*.discount_value' => 'nullable|numeric|gte:0',
+            'lineItems.*.bonus_quantity' => 'nullable|numeric|gte:0|decimal:0,6',
         ]);
 
         $wasEditing = $this->editingOrderId !== null;
@@ -491,27 +493,29 @@ new #[Title('Purchase Orders')] class extends Component
     /** @return array<string, int|string> */
     private function emptyOrderLine(): array
     {
-        return ['product_id' => '', 'product_unit_id' => '', 'conversion_factor' => '1.000000', 'quantity_ordered' => '1', 'unit_cost' => '', 'discount_type' => '', 'discount_value' => '0', 'tax_rate' => '0', 'tax_code' => '', 'tax_inclusive' => false, 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
+        return ['product_id' => '', 'product_unit_id' => '', 'conversion_factor' => '1.000000', 'quantity_ordered' => '1', 'unit_cost' => '', 'discount_type' => '', 'discount_value' => '0', 'bonus_quantity' => '0', 'tax_rate' => '0', 'tax_code' => '', 'tax_inclusive' => false, 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
     }
 
-    /** @return array{lines: array<int, string>, total: string} */
+    /** @return array{lines: array<int, string>, gross: string, discount: string, total: string} */
     private function orderPreview(): array
     {
         $calculator = app(PurchaseOrderCalculator::class);
         $lines = [];
-        $total = '0.0000';
+        $total = $discount = '0.0000';
 
         foreach ($this->lineItems as $index => $line) {
             try {
                 $calculated = $calculator->calculateLine($line);
                 $lines[$index] = $calculated['line_total'];
                 $total = bcadd($total, $calculated['line_total'], 4);
-            } catch (InvalidArgumentException) {
+                $discount = bcadd($discount, $calculated['discount_amount'], 4);
+            } catch (InvalidArgumentException|\Illuminate\Validation\ValidationException) {
                 $lines[$index] = '0.0000';
             }
         }
+        $gross = bcadd($total, $discount, 4);
 
-        return compact('lines', 'total');
+        return compact('lines', 'gross', 'discount', 'total');
     }
 
     public function submitOrder(int $id): void
@@ -956,6 +960,23 @@ new #[Title('Purchase Orders')] class extends Component
                                 <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
                             </div>
 
+                            <div class="col-span-4 sm:col-span-2">
+                                <label class="text-xs font-semibold" for="order-line-bonus-{{ $index }}">{{ __('Bonus quantity (free)') }}</label>
+                                <input id="order-line-bonus-{{ $index }}" type="number" step="1" min="0" wire:model.live="lineItems.{{ $index }}.bonus_quantity" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
+                                <flux:error name="lineItems.{{ $index }}.bonus_quantity" />
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="text-xs font-semibold" for="order-line-discount-type-{{ $index }}">{{ __('Discount type') }}</label>
+                                <select id="order-line-discount-type-{{ $index }}" wire:model.live="lineItems.{{ $index }}.discount_type" data-line-discount-type class="mt-1 h-10 w-full rounded-lg border-zinc-300 bg-white text-sm dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">{{ __('Percentage') }}</option><option value="amount">{{ __('Amount') }}</option></select>
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="text-xs font-semibold" for="order-line-discount-{{ $index }}">{{ __('Discount') }}</label>
+                                <input id="order-line-discount-{{ $index }}" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.discount_value" data-line-discount @disabled(blank($item['discount_type'] ?? '')) class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900" />
+                                <flux:error name="lineItems.{{ $index }}.discount_value" />
+                            </div>
+
                             <div class="col-span-3 sm:col-span-2">
                                 <span class="block text-xs font-semibold">{{ __('Line total') }}</span>
                                 <output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-3 font-mono text-sm dark:bg-zinc-900" data-line-total>0.00</output>
@@ -971,9 +992,13 @@ new #[Title('Purchase Orders')] class extends Component
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <div class="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-end">
-                        <span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
-                        <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format((float) ($orderPreview['total'] ?? 0), 2) }}</span>
+                    <div class="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-end space-y-1">
+                        @if (bccomp((string) ($orderPreview['discount'] ?? '0'), '0', 4) > 0)
+                            <div><span class="text-xs text-zinc-500">{{ __('Before discount') }}: </span><span class="font-mono text-zinc-700 dark:text-zinc-300">{{ number_format((float) ($orderPreview['gross'] ?? 0), 2) }}</span></div>
+                            <div><span class="text-xs text-zinc-500">{{ __('Supplier discount') }}: </span><span class="font-mono text-emerald-700 dark:text-emerald-400">-{{ number_format((float) ($orderPreview['discount'] ?? 0), 2) }}</span></div>
+                        @endif
+                        <div><span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
+                        <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format((float) ($orderPreview['total'] ?? 0), 2) }}</span></div>
                     </div>
                 </div>
             </div>
@@ -1060,6 +1085,7 @@ new #[Title('Purchase Orders')] class extends Component
                                     <th class="px-3 py-2 text-start">#</th>
                                     <th class="px-3 py-2 text-start">{{ __('Product') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Qty') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Bonus (free)') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Price per selected unit') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Discount') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Tax') }}</th>
@@ -1075,8 +1101,9 @@ new #[Title('Purchase Orders')] class extends Component
                                             <div class="text-[11px] font-mono text-zinc-500">{{ $line->product->item_code }}</div>
                                         </td>
                                         <td class="px-3 py-2 text-end font-mono"><x-product-quantity :value="$line->entered_quantity ?? $line->quantity_ordered" /> {{ $line->unit_code_snapshot }}<div class="text-xs text-text-muted">{{ __('Base quantity') }}: <x-product-quantity :value="$line->quantity_ordered" /></div></td>
+                                        <td class="px-3 py-2 text-end font-mono">@if (bccomp((string) ($line->bonus_quantity ?? '0'), '0', 6) > 0)<x-product-quantity :value="$line->bonus_quantity" /><div class="text-[10px] text-text-muted">{{ __('Received') }}: <x-product-quantity :value="$line->bonus_quantity_received ?? 0" /></div>@else — @endif</td>
                                         <td class="px-3 py-2 text-end font-mono">{{ number_format((float) ($line->entered_unit_price ?? $line->unit_cost), 2) }}</td>
-                                        <td class="px-3 py-2 text-end font-mono">{{ number_format((float) $line->discount_amount, 2) }}</td>
+                                        <td class="px-3 py-2 text-end font-mono">{{ number_format((float) $line->discount_amount, 2) }}@if ($line->discount_type === 'percentage')<div class="text-[10px] text-text-muted">{{ rtrim(rtrim(number_format((float) $line->discount_value, 4, '.', ''), '0'), '.') }}%</div>@endif</td>
                                         <td class="px-3 py-2 text-end"><span class="font-mono">{{ number_format((float) $line->tax_amount, 2) }}</span><div class="text-[10px] text-zinc-500">{{ $line->tax_code ?: '—' }} · {{ number_format((float)$line->tax_rate,2) }}% · {{ $line->tax_inclusive ? __('Inclusive') : __('Exclusive') }}</div></td>
                                         <td class="px-3 py-2 text-end font-mono font-semibold">{{ number_format((float) $line->line_total, 2) }}</td>
                                     </tr>

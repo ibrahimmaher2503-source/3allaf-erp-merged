@@ -17,13 +17,15 @@ final class PurchaseInvoiceLine extends Model
     use GuardsApprovedParent;
 
     protected $fillable = [
-        'purchase_invoice_id', 'purchase_order_line_id', 'product_id', 'item_code_snapshot', 'name_ar_snapshot', 'name_en_snapshot', 'product_unit_id', 'entered_quantity', 'conversion_factor_snapshot', 'entered_unit_price', 'quantity', 'original_quantity', 'quantity_received',
+        'purchase_invoice_id', 'purchase_order_line_id', 'product_id', 'item_code_snapshot', 'name_ar_snapshot', 'name_en_snapshot', 'product_unit_id', 'entered_quantity', 'conversion_factor_snapshot', 'entered_unit_price', 'quantity', 'bonus_quantity', 'original_bonus_quantity', 'original_quantity', 'quantity_received',
         'unit_cost', 'base_consumer_price', 'previous_product_cost', 'previous_base_consumer_price', 'discount_type', 'discount_value', 'discount_amount', 'tax_rate', 'tax_code',
         'tax_inclusive', 'tax_amount', 'subtotal', 'line_total', 'allocated_charge_amount', 'inventory_unit_cost',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:6',
+        'bonus_quantity' => 'decimal:6',
+        'original_bonus_quantity' => 'decimal:6',
         'entered_quantity' => 'decimal:6',
         'conversion_factor_snapshot' => 'decimal:6',
         'entered_unit_price' => 'decimal:4',
@@ -48,6 +50,7 @@ final class PurchaseInvoiceLine extends Model
     {
         self::creating(function (self $line): void {
             $line->original_quantity ??= $line->quantity;
+            $line->original_bonus_quantity ??= $line->bonus_quantity ?? 0;
         });
         self::updating(function (self $line): void {
             if ($line->getRawOriginal('original_quantity') !== null && $line->isDirty('original_quantity')
@@ -55,6 +58,25 @@ final class PurchaseInvoiceLine extends Model
                 throw new \LogicException('The original invoice quantity is immutable.');
             }
         });
+    }
+
+    /** Paid (invoiced) base quantity: stock quantity less free bonus units. */
+    public function paidQuantity(): string
+    {
+        return bcsub((string) $this->quantity, (string) ($this->bonus_quantity ?? '0'), 6);
+    }
+
+    /**
+     * Supplier-return credit per base unit: net paid goods value (after line discount, spread over
+     * free bonus units) divided by the received stock quantity. Landed charges are excluded.
+     *
+     * @return numeric-string
+     */
+    public function netReturnUnitCost(): string
+    {
+        return bccomp((string) $this->quantity, '0', 6) > 0
+            ? bcdiv((string) $this->subtotal, (string) $this->quantity, 4)
+            : bcadd((string) $this->unit_cost, '0', 4);
     }
 
     public function shortageQuantity(): string
