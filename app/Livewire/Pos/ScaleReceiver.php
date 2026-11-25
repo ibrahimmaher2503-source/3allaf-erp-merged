@@ -29,7 +29,7 @@ use Throwable;
  */
 final class ScaleReceiver extends Component
 {
-    public bool $auto = false;
+    public bool $auto = true;
 
     public string $messageType = '';
 

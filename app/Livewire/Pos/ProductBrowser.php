@@ -34,13 +34,18 @@ final class ProductBrowser extends Component
 
     public string $quantity = '1';
 
+    public int $cartRevision = 0;
+
     public function mount(): void
     {
         Gate::authorize('pos_sales.view');
     }
 
     #[On('pos-cart-updated')]
-    public function refreshProducts(): void {}
+    public function refreshProducts(): void
+    {
+        $this->cartRevision++;
+    }
 
     public function submitSearch(PosCartAction $cart): void
     {

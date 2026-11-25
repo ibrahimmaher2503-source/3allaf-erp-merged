@@ -1754,3 +1754,28 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Verification actually run: Blade compiled with a standalone compiler (component tags skipped) and the output passed `php -l` with balanced control structures; `php -l` on the service, model and migration; both lang files parse as JSON. `artisan view:cache` timed out. NOT run: the new migration, any browser or authenticated UI check, any hardware call, any automated suite (local MySQL was not accepting connections during this work).
 - Remaining: run the migration on an authorized local database, check the screen in the browser (RTL and LTR), confirm key grid behaviour against the device with read-only calls first, and verify whether the device accepts a barcode format upload.
 - Commit and push: see the git history of `feature/device-settings`.
+
+## 2026-11-13 — POS cart synchronization and display order
+
+- D3 POS change on the 3allaf-erp working tree only; ERP_ELEC was untouched.
+- The cart snapshot now reads persisted lines from the active open order instead of relying on a stale Livewire session cart, while preserving session fallback when no active order exists.
+- Cart line DOM keys are stable per product, and the quantity key no longer changes with the displayed quantity. The cart snapshot renders persisted line positions newest first.
+- Verification actually run: PHP syntax, Blade cache, source assertions for stable keys and descending persisted-line order, git diff check, service restart, public root HTTP 200, and guest POS redirect HTTP 302. No automated suite was run under the repository directive; authenticated browser/UAT remains blocked because no saved login session is available. No commit or push.
+
+## 2026-11-13 — POS scale immediate refresh follow-up
+
+- Enabled automatic scale reception by default for an available scale and reduced the polling interval from five seconds to one second.
+- Kept the existing `pos-cart-updated` event and made Cart, ProductBrowser, and CheckoutPanel listeners increment an explicit revision so each listener request performs a render immediately after a received weight.
+- Added Arabic labels for the one-second automatic mode. No migration, database write, or ERP_ELEC change.
+- Verification actually run: PHP syntax for all affected components, Arabic JSON parsing, Blade cache, source assertions for polling/event/revision behavior, `git diff --check`, service restart, public root HTTP 200, and guest POS redirect HTTP 302. Authenticated scale UAT remains blocked because no saved login session or active scale session is available. Commit: `b4722289`; no push.
+
+## 2026-11-13 — POS dynamic cart scrollbar
+
+- V1 UI behavior change in 3allaf-erp only. The cart list receives a count-sensitive Livewire key so adding or removing a product replaces the scroll viewport instead of retaining stale overflow geometry.
+- When more than one product is displayed, the list now has a bounded vertical scroll viewport, a stable scrollbar gutter, wheel/touch containment, and keyboard focus with localized accessibility labeling. Newest-first ordering remains unchanged.
+- Verification actually run: the focused source contract failed before the change and passed after it; PHP/Blade syntax, JSON parsing, Blade cache, `git diff --check`, service restart, public root HTTP 200, guest POS redirect HTTP 302, and a fresh service-journal error check passed. No database, push, or ERP_ELEC change; authenticated browser verification remains unavailable without a saved login session.
+
+## 2026-11-13 — POS scale polling adjusted to two seconds
+
+- V1 POS behavior change in 3allaf-erp only: automatic scale reception now polls every two seconds instead of every second, with matching Arabic labels.
+- No database, migration, ERP_ELEC, or scale protocol change. PHP/Blade syntax, Arabic JSON parsing, the exact two-second source contract, `git diff --check`, Blade cache, service restart, public root HTTP 200, guest POS redirect HTTP 302, and a fresh service-journal error check passed. No push requested.

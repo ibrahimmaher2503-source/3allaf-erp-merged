@@ -1,11 +1,11 @@
-<div @if ($available && $auto) wire:poll.5s="receive" @endif data-pos-scale-receiver>
+<div @if ($available && $auto) wire:poll.2s="receive" @endif data-pos-scale-receiver>
     @if ($available)
         <section class="border-b border-border bg-surface px-3 py-2 text-text-primary" aria-labelledby="pos-scale-heading">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 id="pos-scale-heading" class="text-xs font-extrabold">{{ __('Scale') }}</h2>
                 <label class="flex items-center gap-1 text-[11px] font-semibold text-text-muted">
                     <input type="checkbox" wire:model.live="auto" class="size-3.5">
-                    {{ __('Receive automatically every 5 seconds') }}
+                    {{ __('Receive automatically every 2 seconds') }}
                 </label>
             </div>
             <button type="button" wire:click="receive" wire:loading.attr="disabled" wire:target="receive"
