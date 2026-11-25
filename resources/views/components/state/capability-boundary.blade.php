@@ -27,7 +27,34 @@
         @endif
     </header>
 
-    <section class="max-w-2xl" data-guide="{{ $guidePrefix }}-empty" aria-labelledby="{{ $guidePrefix }}-empty-title">
+    @if ($boundary)
+        <section class="rounded-2xl border border-amber-300/40 bg-amber-50/70 p-4 text-sm leading-6 text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/20 dark:text-amber-100" data-guide="{{ $guidePrefix }}-boundary">
+            {{ $boundary }}
+        </section>
+    @endif
+
+    @if ($cards)
+        <section class="space-y-4" data-guide="{{ $guidePrefix }}-summary" aria-label="{{ $statusLabel ?: __('Readiness summary') }}">
+            @if ($statusLabel)
+                <p class="text-sm font-semibold text-text-muted">{{ $statusLabel }}</p>
+            @endif
+            <div class="grid gap-4 md:grid-cols-2" data-guide="{{ $guidePrefix }}-cards">
+                @foreach ($cards as $card)
+                    <article class="rounded-2xl border border-border bg-surface p-5 shadow-sm" @if ($loop->first) data-guide="{{ $guidePrefix }}-first-card" @endif>
+                        <div class="flex items-start justify-between gap-3">
+                            <h2 class="font-semibold text-text-primary">{{ $card['title'] }}</h2>
+                            @if ($cardStatusLabel)
+                                <x-status.badge tone="warning">{{ $cardStatusLabel }}</x-status.badge>
+                            @endif
+                        </div>
+                        <p class="mt-2 text-sm leading-6 text-text-muted">{{ $card['body'] }}</p>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+    <section class="max-w-2xl" data-guide="{{ $guidePrefix }}-empty" aria-labelledby="{{ $guidePrefix }}-empty-title" @if ($cards) hidden @endif>
         <x-state.empty
             :title="$emptyTitle ?: __('No records are available yet.')"
             :description="$empty ?: __('There is nothing to show yet.')"

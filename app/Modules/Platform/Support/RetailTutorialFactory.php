@@ -38,7 +38,7 @@ final class RetailTutorialFactory
                 ['ar' => 'هل POS هنا Production-ready؟ لا، هو Local/Dev evidence فقط.', 'en' => 'Is this POS Production-ready? No, it is Local/Dev evidence only.']
             ),
             'UI-RET-002' => self::definition(
-                ['pos.suspended'],
+                ['pos.suspended', 'pos.suspended.resume'],
                 ['ar' => 'دليل المبيعات المعلقة', 'en' => 'Suspended Sales Guide'],
                 ['ar' => 'يعرض السلات المحلية المعلقة التي يمكن استئنافها من قبل الكاشير المصرح.', 'en' => 'Shows local suspended carts that an authorized cashier may resume.'],
                 ['ar' => 'استخدمه لاستعادة سلة معلقة ثم العودة إلى POS.', 'en' => 'Use it to resume a suspended cart and return to POS.'],
@@ -57,7 +57,7 @@ final class RetailTutorialFactory
                 ['ar' => 'هل الاستئناف يبيع تلقائيًا؟ لا، يعيد السلة فقط.', 'en' => 'Does resume sell automatically? No, it only restores the cart.']
             ),
             'UI-RET-003' => self::definition(
-                ['sales.index'],
+                ['sales.index', 'sales.invoices'],
                 ['ar' => 'دليل سجل المبيعات', 'en' => 'Sales Register Guide'],
                 ['ar' => 'يعرض المبيعات المحلية المعتمدة مع المتجر والكاشير والتاريخ والإجمالي.', 'en' => 'Lists approved local sales with store, cashier, date, and total.'],
                 ['ar' => 'استخدمه بعد checkout لمراجعة المرجع وفتح التفاصيل.', 'en' => 'Use it after checkout to review the reference and open details.'],
@@ -130,6 +130,12 @@ final class RetailTutorialFactory
         }
 
         $definition = $definitions[$screenId];
+        if ($screenId === 'UI-CUS-004') {
+            $definition['route_names'][] = 'customers.product-wallet';
+        }
+        if ($screenId === 'UI-CUS-005') {
+            $definition['route_names'][] = 'customers.party-wallet';
+        }
         $definition['sections'] = [
             'steps' => $definition['steps'],
             'fields' => $definition['fields'],
@@ -609,19 +615,25 @@ final class RetailTutorialFactory
         };
 
         $isSettings = $kind === 'settings';
-        $viewPermission = match (true) {
-            $isSettings => 'company_settings.view',
-            str_starts_with($kind, 'party') => 'party_bookings_invoices.view',
-            default => 'pos_sales.view',
+        $permission = match ($route) {
+            'admin.settings.customer-loyalty', 'pos.financial-readiness', 'master-data.migration.readiness' => 'company_settings.view',
+            'party.readiness', 'party.payments.readiness', 'party.operating.readiness', 'party.assets.readiness', 'party.asset-events.readiness', 'party.final-close.readiness' => 'party_bookings_invoices.view',
+            'reports.readiness', 'alerts.readiness', 'exports.audit.readiness', 'quotations.readiness' => 'dashboard_reports.view',
+            'operations.readiness' => 'audit_logs.view',
+            'gift.receipts', 'gift.cards' => 'returns_exchanges_gift_instruments.view',
+            'pos.offline-readiness' => 'pos_sales.view',
+            default => null,
         };
-        $actions = $isSettings
-            ? self::actions([
-                ['settings.review', ['ar' => 'مراجعة مفاتيح القرار', 'en' => 'Review decision keys'], 'company_settings.view'],
+        $actions = $permission === null ? [] : self::actions([
+            [$isSettings ? 'settings.review' : 'readiness.review', $isSettings
+                ? ['ar' => 'مراجعة مفاتيح القرار', 'en' => 'Review decision keys']
+                : ['ar' => 'مراجعة الجاهزية', 'en' => 'Review readiness'], $permission],
+        ]);
+        if ($isSettings) {
+            $actions = array_merge($actions, self::actions([
                 ['settings.save-local', ['ar' => 'حفظ version محلية', 'en' => 'Save a local version'], 'company_settings.edit'],
-            ])
-            : self::actions([
-                ['readiness.review', ['ar' => 'مراجعة الجاهزية', 'en' => 'Review readiness'], $viewPermission],
-            ]);
+            ]));
+        }
 
         $steps = [
             self::step('header', $kind === 'settings' ? 'customer-settings-header' : ($kind === 'customer' ? 'customer-readiness-header' : "{$kind}-readiness-header"), $copy['header'], $copy['headerBody']),
@@ -635,7 +647,7 @@ final class RetailTutorialFactory
             'title' => ['ar' => $routeTitleAr, 'en' => $routeTitleEn],
             'purpose' => ['ar' => "دليل {$routeTitleAr} ضمن {$task}؛ {$pending} ما زالت معلقة.", 'en' => "Guide for {$routeTitleEn} within {$task}; {$pending} remain pending."],
             'when_to_use' => ['ar' => 'استخدمه للقراءة والتحقق فقط قبل توفر اعتماد المالك.', 'en' => 'Use it for read-only review before owner approval is available.'],
-            'permissions' => [$viewPermission],
+            'permissions' => $permission === null ? [] : [$permission],
             'approved_actions' => $actions,
             'stories' => [$task],
             'flows' => ['FLW-READINESS-01'],

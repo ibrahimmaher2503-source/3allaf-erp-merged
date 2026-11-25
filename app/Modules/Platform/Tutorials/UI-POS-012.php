@@ -1,5 +1,5 @@
 <?php
 
-use App\Modules\Platform\Support\RetailTutorialFactory;
+use App\Modules\Platform\Support\ApplicationTutorialFactory;
 
-return RetailTutorialFactory::make('UI-POS-012');
+return ApplicationTutorialFactory::make('UI-POS-012');

@@ -462,7 +462,7 @@ Remaining P1: authenticated browser UAT and resolution of 27 non-passing histori
 
 ## 2026-09-16 — Supervised P0 Phase 6
 
-- Merged 00ba34 after Safety and Lead review. Added forward migration 000126 with immutable AR reduction and actual refund snapshots; completed returns now split unpaid/partial credit settlement from cash or tender refund while preserving existing settlement rows and shift reconciliation.
+- Merged 00ba34 after Safety and Lead review. Added forward migration 000126 with immutable AR reduction and actual refund snapshots; completed returns now split unpaid/partial credit settlement from cash or tender refund while preserving existing settlement rows and shift reconciliation.
 - Retail refund quantities accept up to six decimal places. CustomerBalance uses AR reduction exactly once with a legacy fallback for pre-000126 rows. Focused MariaDB checks passed 4 tests/16 assertions, including partial AR/refund split and existing receipt regressions; PHP syntax, Pint, and diff checks passed.
 - No browser, P1, full-day E2E, production, release, push, or tag action occurred.
 
@@ -505,3 +505,8 @@ Remaining P1: authenticated browser UAT and resolution of 27 non-passing histori
 - Dedicated MariaDB passed 4 focused tests/20 assertions and 9 linked inventory tests/45 assertions. Six real CSV/XLSX/PDF artifacts generated successfully and were removed after verification.
 - Direct integrity audits reported zero balance, duplicate, orphan, transfer-release, purchase/sales-return, negative-balance, conversion, cost-snapshot, and float/double violations on the reviewed R1 dataset.
 - Authenticated Arabic and English browser UAT passed both report pages and sidebar destinations. Mobile/tablet visual acceptance was not performed. No production, deployment, release, commit, push, or tag occurred.
+## 2026-09-20 — Tutorial coverage expansion
+
+- Added route-backed bilingual contextual guides for the real application screen inventory and corrected duplicate route ownership.
+- Readiness selectors and permission mappings now match their rendered boundary contracts and protecting routes.
+- Static verification passed; browser, automated tests, database, build, commit, and release remain unexecuted.

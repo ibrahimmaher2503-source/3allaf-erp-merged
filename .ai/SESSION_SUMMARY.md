@@ -1755,6 +1755,13 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Remaining: run the migration on an authorized local database, check the screen in the browser (RTL and LTR), confirm key grid behaviour against the device with read-only calls first, and verify whether the device accepts a barcode format upload.
 - Commit and push: see the git history of `feature/device-settings`.
 
+## 2026-09-20 — Contextual tutorial coverage expansion
+
+- Task: Expanded the bilingual contextual tutorial assistant across the real Local/Dev application screen routes after a ten-agent read-only coverage audit.
+- Work completed: Added ApplicationTutorialFactory and route-backed guide definitions; corrected roles/permissions and POS route ownership; expanded inventory, purchasing, suppliers, wallets, suspended sales, and sales-register route variants; added readiness boundary/card/summary hooks; aligned readiness permissions with route guards; reduced client DTO exposure of internal permission/route/requirement metadata.
+- Verification actually run: PHP syntax checks for changed PHP files, Laravel Blade cache compilation, route/guide reconciliation, and git diff --check passed. No automated tests, browser verification, database operation, frontend build, commit, push, deployment, or release occurred.
+- Boundary / next action: Full Arabic RTL and English LTR browser verification remains required; changes remain in the pending UI batch.
+
 ## 2026-11-13 — POS cart synchronization and display order
 
 - D3 POS change on the 3allaf-erp working tree only; ERP_ELEC was untouched.
@@ -1779,3 +1786,8 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 
 - V1 POS behavior change in 3allaf-erp only: automatic scale reception now polls every two seconds instead of every second, with matching Arabic labels.
 - No database, migration, ERP_ELEC, or scale protocol change. PHP/Blade syntax, Arabic JSON parsing, the exact two-second source contract, `git diff --check`, Blade cache, service restart, public root HTTP 200, guest POS redirect HTTP 302, and a fresh service-journal error check passed. No push requested.
+
+## 2026-11-25 — Public source sync preparation
+
+- Reviewed pending POS and contextual tutorial changes for source-only publication from an isolated worktree. Local recovery code, proxy override, and internal authentication and database notes were excluded.
+- PHP syntax and translation JSON parsed successfully; static tutorial registry inspection found 101 guides covering 148 unique route names. No deployment, database operations, browser verification, or automated suite in this session.

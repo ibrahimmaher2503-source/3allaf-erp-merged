@@ -14,7 +14,7 @@ This is the mandatory task-aware documentation router for every AI coding agent.
 4. `docs/04-roles-permissions.md` - authoritative authorization matrix.
 5. `docs/08-architecture.md` - authoritative technical architecture.
 6. `docs/17` through `docs/29` - approved implementation policies.
-7. `docs/30` through `docs/58` - detailed local implementation specifications. `docs/30`–`docs/57` are present and routed below; `docs/58` is a reserved slot and must not be treated as content until a canonical file is supplied.
+7. `docs/30` through `docs/58` - detailed local implementation specifications. `docs/30`–`docs/58` are present and routed below when relevant.
 8. Owner-supplied derived specifications within that range remain subordinate to the PRD, approved decisions, roles/permissions, and architecture; owner-configurable defaults are not approvals.
 9. `TASKS.md` - executable task scope and traceability.
 10. `.ai/UI_SCREENS.md` - canonical screen registry.

@@ -52,26 +52,35 @@ final readonly class PageGuideContext
     }
 
     /** @return array<string, mixed> */
-    public function toArray(): array
+    public function toArray(bool $includeInternalTraceability = false): array
     {
-        return [
+        $payload = [
             'screen_id' => $this->screenId,
             'route_name' => $this->routeName,
             'locale' => $this->locale,
             'title' => $this->guide['title'],
             'purpose' => $this->guide['purpose'],
             'when_to_use' => $this->guide['when_to_use'],
-            'route_names' => $this->guide['route_names'],
             'module' => $this->module,
-            'permissions' => $this->guide['permissions'],
-            'approved_actions' => $this->allowedActions,
-            'stories' => $this->guide['stories'],
             'flows' => $this->guide['flows'],
-            'acceptance_criteria' => $this->guide['acceptance_criteria'],
+            'approved_actions' => array_map(
+                static fn (array $action): array => [
+                    'key' => $action['key'],
+                    'label' => $action['label'],
+                ],
+                $this->allowedActions,
+            ),
             'sections' => $this->guide['sections'],
             'tour_steps' => $this->guide['tour_steps'],
             'version' => $this->guide['version'],
             'updated_at' => $this->guide['updated_at'],
         ];
+
+        if ($includeInternalTraceability) {
+            $payload['stories'] = $this->guide['stories'];
+            $payload['acceptance_criteria'] = $this->guide['acceptance_criteria'];
+        }
+
+        return $payload;
     }
 }
