@@ -16,6 +16,7 @@ use App\Modules\Retail\Support\ScaleLabelBarcode;
 use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
@@ -186,7 +187,7 @@ final class ProductBrowser extends Component
 
             return true;
         }
-        $this->dispatch('pos-cart-updated');
+        $this->dispatch('pos-product-added');
         $this->dispatch('notify', message: __('Weighed item added: :quantity', ['quantity' => $line['quantity']]));
         $this->dispatch('pos-product-search-focus');
 
@@ -244,7 +245,7 @@ final class ProductBrowser extends Component
         }
         try {
             $cart->add(request(), $user, $productId, $this->quantity);
-            $this->dispatch('pos-cart-updated');
+            $this->dispatch('pos-product-added');
             $this->dispatch('notify', message: __('Product added to cart.'));
             $this->dispatch('pos-product-search-focus');
             $this->openFamilyId = null;
@@ -292,57 +293,59 @@ final class ProductBrowser extends Component
         $showCategories = $this->categoryId === null && trim($this->search) === '';
         $products = $showCategories ? collect() : $query->get();
         $simpleIds = $products->where('has_variations', false)->pluck('id');
-        $customerId = request()->session()->get('pos.customer_id');
-        $simplePrices = $store ? $prices->resolveForStore($simpleIds->all(), $store->id, customerId: $customerId ? (int) $customerId : null) : collect();
         $simpleStock = $store ? StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $simpleIds)->get()->keyBy('product_id') : collect();
         $cartQuantities = collect(request()->session()->get('pos.cart', []))->mapWithKeys(fn (array $line): array => [(int) ($line['product_id'] ?? 0) => (string) ($line['quantity'] ?? '0')]);
         $familyIds = $products->where('has_variations', true)->pluck('id');
         $familyVariants = Product::query()->whereIn('parent_product_id', $familyIds)->where('status', 'active')->get(['id', 'parent_product_id']);
-        $variantPrices = $store ? $prices->resolveForStore($familyVariants->pluck('id')->all(), $store->id, customerId: $customerId ? (int) $customerId : null) : collect();
-        $familyRanges = $familyVariants->groupBy('parent_product_id')->map(function ($variants) use ($variantPrices): ?object {
-            $amounts = $variants->map(fn (Product $variant): mixed => $variantPrices->get($variant->id)?->amount)->filter()->values();
+        $drawer = $this->openFamilyId && $store
+            ? Product::query()->with(['images.attachment', 'familyOptionGroups.values', 'variants' => fn ($q) => $q->with(['images.attachment', 'barcodes', 'variantValues.group', 'variantValues.value'])->orderBy('variant_sort_order')])->find($this->openFamilyId)
+            : null;
+        $displayPrices = collect();
+        if ($store !== null) {
+            $productIds = $simpleIds->concat($familyVariants->pluck('id'))->concat($drawer?->variants->pluck('id') ?? [])->all();
+            $at = Carbon::instance(now());
+            $customerId = request()->session()->get('pos.customer_id');
+            $prices->warm($productIds, $store->id, $at);
+            $displayPrices = $prices->resolveForStore($productIds, $store->id, $at, $customerId ? (int) $customerId : null);
+        }
+        $familyRanges = $familyVariants->groupBy('parent_product_id')->map(function ($variants) use ($displayPrices): ?object {
+            $amounts = $variants->map(fn (Product $variant): mixed => $displayPrices->get($variant->id)?->amount)->filter()->values();
 
             return $amounts->isEmpty() ? null : (object) ['min_price' => $amounts->sort(fn ($a, $b): int => bccomp((string) $a, (string) $b, 4))->first(), 'max_price' => $amounts->sort(fn ($a, $b): int => bccomp((string) $b, (string) $a, 4))->first()];
         })->filter();
         $familyStock = $store ? DB::table('stock_balances')->join('products', 'products.id', '=', 'stock_balances.product_id')->whereIn('products.parent_product_id', $familyIds)->where('stock_balances.store_id', $store->id)->whereRaw('(stock_balances.on_hand - stock_balances.reserved) > 0')->pluck('products.parent_product_id')->flip() : collect();
         $familyChildImages = ProductImage::query()->with(['attachment', 'product:id,parent_product_id'])->where('status', 'active')->whereHas('product', fn ($q) => $q->whereIn('parent_product_id', $familyIds)->where('status', 'active'))->orderByRaw("CASE WHEN role = 'main' THEN 0 ELSE 1 END")->orderBy('sort_order')->get()->groupBy(fn (ProductImage $image) => $image->product?->parent_product_id)->map->first();
-        $drawer = null;
-        $drawerPrices = collect();
         $drawerStock = collect();
         $optionAvailability = [];
-        if ($this->openFamilyId && $store) {
-            $drawer = Product::query()->with(['images.attachment', 'familyOptionGroups.values', 'variants' => fn ($q) => $q->with(['images.attachment', 'barcodes', 'variantValues.group', 'variantValues.value'])->orderBy('variant_sort_order')])->find($this->openFamilyId);
-            if ($drawer) {
-                $drawerPrices = $prices->resolveForStore($drawer->variants->pluck('id')->all(), $store->id, customerId: $customerId ? (int) $customerId : null);
-                $drawerStock = StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $drawer->variants->pluck('id'))->get()->keyBy('product_id');
-                foreach ($drawer->familyOptionGroups as $group) {
-                    foreach ($group->values as $value) {
-                        $optionAvailability[$group->id][$value->id] = $drawer->variants->contains(function (Product $variant) use ($group, $value, $drawerPrices, $drawerStock): bool {
-                            if ($variant->status !== 'active' || ! $drawerPrices->has($variant->id)) {
+        if ($drawer !== null && $store !== null) {
+            $drawerStock = StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $drawer->variants->pluck('id'))->get()->keyBy('product_id');
+            foreach ($drawer->familyOptionGroups as $group) {
+                foreach ($group->values as $value) {
+                    $optionAvailability[$group->id][$value->id] = $drawer->variants->contains(function (Product $variant) use ($group, $value, $displayPrices, $drawerStock): bool {
+                        if ($variant->status !== 'active' || ! $displayPrices->has($variant->id)) {
+                            return false;
+                        }
+                        $stock = $drawerStock->get($variant->id);
+                        if (! $stock || bccomp(bcsub((string) $stock->on_hand, (string) $stock->reserved, 6), '0', 6) <= 0) {
+                            return false;
+                        }
+                        $values = $variant->variantValues->pluck('product_option_value_id', 'product_option_group_id');
+                        if ((int) $values->get($group->id) !== $value->id) {
+                            return false;
+                        }
+                        foreach ($this->selectedValues as $selectedGroup => $selectedValue) {
+                            if ((int) $selectedGroup !== $group->id && (int) $values->get((int) $selectedGroup) !== (int) $selectedValue) {
                                 return false;
                             }
-                            $stock = $drawerStock->get($variant->id);
-                            if (! $stock || bccomp(bcsub((string) $stock->on_hand, (string) $stock->reserved, 6), '0', 6) <= 0) {
-                                return false;
-                            }
-                            $values = $variant->variantValues->pluck('product_option_value_id', 'product_option_group_id');
-                            if ((int) $values->get($group->id) !== $value->id) {
-                                return false;
-                            }
-                            foreach ($this->selectedValues as $selectedGroup => $selectedValue) {
-                                if ((int) $selectedGroup !== $group->id && (int) $values->get((int) $selectedGroup) !== (int) $selectedValue) {
-                                    return false;
-                                }
-                            }
+                        }
 
-                            return true;
-                        });
-                    }
+                        return true;
+                    });
                 }
             }
         }
         $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->orderBy('id')->get();
 
-        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'showCategories', 'simplePrices', 'simpleStock', 'cartQuantities', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
+        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'showCategories', 'displayPrices', 'simpleStock', 'cartQuantities', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerStock', 'optionAvailability'));
     }
 }

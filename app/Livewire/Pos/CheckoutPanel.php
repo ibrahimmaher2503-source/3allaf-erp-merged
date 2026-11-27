@@ -83,6 +83,7 @@ final class CheckoutPanel extends Component
     }
 
     #[On('pos-cart-updated')]
+    #[On('pos-product-added')]
     public function refreshCheckout(): void
     {
         $this->cartRevision++;

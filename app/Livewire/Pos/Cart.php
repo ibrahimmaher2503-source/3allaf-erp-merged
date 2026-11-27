@@ -59,6 +59,7 @@ final class Cart extends Component
     }
 
     #[On('pos-cart-updated')]
+    #[On('pos-product-added')]
     public function refreshCart(): void
     {
         $this->cartRevision++;
