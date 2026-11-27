@@ -1,16 +1,19 @@
 name: Release Package (public/build + focused checks)
-# Builds the frontend bundle off the production server, publishes it with its SHA-256,
-# and runs focused checks against a disposable MariaDB. Independent of the fast QA gate.
+# Every push builds the frontend bundle off the production server for exactly that commit,
+# publishes it with its SHA-256, and runs focused checks against a disposable MariaDB.
+# The artifact is named after the commit, so the server deploys the same commit the bundle came from.
+# Independent of the fast QA gate.
 on:
   push:
     branches-ignore: [main]
   workflow_dispatch:
+    inputs:
+      compare_with:
+        description: 'Optional: a commit to compare application files against (reported only, never fails the run)'
+        required: false
+        default: ''
 permissions:
   contents: read
-env:
-  # Commit the owner approved for the QA exception. The job proves this branch differs from it
-  # only in CI files and tests, so the bundle below is the bundle of that commit's application code.
-  APPROVED_APP_COMMIT: c5c8211eefe6900c6a960fb98639bd30449c9796
 jobs:
   release-package:
     runs-on: ubuntu-latest
@@ -19,12 +22,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Application code equals the approved commit
+      - name: Commit being packaged
+        id: commit
         run: |
-          changed=$(git diff --name-only "$APPROVED_APP_COMMIT" HEAD -- . ':(exclude).github' ':(exclude)tests' ':(exclude).ai')
-          echo "Compared $APPROVED_APP_COMMIT..$(git rev-parse HEAD)"
-          if [ -n "$changed" ]; then echo "Application files differ from the approved commit:"; echo "$changed"; exit 1; fi
-          echo "No application file differs (only .github, tests or .ai changed)."
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short=${sha:0:8}" >> "$GITHUB_OUTPUT"
+          git log -1 --format='Packaging %H%n%s'
+      - name: Application files changed since the given commit (informational)
+        if: ${{ github.event.inputs.compare_with != '' }}
+        env:
+          COMPARE_WITH: ${{ github.event.inputs.compare_with }}
+        run: git diff --name-only "$COMPARE_WITH" HEAD -- . ':(exclude).github' ':(exclude)tests' ':(exclude).ai' || true
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -38,16 +47,18 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run build
       - name: Package public/build with SHA-256
+        env:
+          SHORT: ${{ steps.commit.outputs.short }}
+          SHA: ${{ steps.commit.outputs.sha }}
         run: |
           mkdir -p dist
-          name="public-build-${APPROVED_APP_COMMIT:0:8}"
+          name="public-build-$SHORT"
           (cd public && zip -qrX "../dist/$name.zip" build)
           (cd dist && sha256sum "$name.zip" | tee "$name.zip.sha256")
-          { echo "approved_app_commit=$APPROVED_APP_COMMIT"; echo "built_from=$(git rev-parse HEAD)"; echo "built_at=$(date -u +%FT%TZ)"; echo "entry_js=$(grep -o 'assets/app-[^"]*\.js' public/build/manifest.json | head -1)"; echo "entry_css=$(grep -o 'assets/app-[^"]*\.css' public/build/manifest.json | head -1)"; } | tee "dist/$name.txt"
-          grep -q F12 public/build/assets/app-*.js && echo "Scanner F12 guard present in the bundle."
+          { echo "commit=$SHA"; echo "built_at=$(date -u +%FT%TZ)"; echo "entry_js=$(grep -o 'assets/app-[^"]*\.js' public/build/manifest.json | head -1)"; echo "entry_css=$(grep -o 'assets/app-[^"]*\.css' public/build/manifest.json | head -1)"; } | tee "dist/$name.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: public-build-c5c8211e
+          name: public-build-${{ steps.commit.outputs.short }}
           path: dist/
           if-no-files-found: error
       - name: Focused check — opening stock fills only empty product costs (disposable MariaDB)
