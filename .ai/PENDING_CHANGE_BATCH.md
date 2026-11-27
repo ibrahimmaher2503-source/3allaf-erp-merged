@@ -137,6 +137,12 @@ Do not clear or archive this ledger until an authorized operator confirms succes
 
 ## Pending Changes
 
+### 2026-09-20 — Contextual tutorial coverage expansion (L2 / undeployed)
+
+- Added bilingual route-backed guides for real application screens, corrected route ownership, fixed readiness selector rendering and permission alignment, and reduced client guide metadata exposure. Business workflows, database schema, and authorization grants were not changed.
+- **Files:** `app/Modules/Platform/Support/ApplicationTutorialFactory.php`, `app/Modules/Platform/Tutorials/`, `app/Modules/Platform/Support/InventoryTutorialFactory.php`, `app/Modules/Platform/Support/RetailTutorialFactory.php`, `app/Modules/Platform/Data/PageGuideContext.php`, `app/Modules/Platform/Http/Controllers/DashboardAssistantController.php`, `resources/views/components/state/capability-boundary.blade.php`, `.ai/TUTORIAL_COVERAGE_RECONCILIATION.md`, `docs/40-contextual-page-guide-specification.md`, `AI_INDEX.md`, `.ai/PROGRESS.md`, `.ai/SESSION_SUMMARY.md`.
+- **Verification:** PHP syntax, Blade cache compilation, route/guide reconciliation, and `git diff --check` passed. Browser, automated tests, database, Vite build, commit, push, and release were not run.
+
 ### 2026-09-18 — Hide Party UI (V0 / undeployed / verification partial)
 
 - Disabled the rental-assets navigation group (Parties already disabled), removed Party/Rental report links, KPI/source/detail/chart presentation, customer Party Wallet links/cards and booking history, and Party/Rental permission groups/options. Party/Rental export jobs are hidden from the current paginated view; pagination remains based on the unchanged backend query.

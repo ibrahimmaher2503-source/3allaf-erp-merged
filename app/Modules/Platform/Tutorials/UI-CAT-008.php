@@ -3,6 +3,7 @@
 return [
     'route_names' => [
         0 => 'catalog.suppliers',
+        1 => 'suppliers.index',
     ],
     'title' => [
         'ar' => 'الموردون',

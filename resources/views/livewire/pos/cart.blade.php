@@ -5,14 +5,14 @@
     </header>
     @if($errors->has('cart') || $error)<div class="px-3 pt-2"><p class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200">{{ $errors->first('cart') ?: $error }}</p></div>@endif
     <div wire:loading class="space-y-2 p-3"><div class="h-20 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-800"></div><div class="h-20 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-800"></div></div>
-    <div wire:loading.remove class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2.5">
+    <div wire:loading.remove wire:key="pos-cart-scroll-{{ $activeOrder?->uuid ?? 'disabled' }}-{{ count($lines) }}" data-pos-cart-scroll class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2.5" @if(count($lines) > 1) style="max-height: min(48dvh, 32rem); overflow-y: scroll; scrollbar-gutter: stable; overscroll-behavior: contain;" role="region" tabindex="0" aria-label="{{ __('Cart items') }}" @endif>
         @if($giftCardSale)
             <article class="rounded-lg border border-emerald-300 bg-white p-3 text-sm dark:bg-zinc-900" data-gift-card-cart-line>
                 <div class="flex items-start justify-between gap-3"><div><strong>{{ __('Gift Card') }}</strong><p class="font-mono text-xs" dir="ltr">{{ $giftCardSale->identifier }}</p><span class="text-xs text-emerald-700">{{ __('Unsold') }} · {{ __('Quantity') }} 1</span></div><div class="text-end"><x-money :amount="$giftCardSale->issued_value" :currency="$currency" /><button type="button" wire:click="removeGiftCard" class="mt-1 block text-xs text-rose-700">{{ __('Remove') }}</button></div></div>
             </article>
         @endif
-        {{-- Newest line first; keys are preserved so $preview['lines'][$index] still matches. --}}
-        @foreach(array_reverse($lines, true) as $index => $line)
+        {{-- Lines arrive newest first from the open order (PosCartSnapshot). --}}
+        @foreach($lines as $index => $line)
             @php($product = $line['product'])
             @php($family = $product->family())
             @php($image = $product->effectiveMainImage())

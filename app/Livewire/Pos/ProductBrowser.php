@@ -39,13 +39,18 @@ final class ProductBrowser extends Component
     /** Last add-to-cart refusal; kept as state because Livewire drops the error bag on the next request. */
     public string $selectionError = '';
 
+    public int $cartRevision = 0;
+
     public function mount(): void
     {
         Gate::authorize('pos_sales.view');
     }
 
     #[On('pos-cart-updated')]
-    public function refreshProducts(): void {}
+    public function refreshProducts(): void
+    {
+        $this->cartRevision++;
+    }
 
     /** Code of the last scan that reached the cart, to ignore the same scan arriving twice. */
     public string $lastScannedCode = '';

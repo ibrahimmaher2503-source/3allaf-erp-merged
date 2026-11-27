@@ -24,6 +24,8 @@ final class Cart extends Component
 
     public string $invoiceDiscountValue = '';
 
+    public int $cartRevision = 0;
+
     public function saveInvoiceDiscount(PosContextResolver $contexts, PosOpenOrderManager $orders, PosCartSnapshot $snapshot, PosCalculationService $calculator): void
     {
         Gate::authorize('pos_sales.apply_discount');
@@ -57,7 +59,10 @@ final class Cart extends Component
     }
 
     #[On('pos-cart-updated')]
-    public function refreshCart(): void {}
+    public function refreshCart(): void
+    {
+        $this->cartRevision++;
+    }
 
     public function quantity(int $productId, string $quantity, PosCartAction $cart): string
     {
@@ -135,8 +140,9 @@ final class Cart extends Component
         $context = $contextResolver->resolve($user);
         $store = $context->store;
         $data = $snapshot->build($context);
+        $activeOrder = $data['activeOrder'] ?? null;
 
         // The cart view never shows the open-order list, so it is not loaded on every re-render.
-        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context]);
+        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context, 'activeOrder' => $activeOrder]);
     }
 }

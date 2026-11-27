@@ -47,6 +47,16 @@ final class V0122Hotfix9NavigationCleanupTest extends TestCase
         self::assertStringContainsString("request()->query('setup_step') === \$stepKey", $navigationSource);
     }
 
+    public function test_opening_inventory_is_listed_under_inventory_in_both_sidebar_variants(): void
+    {
+        foreach (['navigation.php', 'navigation_b.php'] as $file) {
+            $groups = collect(require dirname(__DIR__, 2).'/config/'.$file)->keyBy('key');
+            $inventoryRoutes = collect($groups['inventory']['items'])->pluck('route')->filter()->all();
+
+            self::assertContains('inventory.opening.index', $inventoryRoutes, $file);
+        }
+    }
+
     public function test_sidebar_footer_and_duplicate_pricing_summary_are_removed(): void
     {
         $sidebar = file_get_contents(dirname(__DIR__, 2).'/resources/views/layouts/app/sidebar.blade.php');

@@ -1755,6 +1755,43 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Remaining: run the migration on an authorized local database, check the screen in the browser (RTL and LTR), confirm key grid behaviour against the device with read-only calls first, and verify whether the device accepts a barcode format upload.
 - Commit and push: see the git history of `feature/device-settings`.
 
+## 2026-09-20 — Contextual tutorial coverage expansion
+
+- Task: Expanded the bilingual contextual tutorial assistant across the real Local/Dev application screen routes after a ten-agent read-only coverage audit.
+- Work completed: Added ApplicationTutorialFactory and route-backed guide definitions; corrected roles/permissions and POS route ownership; expanded inventory, purchasing, suppliers, wallets, suspended sales, and sales-register route variants; added readiness boundary/card/summary hooks; aligned readiness permissions with route guards; reduced client DTO exposure of internal permission/route/requirement metadata.
+- Verification actually run: PHP syntax checks for changed PHP files, Laravel Blade cache compilation, route/guide reconciliation, and git diff --check passed. No automated tests, browser verification, database operation, frontend build, commit, push, deployment, or release occurred.
+- Boundary / next action: Full Arabic RTL and English LTR browser verification remains required; changes remain in the pending UI batch.
+
+## 2026-11-13 — POS cart synchronization and display order
+
+- D3 POS change on the 3allaf-erp working tree only; ERP_ELEC was untouched.
+- The cart snapshot now reads persisted lines from the active open order instead of relying on a stale Livewire session cart, while preserving session fallback when no active order exists.
+- Cart line DOM keys are stable per product, and the quantity key no longer changes with the displayed quantity. The cart snapshot renders persisted line positions newest first.
+- Verification actually run: PHP syntax, Blade cache, source assertions for stable keys and descending persisted-line order, git diff check, service restart, public root HTTP 200, and guest POS redirect HTTP 302. No automated suite was run under the repository directive; authenticated browser/UAT remains blocked because no saved login session is available. No commit or push.
+
+## 2026-11-13 — POS scale immediate refresh follow-up
+
+- Enabled automatic scale reception by default for an available scale and reduced the polling interval from five seconds to one second.
+- Kept the existing `pos-cart-updated` event and made Cart, ProductBrowser, and CheckoutPanel listeners increment an explicit revision so each listener request performs a render immediately after a received weight.
+- Added Arabic labels for the one-second automatic mode. No migration, database write, or ERP_ELEC change.
+- Verification actually run: PHP syntax for all affected components, Arabic JSON parsing, Blade cache, source assertions for polling/event/revision behavior, `git diff --check`, service restart, public root HTTP 200, and guest POS redirect HTTP 302. Authenticated scale UAT remains blocked because no saved login session or active scale session is available. Commit: `b4722289`; no push.
+
+## 2026-11-13 — POS dynamic cart scrollbar
+
+- V1 UI behavior change in 3allaf-erp only. The cart list receives a count-sensitive Livewire key so adding or removing a product replaces the scroll viewport instead of retaining stale overflow geometry.
+- When more than one product is displayed, the list now has a bounded vertical scroll viewport, a stable scrollbar gutter, wheel/touch containment, and keyboard focus with localized accessibility labeling. Newest-first ordering remains unchanged.
+- Verification actually run: the focused source contract failed before the change and passed after it; PHP/Blade syntax, JSON parsing, Blade cache, `git diff --check`, service restart, public root HTTP 200, guest POS redirect HTTP 302, and a fresh service-journal error check passed. No database, push, or ERP_ELEC change; authenticated browser verification remains unavailable without a saved login session.
+
+## 2026-11-13 — POS scale polling adjusted to two seconds
+
+- V1 POS behavior change in 3allaf-erp only: automatic scale reception now polls every two seconds instead of every second, with matching Arabic labels.
+- No database, migration, ERP_ELEC, or scale protocol change. PHP/Blade syntax, Arabic JSON parsing, the exact two-second source contract, `git diff --check`, Blade cache, service restart, public root HTTP 200, guest POS redirect HTTP 302, and a fresh service-journal error check passed. No push requested.
+
+## 2026-11-25 — Public source sync preparation
+
+- Reviewed pending POS and contextual tutorial changes for source-only publication from an isolated worktree. Local recovery code, proxy override, and internal authentication and database notes were excluded.
+- PHP syntax and translation JSON parsed successfully; static tutorial registry inspection found 101 guides covering 148 unique route names. No deployment, database operations, browser verification, or automated suite in this session.
+
 ## 2026-11-13 - Pack-size SKUs and open-a-bag reason selector
 
 - Task: owner needs one feed product held in several pack sizes (25 kg bag, 50 kg bag, loose kg) with a per-pack stock breakdown. Decision: separate SKUs per pack (existing product options and variations), not a per-unit breakdown on one SKU, which would change protected Core stock behaviour.
@@ -1887,3 +1924,21 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
   - With the simulator stopped, sending key 0/9 showed "الميزان مش بيرد على العنوان 192.168.1.47:33581…".
   - With it started, the same key was confirmed and the message cleared.
 - The price-row failure message was not exercised in the browser (that price was already confirmed). No automated tests were run.
+
+## 2026-11-27 — Local work committed, codex/r1-sales-reports merged, main updated
+
+- The owner asked to merge the GitHub branch and put all their changes on `main`.
+- Commit b35b88b2 holds the local work: POS speed and scanning, credit sales, customer debt, FEFO, scale label barcodes and scale error messages.
+- Left uncommitted on purpose: `seed-local-auth.bat` (local test credentials) and the `work/` QA dumps, including a 237 MB MySQL data copy.
+- `origin/codex/r1-sales-reports` (10 commits, to 52466a77) merged. Seven conflicts resolved:
+  - Lang files: the union of keys (26 added from the branch).
+  - SESSION_SUMMARY: both sides kept.
+  - `PosCartSnapshot`: kept the branch's open-order-lines cart (newest first) plus `activeOrder`, and our request memo. `buildFresh()` uses the order it is given instead of a second lookup.
+  - `cart.blade.php`: our keyed line wrapper, sale-unit filter and quantity key that refreshes on rescan, plus the branch's scroll container. Dropped `array_reverse`, since lines now arrive newest first.
+  - `Cart.php`: passes only `activeOrder` to the view; the open-order list stays unloaded.
+  - `ProductBrowser`: kept both `selectionError` and `cartRevision`, and our scan-to-cart path.
+- `/reports` was already at about 100 queries; the branch's new "Opening inventory" sidebar item took it to 101, and the query budget aborted it. Added `reports.index` to `query_budget_log_only_routes`, so it is logged, not aborted. Trimming its query count is a follow-up.
+- Browser smoke test on the test DB:
+  - POS scan of FEED-001, then FEED-002, then FEED-001 again: newest line on top, quantity 2, total 69.00.
+  - /reports, /inventory/opening, /pos, /customers, /customers/41, /dashboard, settings and purchasing all returned 200.
+- No automated tests were run.

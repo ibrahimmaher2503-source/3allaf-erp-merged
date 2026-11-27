@@ -3,6 +3,8 @@
 return [
     'route_names' => [
         0 => 'purchasing.orders',
+        1 => 'purchasing.orders.create',
+        2 => 'purchasing.orders.edit',
     ],
     'title' => [
         'ar' => 'أوامر الشراء',

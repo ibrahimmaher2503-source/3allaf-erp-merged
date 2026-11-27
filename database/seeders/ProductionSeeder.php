@@ -28,7 +28,9 @@ final class ProductionSeeder extends Seeder
         DB::transaction(function (): void {
             $this->seedAuthorization();
             $this->seedBootstrapAdministrator();
-            $this->seedOperationalBaseline();
+            if (! Company::query()->exists()) {
+                $this->seedOperationalBaseline();
+            }
         });
 
         if (config('production-seeding.setup_data.enabled') === true) {
@@ -113,6 +115,8 @@ final class ProductionSeeder extends Seeder
             ['code' => 'transfers.dispatch', 'module' => 'transfers', 'action' => 'dispatch'],
             ['code' => 'transfers.receive', 'module' => 'transfers', 'action' => 'receive'],
             ['code' => 'transfers.difference', 'module' => 'transfers', 'action' => 'difference'],
+            ['code' => 'stock_counts.open', 'module' => 'stock_counts', 'action' => 'open'],
+            ['code' => 'stock_counts.close', 'module' => 'stock_counts', 'action' => 'close'],
             ['code' => 'stock_counts.reconcile', 'module' => 'stock_counts', 'action' => 'reconcile'],
             ['code' => 'drawers_payments_tax_numbering_printers.override', 'module' => 'drawers_payments_tax_numbering_printers', 'action' => 'override'],
             ['code' => 'pos_sales.apply_tax', 'module' => 'pos_sales', 'action' => 'apply_tax'],
@@ -373,7 +377,7 @@ final class ProductionSeeder extends Seeder
             ],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view'],
             'purchasing-officer' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change'],
-            'warehouse-manager' => ['inventory_stock_card.view', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.open', 'stock_counts.close'],
+            'warehouse-manager' => ['products_categories_brands.view', 'inventory_stock_card.view', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.open', 'stock_counts.close'],
             'pricing-officer' => [],
             'party-manager' => [],
             'stock-counter' => ['stock_counts.view', 'stock_counts.edit'],

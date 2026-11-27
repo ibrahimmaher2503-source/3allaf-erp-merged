@@ -32,6 +32,8 @@ final class CheckoutPanel extends Component
 
     public string $notes = '';
 
+    public int $cartRevision = 0;
+
     public string $giftCardScan = '';
 
     /** @var array<string, string> */
@@ -83,6 +85,8 @@ final class CheckoutPanel extends Component
     #[On('pos-cart-updated')]
     public function refreshCheckout(): void
     {
+        $this->cartRevision++;
+
         if ($this->giftCardSalePreview !== [] && (request()->session()->get('pos.cart', []) !== [] || ! is_array(request()->session()->get('pos.gift_card_sale')))) {
             $this->giftCardSalePreview = [];
             request()->session()->forget('pos.gift_card_sale');
@@ -344,8 +348,8 @@ final class CheckoutPanel extends Component
         $context = $contextResolver->resolve($user);
         $store = $context->store;
         $shift = $context->shift;
-        $order = $orders->active(request(), $user, $context, ! is_numeric(request()->session()->get('pos.completed_sale_id')));
         $data = $snapshot->build($context);
+        $order = $data['activeOrder'] ?? null;
         $orders->updateTotals($order, $data['preview'] ?? null);
         $methods = PaymentMethod::query()->where('status', 'active')->where('type', '!=', 'gift_card')->orderBy('code')->limit(100)->get();
         $cashMethod = $methods->first(fn (PaymentMethod $method): bool => $method->isCash());

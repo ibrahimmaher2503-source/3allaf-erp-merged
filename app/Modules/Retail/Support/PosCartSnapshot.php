@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Retail\Support;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\TaxSetting;
@@ -11,6 +12,7 @@ use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\PosOpenOrder;
+use App\Modules\Retail\Models\PosOpenOrderLine;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Support\UserSafeError;
 use InvalidArgumentException;
@@ -62,16 +64,27 @@ final class PosCartSnapshot
             ];
         }
 
+        /** @var User $user */
+        $user = auth()->user();
         $store = $context->store;
-        $cart = collect(request()->session()->get('pos.cart', []));
+        // The open order's saved lines are the cart (newest first); the session copy is the fallback.
+        $cart = $order === null
+            ? collect(request()->session()->get('pos.cart', []))
+            : $order->lines()->reorder('line_position', 'desc')->get()->map(static function (PosOpenOrderLine $line): array {
+                $payload = is_array($line->draft_payload) ? $line->draft_payload : [];
+                $payload['product_id'] = (int) $line->product_id;
+                $payload['quantity'] = (string) $line->quantity;
+
+                return $payload;
+            });
         $pendingGiftCard = request()->session()->get('pos.gift_card_sale');
         $giftCardSale = null;
         if ($cart->isEmpty() && is_array($pendingGiftCard)
-            && (int) ($pendingGiftCard['user_id'] ?? 0) === (int) auth()->id()
+            && (int) ($pendingGiftCard['user_id'] ?? 0) === (int) $user->id
             && (int) ($pendingGiftCard['store_id'] ?? 0) === (int) $store->id
             && (int) ($pendingGiftCard['shift_id'] ?? 0) === (int) $context->shift?->id
             && (string) ($pendingGiftCard['open_order_uuid'] ?? '') === (string) request()->session()->get(PosOpenOrderManager::SESSION_KEY)) {
-            $giftCardSale = GiftCard::query()->visibleTo(auth()->user())->where('identifier', (string) ($pendingGiftCard['identifier'] ?? ''))
+            $giftCardSale = GiftCard::query()->visibleTo($user)->where('identifier', (string) ($pendingGiftCard['identifier'] ?? ''))
                 ->where('status', 'unsold')->where('branch_id', $store->branch_id)->first();
         }
         $ids = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->unique()->values();
@@ -109,7 +122,7 @@ final class PosCartSnapshot
             if ($giftCardSale !== null) {
                 $preview = $this->calculator->calculate([['quantity' => '1', 'unit_price' => (string) $giftCardSale->issued_value, 'discount_amount' => '0.00']]);
 
-                return [...compact('cart', 'products', 'lines', 'preview', 'error', 'taxSetting', 'discountType', 'discountValue', 'giftCardSale'), 'taxApplicable' => false];
+                return [...compact('cart', 'products', 'lines', 'preview', 'error', 'taxSetting', 'discountType', 'discountValue', 'giftCardSale'), 'taxApplicable' => false, 'activeOrder' => $order];
             }
             $calculationLines = array_map(fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines);
             $beforeDiscount = $lines === [] ? null : $this->calculator->calculate($calculationLines);
@@ -120,6 +133,6 @@ final class PosCartSnapshot
             $error = UserSafeError::message($exception);
         }
 
-        return [...compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting', 'discountType', 'discountValue'), 'giftCardSale' => null];
+        return [...compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting', 'discountType', 'discountValue'), 'giftCardSale' => null, 'activeOrder' => $order];
     }
 }

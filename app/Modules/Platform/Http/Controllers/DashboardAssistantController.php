@@ -32,7 +32,7 @@ final class DashboardAssistantController
     {
         $guide = TutorialRegistry::find($screenId);
         abort_unless($guide, 404);
-        abort_unless(collect($guide['permissions'])->contains(fn (string $permission): bool => Gate::allows($permission)), 403);
+        abort_unless($guide['permissions'] === [] || collect($guide['permissions'])->contains(fn (string $permission): bool => Gate::allows($permission)), 403);
 
         $guide['permissions'] = array_values(array_filter(
             $guide['permissions'],
@@ -44,7 +44,7 @@ final class DashboardAssistantController
             fn (array $action): bool => Gate::allows($action['required_permission']),
         ));
         $context = new PageGuideContext($screenId, $guide['route_names'][0], (string) app()->getLocale(), $guide, $allowedActions, 'full-guide', TutorialModuleRegistry::forRoute($guide['route_names'][0]));
-        $payload = $context->toArray();
+        $payload = $context->toArray(includeInternalTraceability: true);
         $payload['related_flows'] = array_values(array_filter(array_map(
             function (string $flowId): ?array {
                 $flow = UserFlowRegistry::find($flowId);
@@ -124,6 +124,6 @@ final class DashboardAssistantController
     {
         $guide = TutorialRegistry::find($screenId);
 
-        return $guide !== null && collect($guide['permissions'])->contains(fn (string $permission): bool => Gate::allows($permission));
+        return $guide !== null && ($guide['permissions'] === [] || collect($guide['permissions'])->contains(fn (string $permission): bool => Gate::allows($permission)));
     }
 }

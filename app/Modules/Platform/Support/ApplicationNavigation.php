@@ -25,6 +25,7 @@ final class ApplicationNavigation
         'catalog.brands' => ['catalog.brands*'],
         'catalog.product-options' => ['catalog.product-options*'],
         'inventory.balances' => ['inventory.balances*', 'inventory.movements*', 'inventory.stock-card*'],
+        'inventory.opening.index' => ['inventory.opening*'],
         'inventory.transfers' => ['inventory.transfers*'],
         'inventory.counts' => ['inventory.counts*', 'inventory.adjustments*'],
         'pricing.labels' => ['pricing.labels*', 'barcodes.*'],

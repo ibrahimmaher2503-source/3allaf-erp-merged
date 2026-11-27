@@ -67,6 +67,14 @@ The Local/Demo Inventory slice registers the following real named routes and Scr
 
 Each definition includes bilingual purpose, permission-filtered actions, ordered steps, field explanations, warnings, safe error guidance, FAQ, related `FLW-INV-01` through `FLW-INV-07`, and stable `data-guide` targets in the actual Inventory view. The full operating reference is `docs/58-inventory-tutorial-guide.md`. Inventory guidance remains Local/Demo-only and must not imply Production, UAT, hardware, printing, financial, or Owner approval.
 
+## 2026-09-20 tutorial coverage reconciliation
+
+The tutorial assistant now registers real application routes discovered during the Local/Dev coverage pass. The added definitions cover administration, account settings, catalog imports/options/lookups, customer loyalty and records, pricing, purchasing invoices/returns, opening inventory, POS shift/payment/offline surfaces, reports/exports/alerts, party bookings/invoices/orders/assets, quotations, sales returns, and gift instruments. Existing route ownership collisions were removed for roles, permissions, and the legacy POS reference path.
+
+The readiness boundary component now renders the documented boundary, summary, first-card, and card-list selectors when cards are supplied. Readiness guide permissions now follow the protecting route rather than a generic POS permission. The browser DTO exposes localized content, opaque action keys, and tour metadata; internal permission keys and route lists are retained only for the full server-rendered guide payload.
+
+The authoritative reconciliation artifact is `.ai/TUTORIAL_COVERAGE_RECONCILIATION.md`. It records the route inventory, exclusions, remaining intentionally unsupported surfaces, and the static checks actually run. Print/download/helper routes remain excluded from contextual page coverage unless they are represented by a normal application screen.
+
 ## Deferred
 
 No claim is made for every future screen, official UAT, production readiness, phase completion, or AI-generated guidance. Future user-facing tasks must register or update their Screen ID and approved guide metadata as part of their Definition of Done.
