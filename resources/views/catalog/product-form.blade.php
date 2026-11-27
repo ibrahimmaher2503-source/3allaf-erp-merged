@@ -133,6 +133,9 @@ new #[Title('Product Card')] class extends Component
     {
         foreach ($this->productForm['product_units'] as $rowIndex => &$row) {
             $row['is_base_unit'] = $rowIndex === $index;
+            if ($rowIndex === $index) {
+                $row['conversion_factor'] = '1'; // the stock unit always equals itself
+            }
         }
         unset($row);
     }
@@ -719,20 +722,50 @@ new #[Title('Product Card')] class extends Component
                 <flux:callout variant="info" icon="information-circle" title="{{ __('Digital product') }}">{{ __('Digital products do not use reorder thresholds.') }}</flux:callout>
             @endif
             <div class="space-y-3 rounded-xl border border-border p-3">
-                <div class="flex items-center justify-between gap-3"><flux:heading size="sm">{{ __('Product units and conversion factors') }}</flux:heading><flux:button type="button" size="sm" variant="subtle" wire:click="addProductUnit">{{ __('Add unit') }}</flux:button></div>
+                @php
+                    $unitLabel = fn ($id) => ($u = $units->firstWhere('id', (int) $id)) ? (str_starts_with(app()->getLocale(), 'ar') ? $u->name_ar : ($u->name_en ?: $u->name_ar)) : null;
+                    $baseUnitName = $unitLabel(collect($productForm['product_units'] ?? [])->firstWhere('is_base_unit', true)['unit_id'] ?? null) ?? __('base unit');
+                @endphp
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <flux:heading size="sm">{{ __('Product units and conversion factors') }}</flux:heading>
+                        <p class="mt-1 text-xs text-text-muted">{{ __('Pick the unit stock is counted in, then add the other units this product is bought or sold in, and how many base units each one holds (for example: bag = 50 KG, ton = 1000 KG).') }}</p>
+                    </div>
+                    <flux:button type="button" size="sm" variant="subtle" icon="plus" wire:click="addProductUnit">{{ __('Add unit') }}</flux:button>
+                </div>
                 @foreach (($productForm['product_units'] ?? []) as $index => $row)
-                    <div class="grid gap-3 md:grid-cols-6" wire:key="product-unit-{{ $index }}">
-                        <flux:select wire:model="productForm.product_units.{{ $index }}.unit_id" :label="__('Unit')" class="md:col-span-2">
-                            <flux:select.option value="">{{ __('Select unit') }}</flux:select.option>
-                            @foreach ($units as $unit)<flux:select.option :value="$unit->id">{{ $unit->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $unit->name_ar : $unit->name_en }}</flux:select.option>@endforeach
-                        </flux:select>
-                        <flux:input wire:model="productForm.product_units.{{ $index }}.conversion_factor" type="number" min="0.000001" step="0.000001" :label="__('Base-unit factor')" />
-                        <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_base_unit" wire:click="setBaseProductUnit({{ $index }})" :label="__('Base')" />
-                        <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_purchase_unit" :label="__('Purchase')" />
-                        <div class="flex items-center gap-2"><flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_sale_unit" :label="__('Sale')" /><flux:button type="button" size="sm" variant="ghost" icon="trash" wire:click="removeProductUnit({{ $index }})" :aria-label="__('Remove unit')" /></div>
+                    @php($isBase = (bool) ($row['is_base_unit'] ?? false))
+                    @php($rowUnitName = $unitLabel($row['unit_id'] ?? null))
+                    <div class="rounded-lg border p-3 {{ $isBase ? 'border-primary/50 bg-primary/5' : 'border-border' }}" wire:key="product-unit-{{ $index }}" data-product-unit-row>
+                        <div class="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                            <flux:select wire:model.live="productForm.product_units.{{ $index }}.unit_id" :label="__('Unit')">
+                                <flux:select.option value="">{{ __('Select unit') }}</flux:select.option>
+                                @foreach ($units as $unit)<flux:select.option :value="$unit->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $unit->name_ar : $unit->name_en }} ({{ $unit->code }})</flux:select.option>@endforeach
+                            </flux:select>
+                            @if ($isBase)
+                                <div>
+                                    <flux:label>{{ __('Conversion') }}</flux:label>
+                                    <p class="mt-2 flex h-10 items-center rounded-lg bg-surface-muted px-3 text-sm text-text-muted">{{ __('Always 1 — stock is counted in this unit') }}</p>
+                                </div>
+                            @else
+                                <flux:input wire:model.live.blur="productForm.product_units.{{ $index }}.conversion_factor" type="number" min="0.000001" step="0.000001" :label="__('How many :base in one :unit?', ['base' => $baseUnitName, 'unit' => $rowUnitName ?? __('unit')])" :placeholder="__('e.g. 50')" />
+                            @endif
+                            <flux:button type="button" size="sm" variant="ghost" icon="trash" wire:click="removeProductUnit({{ $index }})" :aria-label="__('Remove unit')" :title="__('Remove unit')" />
+                        </div>
+                        <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                            <label class="inline-flex cursor-pointer items-center gap-2 font-semibold">
+                                <input type="radio" name="product-base-unit" class="size-4 accent-[var(--color-primary,#0f766e)]" @checked($isBase) wire:click="setBaseProductUnit({{ $index }})">
+                                {{ __('Base stock unit') }}
+                            </label>
+                            <span class="text-text-muted">{{ __('Used in:') }}</span>
+                            <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_purchase_unit" :label="__('Purchasing')" />
+                            <flux:checkbox wire:model="productForm.product_units.{{ $index }}.is_sale_unit" :label="__('Selling (POS)')" />
+                            @if (! $isBase && $rowUnitName && is_numeric($row['conversion_factor'] ?? null) && (float) $row['conversion_factor'] > 0)
+                                <span class="ms-auto rounded-md bg-surface-muted px-2 py-0.5 text-xs font-semibold" dir="auto">1 {{ $rowUnitName }} = {{ rtrim(rtrim(number_format((float) $row['conversion_factor'], 6, '.', ''), '0'), '.') }} {{ $baseUnitName }}</span>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
-                <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حدد وحدة أساسية واحدة فقط. معامل الوحدة الأساسية هو عدد هذه الوحدات الذي يساوي وحدة المخزون الأساسية؛ مثال: شيكارة 25 كجم = 25.' : __('Conversion is product-specific: one bag can equal 25, 40, or 50 KG depending on this product.') }}</p>
             </div>
         </flux:card>
 

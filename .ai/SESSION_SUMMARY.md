@@ -2017,3 +2017,16 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Owner report: opening stock asks for a unit cost although a price was entered on the product. On the hosted domain, products 0001-000001…000004 have a selling price and an empty cost. The opening workflow already pre-fills the unit cost from `products.average_cost` (`opening-workflow.blade.php:71`), so it showed 0. Selling price is not used as cost.
 - Change (owner-approved): `ApproveOpeningInventoryAction` now writes the approved line's unit cost to the product's `average_cost` only when that cost is null or ≤ 0. It bumps `lock_version` and records the filled product ids in the approval audit metadata (`product_costs_filled`). The first positive line per product wins, and an existing cost is never overwritten.
 - Verified with a scratch script on local MariaDB `rajeh_debt_test_20261123`, inside a transaction that was always rolled back. The empty-cost product got 42.25 (lock 0→1); the product with cost 15.50 kept it. `php -l` passed. Pint was not applied, because the file's existing one-line style fails it. No automated suite, commit or deploy.
+
+## 2026-11-27 — Product Card units section made understandable
+
+- `resources/views/catalog/product-form.blade.php`, units block:
+  - Each unit is now its own card with a unit picker and a factor field whose label names both units ("1 شيكارة فيها كام كجم؟").
+  - The base unit shows "Always 1" instead of an input, and is chosen with a radio, "الوحدة الأساسية للمخزون".
+  - Purchase and sale are grouped under "تُستخدم في:".
+  - A live summary chip shows the result, e.g. "1 شيكارة = 50 كجم".
+  - The old misaligned header labels and the confusing help line were replaced by a plain intro sentence.
+- `setBaseProductUnit()` now also sets the new base row's factor to 1. Save validation is unchanged.
+- 11 new keys in `lang/ar.json` and `lang/ar-EG.json`. Locale parity check passed. `npm run build` was run because new Tailwind classes were added.
+- Checked in the browser on localhost:8001/catalog/products/create: added BAG at 50 next to the KG base and saw the label and summary chip. Nothing was saved.
+- Not committed.

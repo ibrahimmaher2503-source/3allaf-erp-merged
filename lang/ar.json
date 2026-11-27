@@ -7277,5 +7277,15 @@
     "Stop receiving weights from the scale and hide this section? You can turn it on again in scale settings.": "إيقاف استقبال الوزن من الميزان وإخفاء الجزء ده؟ تقدر تشغّله تاني من إعدادات الميزان.",
     "Stop receiving": "إيقاف الاستقبال",
     "Yes, stop": "أيوه، أوقف",
-    "Hide the scale section?": "إخفاء جزء الميزان؟"
+    "Hide the scale section?": "إخفاء جزء الميزان؟",
+    "Pick the unit stock is counted in, then add the other units this product is bought or sold in, and how many base units each one holds (for example: bag = 50 KG, ton = 1000 KG).": "اختار الوحدة اللي المخزون بيتحسب بيها، وبعدين ضيف باقي الوحدات اللي المنتج بيتشرى أو بيتباع بيها، وكل وحدة فيها كام من الوحدة الأساسية (مثلاً: شيكارة = 50 كجم، طن = 1000 كجم).",
+    "How many :base in one :unit?": "1 :unit فيها كام :base؟",
+    "Always 1 — stock is counted in this unit": "دايماً 1 — المخزون بيتحسب بالوحدة دي",
+    "e.g. 50": "مثلاً 50",
+    "Base stock unit": "الوحدة الأساسية للمخزون",
+    "Used in:": "تُستخدم في:",
+    "Selling (POS)": "البيع (الكاشير)",
+    "base unit": "الوحدة الأساسية",
+    "unit": "وحدة",
+    "Conversion": "التحويل"
 }
