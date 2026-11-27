@@ -7266,5 +7266,14 @@
     "Select exactly one base product unit.": "اختر وحدة أساسية واحدة فقط للمنتج.",
     "Treasury cash account": "حساب الخزينة النقدي",
     "Select treasury cash account": "اختر حساب الخزينة النقدي",
-    "Local Administrator": "مدير النظام المحلي"
+    "Local Administrator": "مدير النظام المحلي",
+    "Receiving weights from the scale is on in POS.": "استقبال الوزن من الميزان شغّال في نقطة البيع.",
+    "Receiving weights from the scale is off and hidden in POS.": "استقبال الوزن من الميزان متوقف واتشال من شاشة نقطة البيع.",
+    "Stop receiving weights in POS": "إيقاف استقبال الوزن في نقطة البيع",
+    "Turn on receiving weights in POS": "تشغيل استقبال الوزن في نقطة البيع",
+    "Receiving in POS: on": "الاستقبال في نقطة البيع: شغّال",
+    "Receiving in POS: off (hidden)": "الاستقبال في نقطة البيع: متوقف (مخفي)",
+    "Receiving weights from the scale is off. Turn it on again in scale settings.": "تم إيقاف استقبال الوزن من الميزان. تقدر تشغّله تاني من إعدادات الميزان.",
+    "Stop receiving weights from the scale and hide this section? You can turn it on again in scale settings.": "إيقاف استقبال الوزن من الميزان وإخفاء الجزء ده؟ تقدر تشغّله تاني من إعدادات الميزان.",
+    "Stop receiving": "إيقاف الاستقبال"
 }

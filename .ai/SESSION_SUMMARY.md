@@ -1942,3 +1942,18 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
   - POS scan of FEED-001, then FEED-002, then FEED-001 again: newest line on top, quantity 2, total 69.00.
   - /reports, /inventory/opening, /pos, /customers, /customers/41, /dashboard, settings and purchasing all returned 200.
 - No automated tests were run.
+
+## 2026-11-27 — Scale receiving in POS: on/off switch
+
+- Owner request: a button that stops or starts receiving weights from the scale, and removes it from the POS screen entirely when off.
+- New migration `2026_11_27_120000_add_pos_receive_enabled_to_scale_configurations`: a boolean, default true, so existing behavior is unchanged. Applied to MySQL `rajeh_debt_test_20261123`.
+- `ScaleConfiguration` gains the fillable field and a boolean cast.
+- Settings scale card: a status badge and a button (`toggleScalePosReceive`, needs `company_settings.edit`, audited as `toggle_scale_pos_receive`).
+- POS `ScaleReceiver` only finds devices with receiving on. When off, the section is not rendered and nothing polls.
+- Admins get a "Stop receiving" button in the POS scale section (with a confirm). Turning it back on happens in settings.
+- Scale label barcodes (`ScaleLabelBarcode`) are not affected by the switch.
+- Verified in the browser:
+  - Turning it off from POS hid the section; after a reload, POS had no scale section.
+  - Settings showed "off (hidden)"; turning it on brought the section back in POS.
+  - Two audit rows were written. DB value ended at 1.
+- 9 new Arabic keys. No automated tests run. Not committed.

@@ -122,9 +122,26 @@ final class ScaleReceiver extends Component
         return view('livewire.pos.scale-receiver', ['available' => $device !== null && Gate::allows('pos_sales.create')]);
     }
 
+    /** Lets an administrator switch scale receiving off from POS; it is switched back on in scale settings. */
+    public function turnOff(PosContextResolver $contexts): void
+    {
+        Gate::authorize('company_settings.edit');
+        /** @var User $user */
+        $user = auth()->user();
+        $context = $contexts->resolve($user);
+        $device = $context->store !== null ? $this->deviceFor((int) $context->store->id) : null;
+        if ($device === null) {
+            return;
+        }
+        $device->update(['pos_receive_enabled' => false]);
+        app(RecordAuditEvent::class)->execute('master_data', 'toggle_scale_pos_receive', $device, ['pos_receive_enabled' => true], ['pos_receive_enabled' => false]);
+        $this->auto = false;
+        $this->dispatch('notify', message: __('Receiving weights from the scale is off. Turn it on again in scale settings.'));
+    }
+
     private function deviceFor(int $storeId): ?ScaleConfiguration
     {
-        return ScaleConfiguration::query()->where('store_id', $storeId)->where('status', 'active')->first();
+        return ScaleConfiguration::query()->where('store_id', $storeId)->where('status', 'active')->where('pos_receive_enabled', true)->first();
     }
 
     /**

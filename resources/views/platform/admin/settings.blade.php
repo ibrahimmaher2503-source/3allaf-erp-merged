@@ -886,6 +886,20 @@ new #[Title('System Settings')] class extends Component
         return $status;
     }
 
+    /** Turns receiving weights from the scale in POS on or off; when off, POS hides the scale receiver. */
+    public function toggleScalePosReceive(): void
+    {
+        Gate::authorize('company_settings.edit');
+        abort_unless($this->companyId, 403);
+        $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->firstOrFail();
+        $before = ['pos_receive_enabled' => $device->pos_receive_enabled];
+        $device->update(['pos_receive_enabled' => ! $device->pos_receive_enabled]);
+        app(RecordAuditEvent::class)->execute('master_data', 'toggle_scale_pos_receive', $device, $before, ['pos_receive_enabled' => $device->pos_receive_enabled]);
+        Flux::toast(variant: 'success', text: $device->pos_receive_enabled
+            ? __('Receiving weights from the scale is on in POS.')
+            : __('Receiving weights from the scale is off and hidden in POS.'));
+    }
+
     public function testScaleConnection(): void
     {
         Gate::authorize('company_settings.edit');
@@ -2290,6 +2304,11 @@ $sectionMeta = [
                                     <flux:text class="flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <span dir="ltr" class="font-mono">{{ $scaleDevice->ip_address }}:{{ $scaleDevice->port }}</span>
                                         <span>{{ $outletName ?? __('No selling outlet') }}</span>
+                                        @if ($scaleDevice->pos_receive_enabled)
+                                            <flux:badge size="sm" color="green" data-scale-pos-receive-state>{{ __('Receiving in POS: on') }}</flux:badge>
+                                        @else
+                                            <flux:badge size="sm" color="zinc" data-scale-pos-receive-state>{{ __('Receiving in POS: off (hidden)') }}</flux:badge>
+                                        @endif
                                     </flux:text>
                                 @else
                                     <flux:text>{{ __('Add the scale address and selling outlet to start linking products, keys and labels.') }}</flux:text>
@@ -2300,6 +2319,12 @@ $sectionMeta = [
                             <div class="flex flex-wrap gap-2">
                                 @if ($scaleDevice)
                                     <flux:button type="button" size="sm" icon="signal" wire:click="testScaleConnection" wire:loading.attr="disabled" wire:target="testScaleConnection">{{ __('Check connection') }}</flux:button>
+                                    <flux:button type="button" size="sm" data-scale-pos-receive-toggle
+                                        :variant="$scaleDevice->pos_receive_enabled ? 'subtle' : 'primary'"
+                                        :icon="$scaleDevice->pos_receive_enabled ? 'pause-circle' : 'play-circle'"
+                                        wire:click="toggleScalePosReceive" wire:loading.attr="disabled" wire:target="toggleScalePosReceive">
+                                        {{ $scaleDevice->pos_receive_enabled ? __('Stop receiving weights in POS') : __('Turn on receiving weights in POS') }}
+                                    </flux:button>
                                 @endif
                                 <flux:button type="button" size="sm" :variant="$scaleEditing ? 'primary' : 'subtle'" icon="cog-6-tooth" wire:click="$toggle('scaleEditing')" x-bind:disabled="sending">{{ $scaleEditing ? __('Close settings') : __('Scale settings') }}</flux:button>
                             </div>
