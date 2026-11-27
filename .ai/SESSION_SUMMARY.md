@@ -2030,3 +2030,22 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - 11 new keys in `lang/ar.json` and `lang/ar-EG.json`. Locale parity check passed. `npm run build` was run because new Tailwind classes were added.
 - Checked in the browser on localhost:8001/catalog/products/create: added BAG at 50 next to the KG base and saw the label and summary chip. Nothing was saved.
 - Not committed.
+
+## 2026-11-27 — POS checkout: one-click "remaining to customer debt"
+
+- Before: partial payment with the rest on account already worked for customers whose type is credit/both, but it had no explicit action. For other customers it needed "enable credit", which switched the window to credit mode and dropped the cash already entered.
+- `checkout-panel.blade.php`: with a customer selected and a non-credit mode, once some amount is paid and something remains, an amber button shows the remaining amount.
+  - Credit-eligible customer: "سجّل الباقي على مديونية العميل وأنهِ البيع" submits the sale.
+  - Other customer, cashier with `customers.edit`: "فعّل الآجل للعميل، وسجّل الباقي على مديونيته وأنهِ البيع" calls `enableCustomerCredit(true)` (new `$keepPayment` flag keeps the current payment mode), then submits.
+- Server-side checkout rules are unchanged; it still validates the outstanding amount and records the debt.
+- Two new locale keys; parity check passed. `npm run build` and `php artisan view:cache` passed, and the compiled view lints clean. Not clicked through in the browser: the owner was using the only local POS session (order #5) at the time. Not committed.
+
+## 2026-11-27 — Receipts: compact lines, customer name, invoice and total debt
+
+- `pages/sales/thermal.blade.php`: each item is now two short rows (name + line total; code · qty × unit price, with a discount only when present) instead of five, including the repeated gross/"line total". The customer line is bold and larger.
+- Thermal and A4 (`print.blade.php`), when the sale has a customer:
+  - "المتبقي من الفاتورة دي (آجل)" from `CustomerBalance::outstandingForSale()`, shown only when greater than 0.
+  - "إجمالي مديونية العميل" from `CustomerBalance::for()`, labelled "as of printing".
+- Arabic "Change total" was relabelled from "إجمالي الباقي" to "الباقي للعميل (فكة)", so it no longer reads like unpaid balance.
+- Checked: `view:cache` passed and locale parity passed. The rendered thermal receipt for local sale MAIN-SI-000005 (payable 1,475, paid 1,000) shows 475.00 for this invoice and 1,283.00 total debt.
+- Committed together with the POS "remaining to customer debt" button. Neither is in the c5c8211e release package.

@@ -226,7 +226,7 @@ final class CheckoutPanel extends Component
      * Lets an authorized cashier allow credit (آجل) for the order's customer straight from the
      * payment window. A cash-only or unset customer becomes "cash and credit"; the change is audited.
      */
-    public function enableCustomerCredit(PosOpenOrderManager $orders, PosContextResolver $contexts): void
+    public function enableCustomerCredit(PosOpenOrderManager $orders, PosContextResolver $contexts, bool $keepPayment = false): void
     {
         Gate::authorize('customers.edit');
         /** @var User $user */
@@ -245,7 +245,10 @@ final class CheckoutPanel extends Component
         $customer->update(['customer_type' => 'both']);
         app(RecordAuditEvent::class)->execute(category: 'customer', event: 'pos_enable_customer_credit', source: $customer,
             before: $before, after: $customer->only(['customer_type']), storeId: $order->store_id);
-        $this->switchCheckoutMode('credit', $orders, $contexts);
+        // The quick "remaining to customer debt" button keeps the amount already collected.
+        if (! $keepPayment) {
+            $this->switchCheckoutMode('credit', $orders, $contexts);
+        }
     }
 
     public function switchCheckoutMode(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void

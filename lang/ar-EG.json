@@ -1015,7 +1015,7 @@
     "Change decision values here. Every save creates a new append-only local version and audit event; no value becomes approved policy.": "غيّر قيم القرارات من هنا. كل حفظ ينشئ إصدارًا محليًا جديدًا وسجل تدقيق ملحقًا، ولا تتحول أي قيمة إلى سياسة معتمدة.",
     "Change reason (for audit)": "سبب التغيير (للتدقيق)",
     "Change the filter or create a permitted record.": "غيّر عامل التصفية أو أنشئ سجلًا مسموحًا.",
-    "Change total": "إجمالي الباقي",
+    "Change total": "الباقي للعميل (فكة)",
     "Changes Summary": "ملخص التغييرات",
     "Changes to financial, numbering, and printing policies require approval before operational use.": "تتطلب تغييرات السياسات المالية والترقيم والطباعة اعتمادًا قبل استخدامها في التشغيل.",
     "Changes to platform settings will appear here.": "تغييرات إعدادات المنصة هتظهر هنا.",
@@ -7330,5 +7330,10 @@
     "Selling (POS)": "البيع (الكاشير)",
     "base unit": "الوحدة الأساسية",
     "unit": "وحدة",
-    "Conversion": "التحويل"
+    "Conversion": "التحويل",
+    "Put the remaining on the customer debt and complete the sale": "سجّل الباقي على مديونية العميل وأنهِ البيع",
+    "Allow credit for this customer, put the remaining on their debt and complete the sale": "فعّل الآجل للعميل، وسجّل الباقي على مديونيته وأنهِ البيع",
+    "This invoice on account": "المتبقي من الفاتورة دي (آجل)",
+    "Customer total debt": "إجمالي مديونية العميل",
+    "Total debt as of printing": "إجمالي المديونية وقت الطباعة"
 }
