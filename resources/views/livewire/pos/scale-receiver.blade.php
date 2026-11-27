@@ -1,4 +1,5 @@
 <div @if ($available && $auto) wire:poll.2s="receive" @endif data-pos-scale-receiver>
+    <style>[data-pos-scale-off] [data-pos-scale-receiver] { display: none; }</style>
     @if ($available)
         <section class="border-b border-border bg-surface px-3 py-2 text-text-primary" aria-labelledby="pos-scale-heading">
             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -9,8 +10,16 @@
                         {{ __('Receive automatically every 2 seconds') }}
                     </label>
                     @can('company_settings.edit')
-                        <button type="button" wire:click="turnOff" wire:confirm="{{ __('Stop receiving weights from the scale and hide this section? You can turn it on again in scale settings.') }}"
-                            class="rounded px-1.5 py-0.5 text-[11px] font-bold text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/50" data-pos-scale-turn-off>{{ __('Stop receiving') }}</button>
+                        {{-- wire:ignore: the 2-second poll re-renders this component and would reset the confirm step. --}}
+                        <span wire:ignore x-data="{ confirmOff: false }" class="flex items-center gap-1.5" data-pos-scale-turn-off-area>
+                            <button type="button" x-show="! confirmOff" x-on:click="confirmOff = true"
+                                class="rounded px-1.5 py-0.5 text-[11px] font-bold text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/50" data-pos-scale-turn-off>{{ __('Stop receiving') }}</button>
+                            <span x-cloak x-show="confirmOff" class="flex items-center gap-1.5 text-[11px] font-semibold text-rose-800 dark:text-rose-200" data-pos-scale-turn-off-confirm>
+                                <span>{{ __('Hide the scale section?') }}</span>
+                                <button type="button" x-on:click="document.documentElement.dataset.posScaleOff = '1'; $wire.turnOff()" class="rounded bg-rose-600 px-2 py-0.5 font-bold text-white" data-pos-scale-turn-off-yes>{{ __('Yes, stop') }}</button>
+                                <button type="button" x-on:click="confirmOff = false" class="rounded border border-rose-300 px-2 py-0.5 font-bold">{{ __('Cancel') }}</button>
+                            </span>
+                        </span>
                     @endcan
                 </div>
             </div>

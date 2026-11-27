@@ -7275,5 +7275,7 @@
     "Receiving in POS: off (hidden)": "الاستقبال في نقطة البيع: متوقف (مخفي)",
     "Receiving weights from the scale is off. Turn it on again in scale settings.": "تم إيقاف استقبال الوزن من الميزان. تقدر تشغّله تاني من إعدادات الميزان.",
     "Stop receiving weights from the scale and hide this section? You can turn it on again in scale settings.": "إيقاف استقبال الوزن من الميزان وإخفاء الجزء ده؟ تقدر تشغّله تاني من إعدادات الميزان.",
-    "Stop receiving": "إيقاف الاستقبال"
+    "Stop receiving": "إيقاف الاستقبال",
+    "Yes, stop": "أيوه، أوقف",
+    "Hide the scale section?": "إخفاء جزء الميزان؟"
 }

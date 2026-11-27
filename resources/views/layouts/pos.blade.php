@@ -90,8 +90,9 @@
                         <span x-text="online ? '{{ __('Online') }}' : '{{ __('Offline') }}'" class="text-white"></span>
                     </div>
 
-                    @if (auth()->user()->hasPermission('offline_queue_conflicts.view'))
-                        @php($offlineEnabled = ! app()->isProduction() && config('offline.enabled'))
+                    {{-- Shown only when offline POS is actually enabled; the "disabled" link was noise in the header. --}}
+                    @php($offlineEnabled = ! app()->isProduction() && config('offline.enabled'))
+                    @if ($offlineEnabled && auth()->user()->hasPermission('offline_queue_conflicts.view'))
                         <a href="{{ route('pos.offline.queue') }}" wire:navigate class="inline-flex items-center gap-1 px-1.5 py-1 text-xs font-bold text-white hover:bg-white/10"><flux:icon name="signal-slash" class="size-4" />
                             <span class="hidden sm:inline">{{ $offlineEnabled ? __('offline.queue_title') : __('offline.disabled') }}</span>
                             <span class="sm:hidden" aria-label="{{ __('offline.queue_title') }}">{{ $offlineEnabled ? __('offline.queued') : __('Offline') }}</span>
