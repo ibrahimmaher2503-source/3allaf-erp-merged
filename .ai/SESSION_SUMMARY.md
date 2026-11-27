@@ -2004,3 +2004,10 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - `npm run build` passed. Not tested with the physical scanner. Not deployed. During testing, one draft-cart line (0001-000001) was added on the server and could not be removed; the owner was told.
 - Also noted: Laravel Boost browser logger is active on the hosted domain (`/_boost/browser-logs`), which suggests dev packages or a dev environment on the server.
 - Committed and pushed to `fix/inventory-qa` together with the pending POS layout and stop-receiving commits.
+
+## 2026-11-27 — POS add-to-cart latency on the hosted domain
+
+- Measured on https://3allaf.duckdns.org/pos (owner signed in, server still on the pre-2d2ebeec build): one grid "Add" took ~4.2 s. That was two sequential Livewire requests: `addProduct` (TTFB 2.34 s, 67 KB, full product-grid re-render), ~0.65 s client morph, then `cart/checkout/product-browser` refresh (TTFB 1.05 s, 117 KB). Network RTT is ~80 ms; a minimal Livewire refresh is ~200 ms, so the time is PHP rendering. Livewire JSON responses are not gzipped (HTML pages are). Boost is active, so the server runs with APP_ENV=local or APP_DEBUG=true.
+- Code: `ProductBrowser::addProduct` (grid button only) now calls `skipRender()` when the grid would not change (no option drawer open, no error showing, quantity 1, product still under its stock limit). Scans and the option picker use the new private `addToCart()` and still re-render.
+- Local check on localhost:8001: the add response dropped to 932 bytes with no HTML (329 ms), and the follow-up rendered only cart and checkout (188 ms). FEED-001 went 4 → 5, then was restored to 4.
+- `php -l` and Pint passed. `tests/Feature/Module5PosQaTest.php` could not run: its test schema `qa_rajh_m1_regression_20261007` does not exist locally. Not committed, not deployed.

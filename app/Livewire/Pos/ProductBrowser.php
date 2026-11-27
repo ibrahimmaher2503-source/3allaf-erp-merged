@@ -119,7 +119,7 @@ final class ProductBrowser extends Component
 
                 return true;
             }
-            $this->addProduct((int) $match->id, $cart);
+            $this->addToCart((int) $match->id, $cart);
 
             return true;
         }
@@ -232,7 +232,38 @@ final class ProductBrowser extends Component
         $this->selectedVariantId = $match?->id;
     }
 
+    /**
+     * The grid's "Add" button. When the add leaves the grid unchanged (no drawer to close, no
+     * message to clear, quantity already 1, product still below its stock limit), the product
+     * grid is not re-rendered: the cart and checkout refresh on their own through the event.
+     * This drops the largest part of the add request on slow servers.
+     */
     public function addProduct(int $productId, PosCartAction $cart): bool
+    {
+        $gridUnchanged = $this->openFamilyId === null && $this->selectionError === '' && $this->quantity === '1';
+        $added = $this->addToCart($productId, $cart);
+        if ($added && $gridUnchanged && ! $this->reachedStockLimit($productId)) {
+            $this->skipRender();
+        }
+
+        return $added;
+    }
+
+    /** Same comparison as the grid's add-button limit ($atMax in the product-browser view). */
+    private function reachedStockLimit(int $productId): bool
+    {
+        $store = app(PosContextResolver::class)->resolve(auth()->user())->store;
+        if ($store === null) {
+            return true;
+        }
+        $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $productId)->first();
+        $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
+        $line = collect(request()->session()->get('pos.cart', []))->first(fn (array $line): bool => (int) ($line['product_id'] ?? 0) === $productId);
+
+        return bccomp((string) ($line['quantity'] ?? '0'), $available, 6) >= 0;
+    }
+
+    private function addToCart(int $productId, PosCartAction $cart): bool
     {
         Gate::authorize('pos_sales.create');
         $this->selectionError = '';
@@ -267,7 +298,7 @@ final class ProductBrowser extends Component
 
             return;
         }
-        $this->addProduct($this->selectedVariantId, $cart);
+        $this->addToCart($this->selectedVariantId, $cart);
     }
 
     public function render(EffectivePriceResolver $prices, PosContextResolver $contextResolver): View
