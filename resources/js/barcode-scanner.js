@@ -132,6 +132,14 @@ const installBarcodeScanner = () => {
     let buffer = [];
 
     document.addEventListener('keydown', (event) => {
+        // Some scanners are configured with an F12 prefix. In Chrome a bare F12 opens DevTools,
+        // which steals focus so the code that follows never reaches the page. Treat it as the
+        // start of a scan instead (DevTools stays reachable with Ctrl+Shift+I).
+        if (event.key === 'F12' && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+            event.preventDefault();
+            buffer = [];
+            return;
+        }
         if (!event.isTrusted || event.ctrlKey || event.altKey || event.metaKey || event.repeat) return;
         const now = performance.now();
         const last = buffer.at(-1);

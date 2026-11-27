@@ -1957,3 +1957,50 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
   - Settings showed "off (hidden)"; turning it on brought the section back in POS.
   - Two audit rows were written. DB value ended at 1.
 - 9 new Arabic keys. No automated tests run. Not committed.
+
+## 2026-11-27 — POS "Stop receiving" button fixed
+
+- Bug: clicking "إيقاف الاستقبال" did nothing.
+  - Its `wire:confirm` used the native confirm dialog, which can be blocked.
+  - An in-page confirm that replaced it was reset by the 2-second `wire:poll` re-render.
+  - `turnOff` also queued behind a poll waiting on an unreachable scale (5 s connect timeout).
+- Fix (`resources/views/livewire/pos/scale-receiver.blade.php`):
+  - The stop button and its confirm step sit in a `wire:ignore` + Alpine span, so the poll no longer resets them.
+  - "Yes, stop" sets `data-pos-scale-off` on `<html>` (never morphed). A component style hides the receiver at once, and the server then saves the setting.
+  - New key "Hide the scale section?".
+- Verified in the browser: the confirm step stayed open through polls for 6 s; after confirming, the section vanished at once and the categories moved up. DB `pos_receive_enabled` became 0; it was reset to 1 afterwards on the test DB.
+- Not committed.
+
+## 2026-11-27 — Local POS performance diagnosis
+
+- Reproduced category switching and product addition in the browser on `localhost:8001/pos` using the existing test database and an open draft order. The diagnostic click incremented FEED-001 by one; other cart activity was observed, so quantities were left as observed. No sale was completed.
+- Category requests on port 8001 took 0.50–1.09 s at the network layer. Equivalent requests on a temporary instrumented PHP server issued 52 SQL queries for four visible products, taking 150–154 ms of SQL time and 212–845 ms during Laravel boot. The OPcache comparison varied; it did not remove the delay.
+- Cart additions took 1.51–1.99 s across the add request and the following Livewire refresh. The follow-up rendered the cart, checkout panel and product browser and transferred 114–129 kB. Scale polling was inactive in the tested workspace.
+- Temporary diagnostic servers were stopped. No application source, settings, schema, automated tests, commit, push or deployment. A follow-up change would need approval for the protected POS scope.
+
+## 2026-11-27 — Local POS cart and category performance
+
+- D3, TSK-023 focused maintenance. Product-browser additions and scans refresh the cart and checkout without re-rendering the product browser in the follow-up request. Product browsing preloads prices for the visible simple and variant SKUs in the current request, using the existing resolver. Sale rules, source priorities and database schema were not edited.
+- Browser on isolated local MariaDB runtime: category updates issued 34 SQL queries (baseline 52). Button add returned in 0.86 s across both requests, with only cart and checkout HTML in the follow-up. Two consecutive Enter scans increased the quantity 4 → 5 → 6. Quantity and total were restored.
+- Applied code commit 2d2ebeec to the local fix/inventory-qa checkout on localhost:8001 by fast-forward. Cleared stale compiled Blade views. Rechecked category browsing and button add on port 8001 (about 1.16 s across both requests). Quantity 4 → 5 → 4 and total 670.00 → 697.00 → 670.00. No sale posted.
+- Pint, changed PHP syntax, route inspection, and diff checks passed. No automated suites, migration, push, or deployment. Main stayed at the source baseline.
+
+## 2026-11-27 — POS totals stay under the cart; offline link hidden
+
+- `resources/views/pages/pos/index.blade.php`:
+  - The order column (`[data-pos-transaction-zone]`) stretched to the height of the product grid, and the checkout panel's `mt-auto` pushed the totals and "إنهاء البيع" to its very bottom.
+  - Removed `mt-auto`. On wide screens (≥64rem) the column is now `position: sticky; top: 0; max-height: 100dvh; overflow-y: auto`, written as inline page CSS because new Tailwind classes are not in the built asset (no `npm` rebuild needed).
+  - Verified at 1400×900 with a 3000px-tall product grid scrolled 2000px: the column stays at top 0, the cart ends at 650 px and the finish button sits at 848 px.
+  - Verified at 375 px: totals come right after the cart and there is no horizontal scroll.
+- `resources/views/layouts/pos.blade.php`: the offline POS header link shows only when offline POS is enabled, so "نقطة البيع دون اتصال معطلة" is gone. Checked in the browser.
+- Not committed. Pending together with the earlier stop-receiving fix.
+
+## 2026-11-27 — Barcode scanner F12 prefix on the hosted domain
+
+- Symptom: scanning worked locally but "did nothing" on https://3allaf.duckdns.org in Chrome.
+- Checked: the server's built JS (`app-DCQH9-KB.js`) and Livewire script were identical to local and loaded fine. On the live POS (owner signed in), typed scans reached `submitSearch`. `2000002047582` and `2000001051986` resolved as scale labels (about 4.758 kg and 5.198 kg) and were refused by the stock check ("available only 1 / 4"). That is a server stock-data gap, not a scanner fault.
+- Root cause of the scanner symptom: a key-logging test page (`work/scanner-diagnostic.html`, not committed) showed the scanner sends an `F12` prefix before each code. In Chrome, F12 opens DevTools, which steals focus, so the digits never reach the page.
+- Fix: `resources/js/barcode-scanner.js` now prevents a bare F12 (no modifiers) and treats it as the start of a scan. DevTools stays reachable with Ctrl+Shift+I.
+- `npm run build` passed. Not tested with the physical scanner. Not deployed. During testing, one draft-cart line (0001-000001) was added on the server and could not be removed; the owner was told.
+- Also noted: Laravel Boost browser logger is active on the hosted domain (`/_boost/browser-logs`), which suggests dev packages or a dev environment on the server.
+- Committed and pushed to `fix/inventory-qa` together with the pending POS layout and stop-receiving commits.
