@@ -10,6 +10,7 @@ use InvalidArgumentException;
 
 final class ConvertProductQuantity
 {
+    /** @return numeric-string */
     public function execute(Product $product, ProductUnit $productUnit, string $enteredQuantity): string
     {
         if ($product->getKey() === null || $productUnit->product_id === null || (string) $product->getKey() !== (string) $productUnit->product_id) {

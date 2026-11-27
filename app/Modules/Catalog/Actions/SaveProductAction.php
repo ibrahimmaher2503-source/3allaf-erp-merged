@@ -11,8 +11,8 @@ use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\ProductUnit;
 use App\Modules\Catalog\Models\ProductOptionValue;
+use App\Modules\Catalog\Models\ProductUnit;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\Unit;
 use App\Modules\Catalog\Support\ProductPricingContract;
@@ -32,6 +32,7 @@ class SaveProductAction
 
     /** @var array<int, string> */
     private const FEED_KINDS = ['feed', 'raw_material', 'additive'];
+
     private const ANIMAL_TYPES = ['cattle', 'poultry', 'rabbit', 'other'];
 
     /** @param array<string, mixed> $data */
@@ -212,7 +213,7 @@ class SaveProductAction
 
                 if ($product !== null) {
                     foreach ([
-                        'description_ar', 'description_en', 'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order','model_number', 'feed_kind', 'animal_type', 'protein_percentage', 'track_batches', 'track_expiry', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details', 'tax_setting_id',
+                        'description_ar', 'description_en', 'short_description_ar', 'short_description_en', 'full_description_ar', 'full_description_en', 'meta_title_ar', 'meta_title_en', 'meta_description_ar', 'meta_description_en', 'seo_slug', 'publish_visibility', 'sort_order', 'model_number', 'feed_kind', 'animal_type', 'protein_percentage', 'track_batches', 'track_expiry', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details', 'tax_setting_id',
                         'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',
                         'dimension_unit', 'weight', 'weight_unit', 'open_price', 'sell_online', 'target_age', 'age_label_id', 'suitable_gender', 'gender_id', 'colour', 'colour_id', 'size', 'character', 'character_id',
                         'key_points_ar', 'key_points_en', 'keywords_ar', 'keywords_en', 'fractional_quantity',
@@ -436,7 +437,7 @@ class SaveProductAction
             $factor = trim((string) ($row['conversion_factor'] ?? ''));
             $isBase = filter_var($row['is_base_unit'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-            if ($unitId === false || in_array($unitId, $unitIds, true) || ! preg_match('/^(?:0*[1-9]\d*)(?:\.\d{1,6})?$|^0\.0*[1-9]\d{0,5}$/', $factor)) {
+            if ($unitId === false || in_array($unitId, $unitIds, true) || ! is_numeric($factor) || ! preg_match('/^(?:0*[1-9]\d*)(?:\.\d{1,6})?$|^0\.0*[1-9]\d{0,5}$/', $factor)) {
                 throw new InvalidArgumentException(__('Each product unit must be unique and have a positive conversion factor.'));
             }
 
@@ -467,7 +468,7 @@ class SaveProductAction
 
         ProductUnit::query()->where('product_id', $product->id)->whereNotIn('unit_id', $unitIds)->delete();
         $baseUnit = Unit::query()->findOrFail($unitIds[array_search(true, array_map(
-            fn (mixed $row): bool => filter_var(is_array($row) ? ($row['is_base_unit'] ?? false) : false, FILTER_VALIDATE_BOOLEAN),
+            fn (array $row): bool => filter_var($row['is_base_unit'] ?? false, FILTER_VALIDATE_BOOLEAN),
             $rows,
         ), true)]);
         $product->update(['unit_of_measure' => $baseUnit->code, 'fractional_quantity' => $baseUnit->decimal_places > 0]);

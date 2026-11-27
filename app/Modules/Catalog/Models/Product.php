@@ -263,6 +263,7 @@ class Product extends Model
         return $this->hasMany(ProductVariantValue::class)->orderBy('sort_order');
     }
 
+    /** @return HasMany<ProductSupplier, $this> */
     public function productSuppliers(): HasMany
     {
         return $this->hasMany(ProductSupplier::class);

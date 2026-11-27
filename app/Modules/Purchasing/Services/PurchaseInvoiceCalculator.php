@@ -25,7 +25,7 @@ final class PurchaseInvoiceCalculator
      * compatibility snapshots and are always zero for newly saved invoices.
      *
      * @param  array<string, mixed>  $line
-     * @return array<string, mixed>
+     * @return array{product_unit_id: mixed, entered_quantity: numeric-string, conversion_factor_snapshot: numeric-string, entered_unit_price: numeric-string, quantity: numeric-string, bonus_quantity: numeric-string, unit_cost: numeric-string, discount_type: mixed, discount_value: numeric-string, discount_amount: numeric-string, tax_rate: numeric-string, tax_code: null, tax_inclusive: false, tax_amount: numeric-string, subtotal: numeric-string, line_total: numeric-string}
      */
     public function calculateLine(array $line): array
     {
@@ -35,7 +35,7 @@ final class PurchaseInvoiceCalculator
             throw new InvalidArgumentException(__('Product unit context is invalid.'));
         }
         $decimalPlaces = $product instanceof Product && $product->fractional_quantity
-            ? min(6, (int) ($productUnit?->unit?->decimal_places ?? 6))
+            ? min(6, (int) ($productUnit->unit->decimal_places ?? 6))
             : 0;
         $enteredQuantity = bcadd((string) ProductQuantity::normalize($line['entered_quantity'] ?? $line['quantity'] ?? null, decimalPlaces: $decimalPlaces), '0', 6);
         $factor = $productUnit instanceof ProductUnit ? (string) $productUnit->conversion_factor : '1.000000';

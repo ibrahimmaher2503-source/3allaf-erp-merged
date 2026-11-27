@@ -30,6 +30,7 @@ class ProductUnit extends Model
         return $this->belongsTo(Product::class);
     }
 
+    /** @return BelongsTo<Unit, $this> */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);

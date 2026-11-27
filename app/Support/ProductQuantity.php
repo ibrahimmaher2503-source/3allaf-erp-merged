@@ -32,11 +32,12 @@ final class ProductQuantity
         return ($negative ? '-' : '').$whole.($fraction === '' ? '' : '.'.$fraction);
     }
 
+    /** @return int|numeric-string */
     public static function normalize(mixed $value, string $field = 'quantity', bool $allowZero = false, int $decimalPlaces = 0): int|string
     {
         self::assertDecimalPlaces($decimalPlaces);
         $raw = trim((string) $value);
-        if (! self::matchesPrecision($raw, false, $decimalPlaces) || (! $allowZero && bccomp($raw, '0', $decimalPlaces) <= 0) || ($allowZero && bccomp($raw, '0', $decimalPlaces) < 0)) {
+        if (! self::matchesPrecision($raw, false, $decimalPlaces) || ! is_numeric($raw) || (! $allowZero && bccomp($raw, '0', $decimalPlaces) <= 0) || ($allowZero && bccomp($raw, '0', $decimalPlaces) < 0)) {
             throw ValidationException::withMessages([$field => $decimalPlaces === 0 ? __('Product quantities must be whole numbers.') : __('Product quantity has an invalid decimal precision.')]);
         }
         if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) {
@@ -46,11 +47,12 @@ final class ProductQuantity
         return $decimalPlaces === 0 ? (int) $raw : bcadd($raw, '0', $decimalPlaces);
     }
 
+    /** @return int|numeric-string */
     public static function normalizeSigned(mixed $value, string $field = 'quantity', bool $allowZero = false, int $decimalPlaces = 0): int|string
     {
         self::assertDecimalPlaces($decimalPlaces);
         $raw = trim((string) $value);
-        if (! self::matchesPrecision($raw, true, $decimalPlaces) || (! $allowZero && bccomp($raw, '0', $decimalPlaces) === 0)) {
+        if (! self::matchesPrecision($raw, true, $decimalPlaces) || ! is_numeric($raw) || (! $allowZero && bccomp($raw, '0', $decimalPlaces) === 0)) {
             throw ValidationException::withMessages([$field => $decimalPlaces === 0 ? __('Product quantities must be whole numbers.') : __('Product quantity has an invalid decimal precision.')]);
         }
         if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0 || bccomp($raw, (string) PHP_INT_MIN, 0) < 0) {
