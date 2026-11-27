@@ -34,10 +34,35 @@ final class ApproveOpeningInventoryAction
                     app(PostInventoryMovement::class)->execute($line->product_id, $line->store_id, (string) $line->quantity, 'opening_inventory', (string) $line->unit_cost, 'opening-inventory:'.$document->id.':'.$line->id, OpeningInventoryDocument::class, $document->id, $line->id, requireFirstMovement: true);
                 }
             });
+            $costsFilled = $this->fillEmptyProductCosts($document);
             $before = $document->only(['status', 'lock_version']);
             $document->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now(), 'lock_version' => $document->lock_version + 1]);
-            app(RecordAuditEvent::class)->execute('inventory', 'approve_opening_inventory', $document, $before, $document->only(['status', 'approved_by', 'approved_at', 'lock_version']), metadata: ['line_count' => $lineCount]);
+            app(RecordAuditEvent::class)->execute('inventory', 'approve_opening_inventory', $document, $before, $document->only(['status', 'approved_by', 'approved_at', 'lock_version']), metadata: ['line_count' => $lineCount, 'product_costs_filled' => $costsFilled]);
             return $document->fresh();
         });
+    }
+
+    /**
+     * A product created without a cost gets its first cost from the approved opening line, so the
+     * cost is typed only once. A cost already on the Product Card is never overwritten; when one
+     * product has several lines, the first line with a positive cost wins.
+     *
+     * @return list<int> ids of the products whose cost was filled
+     */
+    private function fillEmptyProductCosts(OpeningInventoryDocument $document): array
+    {
+        $costs = $document->lines()->where('unit_cost', '>', 0)->orderBy('id')->get(['product_id', 'unit_cost'])
+            ->unique('product_id')->pluck('unit_cost', 'product_id');
+        $filled = [];
+        foreach ($costs as $productId => $unitCost) {
+            $updated = DB::table('products')->where('id', $productId)
+                ->where(fn ($query) => $query->whereNull('average_cost')->orWhere('average_cost', '<=', 0))
+                ->update(['average_cost' => $unitCost, 'lock_version' => DB::raw('lock_version + 1'), 'updated_at' => now()]);
+            if ($updated > 0) {
+                $filled[] = (int) $productId;
+            }
+        }
+
+        return $filled;
     }
 }

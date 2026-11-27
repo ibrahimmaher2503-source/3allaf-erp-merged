@@ -2011,3 +2011,9 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Code: `ProductBrowser::addProduct` (grid button only) now calls `skipRender()` when the grid would not change (no option drawer open, no error showing, quantity 1, product still under its stock limit). Scans and the option picker use the new private `addToCart()` and still re-render.
 - Local check on localhost:8001: the add response dropped to 932 bytes with no HTML (329 ms), and the follow-up rendered only cart and checkout (188 ms). FEED-001 went 4 → 5, then was restored to 4.
 - `php -l` and Pint passed. `tests/Feature/Module5PosQaTest.php` could not run: its test schema `qa_rajh_m1_regression_20261007` does not exist locally. Not committed, not deployed.
+
+## 2026-11-27 — Opening inventory fills an empty Product Card cost
+
+- Owner report: opening stock asks for a unit cost although a price was entered on the product. On the hosted domain, products 0001-000001…000004 have a selling price and an empty cost. The opening workflow already pre-fills the unit cost from `products.average_cost` (`opening-workflow.blade.php:71`), so it showed 0. Selling price is not used as cost.
+- Change (owner-approved): `ApproveOpeningInventoryAction` now writes the approved line's unit cost to the product's `average_cost` only when that cost is null or ≤ 0. It bumps `lock_version` and records the filled product ids in the approval audit metadata (`product_costs_filled`). The first positive line per product wins, and an existing cost is never overwritten.
+- Verified with a scratch script on local MariaDB `rajeh_debt_test_20261123`, inside a transaction that was always rolled back. The empty-cost product got 42.25 (lock 0→1); the product with cost 15.50 kept it. `php -l` passed. Pint was not applied, because the file's existing one-line style fails it. No automated suite, commit or deploy.
