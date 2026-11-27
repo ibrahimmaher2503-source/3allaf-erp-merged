@@ -11,7 +11,25 @@ use App\Modules\Retail\Models\PosShift;
 
 final class PosContextResolver
 {
+    /**
+     * The POS screen resolves the same context from several Livewire components and
+     * routes in one request; the result is remembered for the current request only.
+     */
     public function resolve(User $cashier): PosContext
+    {
+        if (app()->runningInConsole() || ! app()->bound('request')) {
+            return $this->resolveFresh($cashier);
+        }
+        $key = 'pos.context.'.$cashier->id;
+        $request = request();
+        if (! $request->attributes->has($key)) {
+            $request->attributes->set($key, $this->resolveFresh($cashier));
+        }
+
+        return $request->attributes->get($key);
+    }
+
+    private function resolveFresh(User $cashier): PosContext
     {
         $shift = PosShift::query()
             ->select('pos_shifts.*')

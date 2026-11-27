@@ -86,7 +86,7 @@ final class Cart extends Component
             $cart->unit(request(), $user, $productId, $productUnitId);
             $this->dispatch('pos-cart-updated');
         } catch (\Throwable $exception) {
-            $this->addError('cart', \App\Support\UserSafeError::message($exception));
+            $this->addError('cart', UserSafeError::message($exception));
         }
     }
 
@@ -128,16 +128,15 @@ final class Cart extends Component
         $this->dispatch('pos-cart-updated');
     }
 
-    public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver, PosOpenOrderManager $orders): View
+    public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver): View
     {
         /** @var User $user */
         $user = auth()->user();
         $context = $contextResolver->resolve($user);
         $store = $context->store;
         $data = $snapshot->build($context);
-        $activeOrder = $orders->active(request(), $user, $context, false);
-        $openOrders = $orders->orders($user, $context);
 
-        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context, 'activeOrder' => $activeOrder, 'openOrders' => $openOrders]);
+        // The cart view never shows the open-order list, so it is not loaded on every re-render.
+        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context]);
     }
 }

@@ -186,19 +186,27 @@ final class PosOpenOrderManager
         DB::transaction(function () use ($order, $cart): void {
             $locked = PosOpenOrder::query()->open()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             $locked->lines()->delete();
+            // One bulk insert: re-saving a 20-line cart must not cost 20 inserts on every change.
+            $now = now();
+            $rows = [];
             foreach ($cart as $position => $line) {
                 $productId = (int) ($line['product_id'] ?? 0);
                 $quantity = (string) ($line['quantity'] ?? '0');
                 if ($productId <= 0 || bccomp($quantity, '0', 6) <= 0) {
                     throw new InvalidArgumentException(__('The open order contains an invalid product line.'));
                 }
-                PosOpenOrderLine::query()->create([
+                $rows[] = [
                     'pos_open_order_id' => $locked->id,
                     'product_id' => $productId,
                     'line_position' => $position + 1,
                     'quantity' => $quantity,
-                    'draft_payload' => $line,
-                ]);
+                    'draft_payload' => json_encode($line, JSON_THROW_ON_ERROR),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            if ($rows !== []) {
+                PosOpenOrderLine::query()->insert($rows);
             }
             $locked->update(['revision' => $locked->revision + 1, 'last_activity_at' => now()]);
         });
@@ -234,13 +242,24 @@ final class PosOpenOrderManager
         if ($order === null || $totals === null || $order->status !== 'open') {
             return;
         }
-        PosOpenOrder::query()->open()->whereKey($order->id)->update([
-            'subtotal' => $totals['subtotal'] ?? '0.00',
-            'discount_total' => $totals['discount_total'] ?? '0.00',
-            'tax_total' => $totals['tax_total'] ?? '0.00',
-            'total' => $totals['total'] ?? '0.00',
-            'last_activity_at' => now(),
-        ]);
+        $next = [
+            'subtotal' => (string) ($totals['subtotal'] ?? '0.00'),
+            'discount_total' => (string) ($totals['discount_total'] ?? '0.00'),
+            'tax_total' => (string) ($totals['tax_total'] ?? '0.00'),
+            'total' => (string) ($totals['total'] ?? '0.00'),
+        ];
+        // Rendering the page must not write when nothing changed (it also kept bumping last_activity_at).
+        $unchanged = true;
+        foreach ($next as $column => $value) {
+            if ($order->{$column} === null || bccomp((string) $order->{$column}, $value, 2) !== 0) {
+                $unchanged = false;
+                break;
+            }
+        }
+        if ($unchanged) {
+            return;
+        }
+        PosOpenOrder::query()->open()->whereKey($order->id)->update($next + ['last_activity_at' => now()]);
     }
 
     /** @param array<int, array<string, mixed>> $lines */

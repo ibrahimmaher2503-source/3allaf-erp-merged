@@ -1763,6 +1763,28 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Verification run: the edited reason-select markup compiled with the standalone Blade compiler and passed `php -l`. NOT run: browser check, tests, any database operation (local MariaDB was down). The standalone lint of the whole file reports the same error on the committed version, so it could not be used for that file.
 - Not committed or pushed.
 
+## 2026-11-23 - Customer and supplier debt entry (feed-store operations)
+
+- Task: owner asked to add customer and supplier debts (مديونية) quickly and appropriately. Class L2: new routes and controller methods reusing existing actions; no migration and no Core behaviour change.
+- Finding: the ledgers and posting actions already existed but no screen used them. `customer_account_adjustments` + `PostCustomerAccountAdjustmentAction` (signed amount, `customers.sensitive`) and `supplier_account_adjustments` + `PostSupplierAccountAdjustmentAction` (debit/credit, `purchase_invoices.approve`) already feed `CustomerBalance::for` and `SupplierBalance::for`. Per `docs/30` and `docs/36`, no opening-balance column was added; debts are explicit, reasoned, audited, idempotent adjustments.
+- Work completed: routes `feed-store.customer-debts.store` and `feed-store.supplier-debts.store` (route-level `can:` middleware); `customerDebt` / `supplierDebt` methods in `FeedStoreOperationsController`; two cards on `feed-store/operations` (type increase/decrease, amount, date not in the future, required reason, reference, current balance after "Show balance", latest 10 manual debts); 22 Arabic strings in `lang/ar.json` and `lang/ar-EG.json`. Pint reformatted the whole controller.
+- Known limitation (owner decision): `RecordSupplierPaymentAction` requires invoice allocations, so a manual supplier debt cannot be paid from Supplier payment. It is reduced with a credit adjustment, which moves no treasury money. A customer manual debt is collected through an unallocated Customer receipt, which shows as unapplied credit while the net balance updates correctly.
+- Verification actually run: `php -l` on controller and routes, Pint on the two edited PHP files, `route:list --name=feed-store` shows both routes, `feed-store/operations.blade.php` compiled with the app Blade compiler and the output passed `php -l`, and both lang files parse as JSON. NOT run: browser/authenticated check, a real posting, or any automated suite. The local MariaDB in `C:\xampp\mysql\data` fails to start with InnoDB "log sequence number is in the future" corruption; no recovery was attempted.
+- Not committed or pushed. The working tree also holds the owner's earlier uncommitted POS edits, which this session did not touch.
+- Database restore attempt (owner approved "Restore 11-08 backup"): `C:\xampp\mysql\data` renamed to `C:\xampp\mysql\data-corrupt-20261123` (kept intact). `data-backup-20261108-before-recovery` was copied to `C:\xampp\mysql\data`; the original backup was not modified. Both folders hold the same 44 schemas. A normal start failed: the redo log pointed at missing `#sql-96cc_b.ibd` temp tablespaces in `qa_rajh_m1_merge_review_20261107_20261007`. A single start with `--innodb-force-recovery=1` (command line only, `my.ini` unchanged) also failed with the same "log sequence number is in the future" corruption, so the backup was taken after the damage. No higher recovery level was tried. MariaDB is not running and the browser check is still not done.
+- Clean test database (owner chose "New clean test DB"): new data folder `C:\xampp\mysql\data-test-20261123` (own `my.ini`, 127.0.0.1:3306) and schema `rajeh_debt_test_20261123`. `.env` `DB_DATABASE` changed from `qa_rajh_m1_merge_review_20261107_20261007` to `rajeh_debt_test_20261123`. Ran all migrations, then `db:seed` (ProductionSeeder + DemoFeedStoreSeeder) and `LocalAuthSeeder` with the local test admin values from `seed-local-auth.bat`. Rebuilt assets with `npm run build`, because the new orange utilities were missing from the compiled CSS.
+- Browser verification actually run (local, `local.production-admin`, English and ar-EG): customer 1 balance 8,460 → 8,960 after a +500 debt; supplier 1 balance 40,050 → 41,250 after a +1,200 debit, then 41,050 after a −200 credit; the latest-debts lists updated. Server checks: empty reason rejected; a repeated idempotency key did not double-post (balance stayed 41,100 after a +50 test); reusing the key with changed data was refused. Gate check: only production-admin and system-administrator can post debts; the cashier sees the page but not the debt cards. The Arabic RTL cards render with the new strings.
+- Found: `feed-store/operations?customer_id=…&supplier_id=…` (both selected in one URL) exceeds the dev query budget of 100 and returns 500. The existing per-invoice outstanding loops cause most of the queries, and the two new balance reads add about 10. The screen's own forms never send both parameters together. Not fixed.
+
+## 2026-11-23 - Customer debt in POS add-customer and in the customer profile
+
+- Owner request: enter a customer's debt while adding the customer in POS, and see and edit all debts in the customer profile.
+- POS (`routes/pos-hotfix16-customers.php`, `resources/views/pages/pos/customer-modal.blade.php`): optional "previous debt" amount and note, shown only with `customers.sensitive` (the server returns 403 if the amount is sent without it). Customer creation and the `PostCustomerAccountAdjustmentAction` posting run in one transaction. Idempotency key is `pos-opening-debt:<customer idempotency key>`.
+- Profile (`routes/customers.php`, `resources/views/pages/customers/show.blade.php`): a "Customer debts" section lists every manual debt (sale_id null) with original amount, current amount, correction history, creator and total. With `customers.sensitive`, "Add a debt" uses the new route `customers.debts.store`. "Edit" (`customers.debts.correct`) takes the corrected amount and posts the difference as a new adjustment referenced `CORR-<original public_id>`, under a customer row lock. Approved entries are never changed, and 0 cancels the debt.
+- Test-DB-only setup (`rajeh_debt_test_20261123`): inserted the missing `active_pos_shift_assignments` row for demo shift 1, and ran `ConsentQaPolicySeeder` (customer creation needs `customer.phone_normalization`).
+- Browser verification run: customer 1 debt edited 500 → 400 (correction −100 shown); saving the same amount reported no change; adding +250 from the profile gave a total of 650 and a system balance of 9,110 (8,460 + 650). The POS add-customer modal showed the field; a customer saved with a previous debt of 750 became customer 41 with a 750 adjustment and a 750 balance, listed in their profile.
+- Notes: after `view:clear`, `php artisan serve` kept serving stale compiled views until the server restarted (OPcache). Assets were rebuilt with `npm run build`. Not committed.
+
 ## 2026-11-23 — Supplier quantity discounts review (side session)
 
 - Task: owner asked for complete handling of supplier quantity discounts on purchase orders and invoices.
@@ -1787,3 +1809,81 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Release notes: an authorized Core change. `scripts/test-core-baseline.sh` and the Core Freeze review have not run and are required before production. A grep of existing tests found none asserting the old zero-PO-discount or gross return cost. Before deployment, open supplier returns (draft/submitted) against discounted invoice lines must be re-saved (drafts recompute the cost) or rejected and recreated (submitted), because approval now requires net cost. Pint also reformatted untouched imports and operator spacing in `SavePurchaseOrderAction` and `ApprovePurchaseInvoiceAction`.
 - Not run: automated tests (forbidden). Not committed.
 - Remaining gaps: an order-linked invoice rejects an extra bonus beyond the order bonus (and one line per product blocks a second line); bonus still owed after all paid units arrive cannot be received from the order (lines with no paid quantity remaining are skipped); tiered price breaks; bonus-only lines with zero paid quantity; the English-only message "Supplier credit limit would be exceeded by this invoice." (no Arabic translation, predates this change); purchase-cost/list-price label overlap at mobile width (predates this change).
+
+## 2026-11-25 — POS fixes and full POS walk-through (local fix/inventory-qa, test DB)
+
+- Backups first (nothing deleted): branch `backup/fix-inventory-qa-20261125`; ref `refs/backup/fix-inventory-qa-uncommitted-20261125` (all uncommitted tracked work); untracked files in `work/backups/3allaf-erp-merged-untracked-20261125/untracked.tar.gz`; branch `backup/codex-r1-sales-reports-52466a77`; review worktree `work/review-r1-sales-reports`. Review notes: `work/backups/review-codex-r1-sales-reports-20261125.md`.
+- Fixed:
+  1. The POS page failed with more than 200 queries. Request-scoped caching of the POS context, the cart snapshot (keyed by every input) and pricing reads (store, product, customer, base list, resolved price; cleared on save of any pricing/store/product/customer model) via `App\Support\RequestMemo`. Page load went from about 205 to 119 queries.
+  2. Livewire morph error "Cannot read properties of null (reading 'before')" when a new line was added: the cart broke (header count vs lines, stale totals). Each line is now one keyed element, and `@forelse/@empty@if` was replaced by `@foreach` plus a separate empty state. Newest line shows on top (display only; the quantity box keeps its quantity-based key so it updates).
+  3. Scan errors (e.g. out of stock) vanished at once because Livewire's follow-up sync cleared the error bag; the message is now component state (`selectionError`), and an empty second submit no longer re-renders.
+  4. Batch/expiry-tracked products could not be sold at all; owner chose first-expiry-first-out (see DECISIONS). Verified returns go back to the sold batch.
+  5. Egyptian Arabic gaps: 42 keys copied from `ar.json` into `ar-EG.json`, and 38 POS messages translated (payment, stock, units, credit, batches).
+  6. Gift-card payment entry points removed (ported server commit 8b740f8c).
+- Browser-verified on `rajeh_debt_test_20261123`:
+  - Scan and rescan, quantity typing above stock (message stays), remove line, category-card add.
+  - New parallel order and switching back; cart discount 10.
+  - Cash sale MAIN-SI-000001: stock deducted correctly. Sale MAIN-SI-000002 with discount and FEED-001: posted from batch LOT-260801-A.
+  - Receipt print; phone-width layout.
+  - Rolled-back tinker: a return of FEED-001 went back into batch 1.
+- Test-environment change: `.env` `QUERY_BUDGET` 200 → 500, because checkout of 5 lines still needs about 216 queries (about 40 per line in protected sale posting). `.env.example` ships `QUERY_BUDGET_ENABLED=true` / 100. If production uses it, the POS page (119) and multi-line checkouts exceed it. Needs an owner check.
+- Not done: scale auto-receive default (owner wanted automatic; it blocks a single-threaded server for up to 8 s per poll when the scale is off), merging `codex/r1-sales-reports`, automated tests (forbidden), commit.
+
+## 2026-11-27 — POS freeze with many cart items (follow-up)
+
+- Symptom (owner): POS froze after about 7 cart items. Cause: every cart change cost about 7–10 queries per line (prices, overrides, product cards, barcodes, and one insert per open-order line), so requests passed the local query cap near 7 lines. Each add took 1–2 s.
+- Fix: `EffectivePriceResolver::warm()` and `PriceListResolver::warmOverrides()` pre-load product cards (with units and barcodes), approved store price lines and list overrides for the whole cart in a few queries (request memo, cleared on any pricing save). The cart snapshot and sale line preparation call it. Open-order lines are saved with one bulk insert. Sale completion now locks every price source, clears the request pricing cache, then re-reads prices in bulk, so a price changed before the lock is still detected.
+- Cart requests now take a flat ~50–68 queries regardless of size (was ~217 with 21 lines); adds take 0.15–0.9 s.
+- `config/performance.php` gains `query_budget_log_only_routes` (`pos.checkout`, `pos.checkout.legacy`): a sale completion over the cap is logged, not aborted halfway, because posting needs at least 3 writes per item.
+- MariaDB on the test data folder had been stopped (no error in its log); restarted with the same `my.ini`, data intact.
+- Browser-verified with local `.env` `QUERY_BUDGET=100` (same as `.env.example`): 20 different products added with no errors, 20 lines shown, line totals 530 = cart total; completed sale MAIN-SI-000003 (20 lines posted, stock deducted, FEED-001 from batch 1); the checkout was logged at 101 queries, not aborted.
+- Not committed.
+
+## 2026-11-27 — Customer debt and credit sales made clear (customer pages + POS)
+
+- Customer create/edit "الحساب والائتمان": labels translated ("نوع تعامل العميل (نقدي / آجل)", "حد المديونية (أقصى مبلغ آجل)", empty = no ceiling) with a note that credit sales add to the customer debt automatically. The create form gains an optional "مديونية سابقة على العميل" (+ note), posted in the same transaction through `PostCustomerAccountAdjustmentAction` (permission `customers.sensitive`, idempotency `profile-opening-debt:<key>`). The edit form links to "مديونيات العميل".
+- Customer profile: the top card now shows the total owed (open invoices + manual debts) with a link to add or edit a debt; previously it showed only open invoices (0 while the customer owed 750). The sales-analysis tables scroll inside their card instead of spilling past it, and the consent-history card is full width. 10 missing Arabic labels were added.
+- POS payment window: the credit tab ("بيع ائتماني") is always visible. When the customer is missing or not credit-enabled it explains why, and a user with `customers.edit` can enable credit for the order's customer (`CheckoutPanel::enableCustomerCredit`, cash/unset → "both", audited as `pos_enable_customer_credit`). It also shows the current customer debt and credit limit with a link to adjust the debt on the profile.
+- Browser-verified on the test DB:
+  - Customer 41 page: total 750, no overflow at the bottom.
+  - POS: customer 41 selected, credit enabled from the payment window, credit sale MAIN-SI-000004 = 58 unpaid; customer balance 750 → 808.
+  - New customer 42 created with previous debt 300; total owed 300.
+- Not committed.
+- Follow-up (same day): on the customer profile the pricing, account (AR), customer debts and sales-analysis sections moved out of the narrow main column into a full-width block below the profile/sidebar grid. Browser check on customer 42: tables 1060px wide (was 684px), no horizontal page scroll.
+
+## 2026-11-27 — Scale label barcodes at the POS
+
+- Problem: scanning a scale label (e.g. `2000001016473`) found nothing. The scale barcode format (prefix / item digits / value digits / decimals) was only stored in scale settings; POS searched it as a product barcode.
+- Fix: `App\Modules\Retail\Support\ScaleLabelBarcode` parses the label with the store's active scale `barcode_settings` (defaults: EAN-13, prefix 20, 5-digit PLU, 5-digit weight, 3 decimals; EAN check digit validated), resolves the PLU through `scale_product_mappings` (or the item code when the format uses item codes) and returns product unit + quantity (price labels: price ÷ current unit price). `ProductBrowser::submitSearch` tries it when no product matches and adds the line with the weight; an unmapped PLU or zero weight shows an Arabic message.
+- `2000001016473` = prefix 20, PLU 1, 1.647 kg, check digit 3 (valid).
+- Test DB only: created scale configuration 1 (store 1, 127.0.0.1:5001, default format) and mapping PLU 1 → product unit 34 (FEED-012, kg).
+- Browser-verified: scanning `2000001016473` added FEED-012 at 1.647 kg × 25 = 41.18; `2000002010005` (PLU 2, unmapped) showed the "not linked" message. Not committed.
+
+## 2026-11-27 — Scanner adds straight to the cart
+
+- Owner request: a scan must put the item in the cart, not show search results to pick from.
+- `ProductBrowser::scanToCart()`: exact item code / model number / barcode; with Enter, else the single product whose barcode or item code starts with the scanned text; else a scale label. A product with options opens its option picker. Several matches still show results.
+- `updatedSearch()`: scanners that send no Enter fill the search box only, so a complete numeric barcode (8–14 digits) that identifies one product (or a scale label) is added on the search sync.
+- Duplicate guard: one physical scan arriving through both paths (Enter + sync) within 1.2 s is ignored; scanning the same item twice adds 2.
+- Browser-verified: scan + Enter added once; no-Enter scan added once; two scans of the same barcode gave quantity 2; "FEED-01" + Enter showed 10 results and added nothing. Not committed.
+
+## 2026-11-27 — Scale sending from settings verified (against a protocol simulator)
+
+- The real scale (192.168.0.150:33581) is not reachable: this PC is now on 192.168.1.x. A local simulator of the documented TM-xA protocol (`docs/scale-device-protocol.md`) ran on 192.168.1.47:33581 (scratchpad, not in the repo).
+- Through the settings screen on the test DB (scale configuration 1 pointed at the simulator):
+  - Connection test: "connected".
+  - Price send for PLU 1: read-before, `DWL PLU` record `1|1|1|1|2500,2|…|ARANEB`, read back twice; mapping `confirmed` at 25.00, audit `confirm_scale_price`.
+  - Key send: layer 0 key 8 = PLU 1; `DWL SCP 0|8|1`, read back; `confirmed`.
+  - With the simulator stopped, sending key 9 was marked `unverified` (red) with "توقف الإرسال"; nothing was falsely confirmed.
+- No code change. The real device still needs one end-to-end check on its network; the failure message does not say why (for example scale off or another network).
+
+## 2026-11-27 — Clear reasons for failed scale sends (settings)
+
+- `resources/views/platform/admin/settings.blade.php`: a failed price or key send now stores a reason (`scaleSendErrors`, `scaleKeyErrors`, locked). `scaleFailureReason()` maps each `TmScaleConnection` RuntimeException to an actionable message: the scale is not answering at IP:port (off, wrong network, wrong IP/port), invalid address, connection dropped, unexpected reply from another device, value not kept, PLU holds another product, name/price format, or key not on the scale.
+- Where it shows: under the price preview row, in the key detail panel, and under the "Sending stopped" banners. A successful send clears it.
+- Pint also normalised imports in that file (the FQCNs became `use` statements, with no behaviour change).
+- 11 new keys were added to `lang/ar.json` and `lang/ar-EG.json`.
+- Verified in the browser, test DB, simulator at 192.168.1.47:33581:
+  - With the simulator stopped, sending key 0/9 showed "الميزان مش بيرد على العنوان 192.168.1.47:33581…".
+  - With it started, the same key was confirmed and the message cleared.
+- The price-row failure message was not exercised in the browser (that price was already confirmed). No automated tests were run.

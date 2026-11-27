@@ -1,5 +1,5 @@
 <dialog id="pos-new-customer"
-    @if($errors->hasAny(['phone','first_name_ar','last_name_ar','governorate_id','city_id','email','invoice_delivery_method','customer'])) x-data x-init="$nextTick(() => $el.showModal())" @endif
+    @if($errors->hasAny(['phone','first_name_ar','last_name_ar','governorate_id','city_id','email','invoice_delivery_method','customer','opening_debt','opening_debt_note']))x-data x-init="$nextTick(() => $el.showModal())" @endif
     class="m-auto h-[min(82vh,46rem)] max-h-[82vh] w-[min(96vw,74rem)] max-w-none overflow-hidden border border-border bg-surface p-0 text-start text-text-primary shadow-2xl backdrop:bg-slate-950/75"
     aria-labelledby="pos-customer-modal-title">
     <form method="POST" action="{{ route('pos.customer.create') }}" class="flex h-full min-h-0 flex-col"
@@ -44,6 +44,14 @@
                     <label class="col-span-2 text-[11px] font-semibold text-text-primary">{{ __('Customer group') }}<select name="customer_group_id" class="mt-0.5 h-8 w-full border border-border bg-surface px-2 text-xs text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"><option value="">{{ __('No group assigned') }}</option>@foreach($customerGroups as $group)<option value="{{ $group->id }}" @selected(old('customer_group_id')==$group->id)>{{ str_starts_with(app()->getLocale(), 'ar') ? $group->name_ar : $group->name_en }}</option>@endforeach</select></label>
                     @error('customer_group_id')<p class="col-span-2 text-xs font-semibold text-rose-700 dark:text-rose-300">{{ $message }}</p>@enderror
                     <label class="col-span-2 text-[11px] font-semibold text-text-primary">{{ __('English address') }}<input name="address_en" value="{{ old('address_en') }}" dir="ltr" class="mt-0.5 h-8 w-full border border-border bg-surface px-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
+                    @can('customers.sensitive')
+                        <div class="col-span-2 grid grid-cols-2 gap-2 border border-rose-200 bg-rose-50/60 p-2 dark:border-rose-900 dark:bg-rose-950/20">
+                            <label class="text-[11px] font-semibold text-text-primary">{{ __('Previous debt (optional)') }}<input name="opening_debt" type="number" min="0.0001" step="0.0001" value="{{ old('opening_debt') }}" dir="ltr" placeholder="0.00" class="mt-0.5 h-8 w-full border border-border bg-surface px-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
+                            <label class="text-[11px] font-semibold text-text-primary">{{ __('Debt note') }}<input name="opening_debt_note" value="{{ old('opening_debt_note') }}" maxlength="500" class="mt-0.5 h-8 w-full border border-border bg-surface px-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></label>
+                            <p class="col-span-2 text-[11px] text-text-muted">{{ __('An amount the customer already owes from before. It is added to the customer account and shown in the customer profile.') }}</p>
+                            @error('opening_debt')<p class="col-span-2 text-xs font-semibold text-rose-700 dark:text-rose-300">{{ $message }}</p>@enderror
+                        </div>
+                    @endcan
                     <p class="col-span-2 border-t border-border pt-2 text-[11px] text-text-muted">{{ __('Email delivery without an address falls back to print.') }}</p>
                 </div>
             </section>

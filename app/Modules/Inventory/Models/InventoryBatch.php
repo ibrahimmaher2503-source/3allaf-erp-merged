@@ -29,6 +29,33 @@ final class InventoryBatch extends Model
         });
     }
 
+    /**
+     * Owner decision 2026-11-25: POS stock for a batch- or expiry-tracked product comes from the
+     * active batch with the nearest unexpired expiry date (first expiry, first out). Returns null
+     * for an untracked product, which posts without a batch exactly as before.
+     */
+    public static function firstExpiringIdFor(int $productId): ?int
+    {
+        $product = Product::query()->select(['id', 'track_batches', 'track_expiry'])->findOrFail($productId);
+        if (! $product->track_batches && ! $product->track_expiry) {
+            return null;
+        }
+        $batchId = self::query()
+            ->where('product_id', $productId)
+            ->where('status', 'active')
+            ->when($product->track_expiry, fn ($query) => $query->whereNotNull('expiry_date'))
+            ->where(fn ($query) => $query->whereNull('expiry_date')->orWhereDate('expiry_date', '>=', today()))
+            ->orderByRaw('expiry_date is null')
+            ->orderBy('expiry_date')
+            ->orderBy('id')
+            ->value('id');
+        if ($batchId === null) {
+            throw new InvalidArgumentException(__('No active, unexpired batch is available for this product.'));
+        }
+
+        return (int) $batchId;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

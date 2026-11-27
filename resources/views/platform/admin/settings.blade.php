@@ -20,11 +20,15 @@ use App\Modules\Platform\Models\ScaleConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Services\TmScaleConnection;
-use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Platform\Support\DocumentTypeCatalog;
+use App\Modules\Pricing\Services\BarcodeSvgRenderer;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -79,6 +83,10 @@ new #[Title('System Settings')] class extends Component
     #[Locked]
     public array $scaleSendResults = [];
 
+    /** @var array<int, string> mapping id => why the last price send failed, in the user's language */
+    #[Locked]
+    public array $scaleSendErrors = [];
+
     public ?string $scaleConnectionResult = null;
 
     public string $scaleProductNumber = '';
@@ -98,6 +106,10 @@ new #[Title('System Settings')] class extends Component
 
     /** @var array<int, string> key assignment id => confirmed|unverified, set by sendScaleKey() */
     public array $scaleKeyResults = [];
+
+    /** @var array<int, string> key assignment id => why the last key send failed, in the user's language */
+    #[Locked]
+    public array $scaleKeyErrors = [];
 
     public array $scaleLabelForm = ['name' => 'Default label', 'width_mm' => 58, 'height_mm' => 40, 'barcode_type' => 'EAN13', 'fields' => ['name', 'weight', 'unit_price', 'total', 'date']];
 
@@ -708,11 +720,11 @@ new #[Title('System Settings')] class extends Component
 
         $this->scaleConnectionResult = null;
         $this->scaleEditing = false;
-        $this->reset('scalePricePreviews', 'scaleSendResults');
+        $this->reset('scalePricePreviews', 'scaleSendResults', 'scaleSendErrors', 'scaleKeyErrors');
         Flux::toast(variant: 'success', text: __('Scale configuration saved.'));
     }
 
-    private function scaleOutlets(): \Illuminate\Database\Eloquent\Builder
+    private function scaleOutlets(): Builder
     {
         return Store::query()->visibleTo(auth()->user())->where('company_id', $this->companyId)
             ->where('type', 'selling')->where('status', 'active');
@@ -763,7 +775,7 @@ new #[Title('System Settings')] class extends Component
         }
         $device = ScaleConfiguration::query()->where('company_id', $this->companyId)->where('status', 'active')->firstOrFail();
         $this->scalePricePreviews[$id] = $this->scalePriceSnapshot($device, $id, $prices);
-        unset($this->scaleSendResults[$id]);
+        unset($this->scaleSendResults[$id], $this->scaleSendErrors[$id]);
     }
 
     /**
@@ -783,7 +795,7 @@ new #[Title('System Settings')] class extends Component
             try {
                 $snapshot = $this->scalePriceSnapshot($device, (int) $mapping->id, $prices);
                 $this->scaleStatuses[(int) $mapping->id] = $snapshot['status'] === 'confirmed' && $snapshot['confirmed'] === $snapshot['price'] ? 'confirmed' : 'needs_update';
-            } catch (ValidationException | \Illuminate\Database\Eloquent\ModelNotFoundException) {
+            } catch (ValidationException|ModelNotFoundException) {
                 $this->scaleStatuses[(int) $mapping->id] = 'ineligible';
             }
         }
@@ -792,7 +804,7 @@ new #[Title('System Settings')] class extends Component
     public function removeScalePreview(int $id): void
     {
         Gate::authorize('company_settings.edit');
-        unset($this->scalePricePreviews[$id], $this->scaleSendResults[$id]);
+        unset($this->scalePricePreviews[$id], $this->scaleSendResults[$id], $this->scaleSendErrors[$id]);
     }
 
     private function scalePriceSnapshot(ScaleConfiguration $device, int $id, EffectivePriceResolver $prices): array
@@ -833,7 +845,7 @@ new #[Title('System Settings')] class extends Component
             }
             try {
                 $snapshot = $this->scalePriceSnapshot($device, $id, $prices);
-            } catch (ValidationException | \Illuminate\Database\Eloquent\ModelNotFoundException) {
+            } catch (ValidationException|ModelNotFoundException) {
                 return 'ineligible';
             }
             if ($snapshot !== $this->scalePricePreviews[$id]) {
@@ -845,9 +857,10 @@ new #[Title('System Settings')] class extends Component
             $query = DB::table('scale_product_mappings')->where('scale_configuration_id', $device->id)->where('id', $snapshot['id']);
             try {
                 $connection->sendWeightedProduct($device->ip_address, $device->port, $snapshot['plu'], (string) $snapshot['plu'], $snapshot['label'], $snapshot['price']);
-            } catch (RuntimeException) {
+            } catch (RuntimeException $exception) {
                 $query->update(['sync_status' => 'unverified', 'updated_at' => now()]);
                 $this->scalePricePreviews[$id] = array_replace($snapshot, ['status' => 'unverified']);
+                $this->scaleSendErrors[$id] = $this->scaleFailureReason($exception, $device);
 
                 return 'unverified';
             }
@@ -861,6 +874,9 @@ new #[Title('System Settings')] class extends Component
             return 'confirmed';
         });
         $this->scaleSendResults[$id] = $status;
+        if ($status !== 'unverified') {
+            unset($this->scaleSendErrors[$id]);
+        }
         $this->scaleStatuses[$id] = match ($status) {
             'confirmed' => 'confirmed',
             'ineligible' => 'ineligible',
@@ -951,9 +967,10 @@ new #[Title('System Settings')] class extends Component
         $query = DB::table('scale_key_assignments')->where('id', $assignment->id);
         try {
             $connection->sendShortcutKey($device->ip_address, $device->port, (int) $assignment->layer, (int) $assignment->key_number, $value);
-        } catch (RuntimeException) {
+        } catch (RuntimeException $exception) {
             $query->update(['sync_status' => 'unverified', 'updated_at' => now()]);
             $this->scaleKeyResults[$id] = 'unverified';
+            $this->scaleKeyErrors[$id] = $this->scaleFailureReason($exception, $device);
 
             return 'unverified';
         }
@@ -963,8 +980,29 @@ new #[Title('System Settings')] class extends Component
             'layer' => (int) $assignment->layer, 'key' => (int) $assignment->key_number, 'plu' => $value,
         ]);
         $this->scaleKeyResults[$id] = 'confirmed';
+        unset($this->scaleKeyErrors[$id]);
 
         return 'confirmed';
+    }
+
+    /** Turns a scale connection failure into a reason the user can act on (scale off, wrong network, rejected value...). */
+    private function scaleFailureReason(RuntimeException $exception, ScaleConfiguration $device): string
+    {
+        $address = $device->ip_address.':'.$device->port;
+
+        return match ($exception->getMessage()) {
+            'Scale connection failed.' => __('The scale did not answer at :address. Check that the scale is on, connected to the same network as this computer, and that the IP address and port are correct.', ['address' => $address]),
+            'Invalid scale endpoint.' => __("The scale address :address is not valid. Use the scale's local network IP address and port.", ['address' => $address]),
+            'Scale request failed.', 'Scale reply was incomplete.' => __('The connection to the scale at :address dropped before it finished replying. The scale may be busy or the network unstable; try again.', ['address' => $address]),
+            'Invalid scale product reply.', 'Invalid scale product data.', 'Invalid scale shortcut key reply.' => __('The device at :address replied in an unexpected format. Make sure this address belongs to the scale and not another device.', ['address' => $address]),
+            'The scale write could not be confirmed.', 'The scale value did not stay after the write.', 'The scale shortcut key could not be confirmed.' => __('The scale received the data but did not keep it. Try sending again; if it repeats, restart the scale.'),
+            'The PLU contains a different product or unit.' => __('This PLU number on the scale holds a different product. Change the PLU number or clear it on the scale first.'),
+            'Product fields exceed the verified scale format.' => __('The product name or price does not fit the scale: use a Latin name of up to 20 characters and a price below 10000.'),
+            'The scale price must be positive.' => __('The price must be greater than zero before sending it to the scale.'),
+            'Shortcut key is outside the verified scale range.', 'The shortcut key was not found on the scale.' => __('This key number does not exist on the scale. Choose a key that the scale has.'),
+            'Invalid scale product number.' => __('The PLU number is outside the range the scale accepts.'),
+            default => __('Sending to the scale failed: :reason', ['reason' => $exception->getMessage()]),
+        };
     }
 
     public function saveScaleLabelTemplate(): void
@@ -1015,7 +1053,7 @@ new #[Title('System Settings')] class extends Component
     }
 
     /** Sellable products with an active kilogram sale unit at the scale outlet, matching code or name (max 8). */
-    public function scaleProductMatches(): \Illuminate\Support\Collection
+    public function scaleProductMatches(): Collection
     {
         $term = trim($this->scaleProductSearch);
         $device = $this->activeScaleDevice();
@@ -1200,8 +1238,8 @@ new #[Title('System Settings')] class extends Component
         $svg = null;
         if ($valid) {
             try {
-                $svg = app(\App\Modules\Pricing\Services\BarcodeSvgRenderer::class)->render($code, $form['symbology'] === 'EAN13' ? 'ean13' : 'code128', 56);
-            } catch (\InvalidArgumentException) {
+                $svg = app(BarcodeSvgRenderer::class)->render($code, $form['symbology'] === 'EAN13' ? 'ean13' : 'code128', 56);
+            } catch (InvalidArgumentException) {
                 $valid = false;
             }
         }
@@ -2521,7 +2559,7 @@ $sectionMeta = [
                                                     @if ($result === 'changed')
                                                         <p role="status" class="text-xs text-amber-700 dark:text-amber-300">{{ __('Scale data changed. Review the new preview before sending.') }}</p>
                                                     @elseif ($result === 'unverified')
-                                                        <p role="status" class="text-xs text-red-700 dark:text-red-300">{{ __('Scale update could not be verified.') }}</p>
+                                                        <p role="status" class="text-xs text-red-700 dark:text-red-300" data-scale-send-error>{{ __('Scale update could not be verified.') }}@if (isset($scaleSendErrors[$preview['id']])) {{ $scaleSendErrors[$preview['id']] }}@endif</p>
                                                     @elseif ($result === 'ineligible')
                                                         <p role="status" class="text-xs text-red-700 dark:text-red-300">{{ __('Scale product is no longer eligible for sending.') }}</p>
                                                     @endif
@@ -2552,7 +2590,7 @@ $sectionMeta = [
                                                     "
                                                 >{{ __('Send previewed prices') }} ({{ count($pendingScaleIds) }})</flux:button>
                                                 <p role="status" x-show="sending" x-cloak class="text-sm text-text-muted">{{ __('Sending prices to the scale…') }}</p>
-                                                <p role="status" x-show="interrupted" x-cloak class="text-sm text-amber-700 dark:text-amber-300">{{ __('Sending stopped. Review the results before retrying.') }}</p>
+                                                <p role="status" x-show="interrupted" x-cloak class="text-sm text-amber-700 dark:text-amber-300">{{ __('Sending stopped. Review the results before retrying.') }}@if ($scaleSendErrors !== []) <strong class="block">{{ collect($scaleSendErrors)->last() }}</strong>@endif</p>
                                             </div>
                                         @endif
                                     </flux:card>
@@ -2621,7 +2659,7 @@ $sectionMeta = [
                                     </div>
 
                                     <div role="status" x-show="sending" x-cloak class="text-sm text-text-muted">{{ __('Sending keys to the scale…') }}</div>
-                                    <div role="status" x-show="interrupted" x-cloak class="text-sm text-amber-700 dark:text-amber-300">{{ __('Sending stopped. Review the results before retrying.') }}</div>
+                                    <div role="status" x-show="interrupted" x-cloak class="text-sm text-amber-700 dark:text-amber-300">{{ __('Sending stopped. Review the results before retrying.') }}@if ($scaleKeyErrors !== []) <strong class="block">{{ collect($scaleKeyErrors)->last() }}</strong>@endif</div>
                                     @if ($scaleDeviceKeysResult === 'failed')
                                         <flux:callout color="red" icon="exclamation-triangle" :text="__('Could not read the key table from the scale.')" />
                                     @elseif ($scaleDeviceKeysResult === 'read')
@@ -2721,6 +2759,9 @@ $sectionMeta = [
                                                         </div>
                                                     @elseif ($selectedState === 'confirmed')
                                                         <flux:badge size="sm" color="green">{{ __('Key confirmed on the scale') }}</flux:badge>
+                                                    @endif
+                                                    @if ($selectedRow && isset($scaleKeyErrors[$selectedRow->id]))
+                                                        <p role="alert" class="rounded-md bg-red-50 px-3 py-2 text-xs text-red-800 dark:bg-red-950/40 dark:text-red-200" data-scale-key-error>{{ $scaleKeyErrors[$selectedRow->id] }}</p>
                                                     @endif
                                                     <flux:input wire:model.live.debounce.250ms="scaleKeyPickerSearch" icon="magnifying-glass" size="sm" :placeholder="__('Search PLU or label')" clearable autocomplete="off" />
                                                     <div class="max-h-80 space-y-1 overflow-y-auto">

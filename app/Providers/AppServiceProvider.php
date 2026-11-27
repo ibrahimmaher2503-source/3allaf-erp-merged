@@ -4,9 +4,13 @@ namespace App\Providers;
 
 use App\Http\Responses\PosAwareLoginResponse;
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductUnit;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
 use App\Modules\Platform\Policies\AuditLogPolicy;
 use App\Modules\Platform\Support\ApprovalInboxAccess;
@@ -17,6 +21,12 @@ use App\Modules\Platform\Support\SetupReadinessCache;
 use App\Modules\Platform\Support\TranslationOverrideLoader;
 use App\Modules\Platform\Support\UserManagementScope;
 use App\Modules\Platform\Support\WorkContext;
+use App\Modules\Pricing\Models\CustomerProductPrice;
+use App\Modules\Pricing\Models\PriceLine;
+use App\Modules\Pricing\Models\PriceList;
+use App\Modules\Pricing\Models\PriceVersion;
+use App\Modules\Pricing\Models\ProductPriceOverride;
+use App\Support\RequestMemo;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -87,6 +97,13 @@ class AppServiceProvider extends ServiceProvider
                 Event::listen("eloquent.{$event}: {$model}", static function (Model $record): void {
                     SetupReadinessCache::handleModelEvent($record);
                 });
+            }
+        }
+        // Pricing lookups remember stores, products, customers and price lists for one request
+        // (App\Support\RequestMemo); a save of any of them in that request clears them.
+        foreach (['saved', 'deleted'] as $event) {
+            foreach ([Store::class, Product::class, ProductUnit::class, Customer::class, PriceList::class, PriceLine::class, PriceVersion::class, ProductPriceOverride::class, CustomerProductPrice::class] as $model) {
+                Event::listen("eloquent.{$event}: {$model}", static fn (): bool => RequestMemo::forget('pricing.'));
             }
         }
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
@@ -184,6 +201,16 @@ class AppServiceProvider extends ServiceProvider
             $queryBudget = (int) config('performance.query_budget', 100);
             if ($queryCount > $queryBudget && ! $request->attributes->get('query_budget_exceeded')) {
                 $request->attributes->set('query_budget_exceeded', true);
+                if (in_array($request->route()?->getName(), (array) config('performance.query_budget_log_only_routes', []), true)) {
+                    Log::warning('Database query budget exceeded on a posting route; logged only.', [
+                        'budget' => $queryBudget,
+                        'count' => $queryCount,
+                        'route' => $request->route()?->getName(),
+                        'path' => $request->path(),
+                    ]);
+
+                    return;
+                }
                 Log::warning('Database query budget exceeded; request aborted.', [
                     'budget' => $queryBudget,
                     'count' => $queryCount,

@@ -15,6 +15,8 @@
         <div class="flex min-w-max gap-1">
             @can('customers.edit')<a href="#customer-receipt" class="rounded-lg px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40">{{ __('Customer receipt') }}</a>@endcan
             @can('purchase_invoices.approve')<a href="#supplier-payment" class="rounded-lg px-3 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/40">{{ __('Supplier payment') }}</a>@endcan
+            @if($canCustomerDebts)<a href="#customer-debt" class="rounded-lg px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40">{{ __('Customer debt') }}</a>@endif
+            @can('purchase_invoices.approve')<a href="#supplier-debt" class="rounded-lg px-3 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-50 dark:text-orange-300 dark:hover:bg-orange-950/40">{{ __('Supplier debt') }}</a>@endcan
             @can('shifts_cash_movements.approve')
                 <a href="#expense" class="rounded-lg px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40">{{ __('Expense') }}</a>
                 <a href="#cash-account" class="rounded-lg px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/40">{{ __('General treasury account') }}</a>
@@ -130,6 +132,95 @@
                 </details>
                 <div class="sm:col-span-2 text-end"><flux:button type="submit" variant="primary">{{ __('Record payment') }}</flux:button></div>
             </form>
+        </flux:card>
+        @endcan
+
+        @if($canCustomerDebts)
+        <flux:card id="customer-debt" class="scroll-mt-24 overflow-hidden border-rose-200/70 bg-surface p-0 shadow-sm dark:border-rose-900/60">
+            <div class="border-b border-rose-200/70 bg-rose-50/70 p-5 dark:border-rose-900/60 dark:bg-rose-950/20">
+                <div class="flex items-start gap-3">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-sm"><flux:icon name="user-minus" class="size-5" /></span>
+                    <div><flux:heading size="lg">{{ __('Customer debt') }}</flux:heading><flux:text>{{ __('Record an old or manual debt on a customer, or reduce it, with a mandatory reason. Collect it later from Customer receipt.') }}</flux:text></div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('feed-store.customer-debts.store') }}" class="grid gap-4 p-5 sm:grid-cols-2">@csrf
+                <input type="hidden" name="idempotency_key" value="{{ (string) Illuminate\Support\Str::uuid() }}">
+                <div class="grid gap-1 sm:col-span-2">
+                    <flux:select name="customer_id" :label="__('Customer')" required><option value="">{{ __('Select customer') }}</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" @selected((string) old('customer_id', request('customer_id')) === (string) $customer->id)>{{ $localizedName($customer) }} · {{ $customer->phone_display }}</option>@endforeach</flux:select>
+                    <p class="text-xs text-text-muted">{{ __('Use the customer search in Customer receipt to load customers.') }}</p>
+                </div>
+                @if($selectedCustomer && $selectedCustomerBalance !== null)
+                    <div class="sm:col-span-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-rose-50 p-3 text-sm dark:bg-rose-950/30">
+                        <span>{{ __('Current balance of :name', ['name' => $localizedName($selectedCustomer)]) }}</span>
+                        <strong dir="ltr" class="tabular-nums {{ bccomp($selectedCustomerBalance, '0', 4) > 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300' }}">{{ number_format((float) $selectedCustomerBalance, 2) }} {{ $customerCurrency }}</strong>
+                        <span class="w-full text-xs text-text-muted">{{ __('Positive means the customer owes us.') }}</span>
+                    </div>
+                @endif
+                <flux:select name="direction" :label="__('Type')" required>
+                    <option value="increase" @selected(old('direction', 'increase') === 'increase')>{{ __('Add debt on the customer') }}</option>
+                    <option value="decrease" @selected(old('direction') === 'decrease')>{{ __('Reduce the customer debt') }}</option>
+                </flux:select>
+                <flux:input name="amount" type="number" min="0.0001" step="0.0001" :value="old('amount')" :label="__('Amount')" required />
+                <flux:input name="date" type="date" :value="old('date', now()->toDateString())" max="{{ now()->toDateString() }}" :label="__('Date')" required />
+                <flux:input name="reference" :value="old('reference')" :label="__('Reference')" />
+                <div class="sm:col-span-2"><flux:textarea name="reason" rows="2" :label="__('Reason')" :placeholder="__('Example: opening balance before using the system')" required>{{ old('reason') }}</flux:textarea></div>
+                <div class="sm:col-span-2 flex flex-wrap justify-end gap-2">
+                    <flux:button type="submit" variant="subtle" formmethod="GET" formaction="{{ route('feed-store.operations') }}#customer-debt" formnovalidate icon="calculator">{{ __('Show balance') }}</flux:button>
+                    <flux:button type="submit" variant="primary">{{ __('Record debt') }}</flux:button>
+                </div>
+            </form>
+            <div class="border-t border-border px-5 py-3 text-sm">
+                <p class="mb-2 font-medium">{{ __('Latest customer debts') }}</p>
+                @forelse($customerDebts as $debt)
+                    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800"><span>{{ $localizedName($debt->customer) }} · {{ $debt->adjustment_date?->format('Y-m-d') }} · {{ $debt->reason }}</span><strong dir="ltr" class="shrink-0 tabular-nums {{ bccomp((string) $debt->amount, '0', 4) > 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ bccomp((string) $debt->amount, '0', 4) > 0 ? '+' : '' }}{{ number_format((float) $debt->amount, 2) }}</strong></div>
+                @empty
+                    <p class="py-2 text-text-muted">{{ __('No customer debts recorded yet.') }}</p>
+                @endforelse
+            </div>
+        </flux:card>
+        @endif
+
+        @can('purchase_invoices.approve')
+        <flux:card id="supplier-debt" class="scroll-mt-24 overflow-hidden border-orange-200/70 bg-surface p-0 shadow-sm dark:border-orange-900/60">
+            <div class="border-b border-orange-200/70 bg-orange-50/70 p-5 dark:border-orange-900/60 dark:bg-orange-950/20">
+                <div class="flex items-start gap-3">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white shadow-sm"><flux:icon name="building-storefront" class="size-5" /></span>
+                    <div><flux:heading size="lg">{{ __('Supplier debt') }}</flux:heading><flux:text>{{ __('Record an old or manual amount we owe a supplier, or reduce it, with a mandatory reason.') }}</flux:text></div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('feed-store.supplier-debts.store') }}" class="grid gap-4 p-5 sm:grid-cols-2">@csrf
+                <input type="hidden" name="idempotency_key" value="{{ (string) Illuminate\Support\Str::uuid() }}">
+                <input type="hidden" name="currency_code" value="{{ $supplierCurrency }}">
+                <div class="sm:col-span-2"><flux:select name="supplier_id" :label="__('Supplier')" required><option value="">{{ __('Select supplier') }}</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id }}" @selected((string) old('supplier_id', request('supplier_id')) === (string) $supplier->id)>{{ $localizedName($supplier) }}</option>@endforeach</flux:select></div>
+                @if($selectedSupplier && $selectedSupplierBalance !== null)
+                    <div class="sm:col-span-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-orange-50 p-3 text-sm dark:bg-orange-950/30">
+                        <span>{{ __('Current balance of :name', ['name' => $localizedName($selectedSupplier)]) }}</span>
+                        <strong dir="ltr" class="tabular-nums {{ bccomp($selectedSupplierBalance, '0', 4) > 0 ? 'text-orange-700 dark:text-orange-300' : 'text-emerald-700 dark:text-emerald-300' }}">{{ number_format((float) $selectedSupplierBalance, 2) }} {{ $supplierCurrency }}</strong>
+                        <span class="w-full text-xs text-text-muted">{{ __('Positive means we owe the supplier.') }}</span>
+                    </div>
+                @endif
+                <flux:select name="direction" :label="__('Type')" required>
+                    <option value="debit" @selected(old('direction', 'debit') === 'debit')>{{ __('Add debt we owe the supplier') }}</option>
+                    <option value="credit" @selected(old('direction') === 'credit')>{{ __('Reduce what we owe the supplier') }}</option>
+                </flux:select>
+                <flux:input name="amount" type="number" min="0.0001" step="0.0001" :value="old('amount')" :label="__('Amount')" required />
+                <flux:input name="date" type="date" :value="old('date', now()->toDateString())" max="{{ now()->toDateString() }}" :label="__('Date')" required />
+                <flux:input name="reference" :value="old('reference')" :label="__('Reference')" />
+                <div class="sm:col-span-2"><flux:textarea name="reason" rows="2" :label="__('Reason')" :placeholder="__('Example: opening balance before using the system')" required>{{ old('reason') }}</flux:textarea></div>
+                <p class="sm:col-span-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{{ __('Supplier payment currently settles purchase invoices only. A manual supplier debt is reduced here with a reason, not from Supplier payment.') }}</p>
+                <div class="sm:col-span-2 flex flex-wrap justify-end gap-2">
+                    <flux:button type="submit" variant="subtle" formmethod="GET" formaction="{{ route('feed-store.operations') }}#supplier-debt" formnovalidate icon="calculator">{{ __('Show balance') }}</flux:button>
+                    <flux:button type="submit" variant="primary">{{ __('Record debt') }}</flux:button>
+                </div>
+            </form>
+            <div class="border-t border-border px-5 py-3 text-sm">
+                <p class="mb-2 font-medium">{{ __('Latest supplier debts') }}</p>
+                @forelse($supplierDebts as $debt)
+                    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800"><span>{{ $localizedName($debt->supplier) }} · {{ $debt->adjustment_date?->format('Y-m-d') }} · {{ $debt->reason }}</span><strong dir="ltr" class="shrink-0 tabular-nums {{ $debt->direction === 'debit' ? 'text-orange-600' : 'text-emerald-600' }}">{{ $debt->direction === 'debit' ? '+' : '-' }}{{ number_format((float) $debt->amount, 2) }} {{ $debt->currency_code }}</strong></div>
+                @empty
+                    <p class="py-2 text-text-muted">{{ __('No supplier debts recorded yet.') }}</p>
+                @endforelse
+            </div>
         </flux:card>
         @endcan
 

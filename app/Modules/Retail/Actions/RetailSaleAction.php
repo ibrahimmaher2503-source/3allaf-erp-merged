@@ -13,6 +13,7 @@ use App\Modules\Customer\Actions\EarnLoyaltyAction;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Support\CustomerBalance;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Models\InventoryBatch;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -36,6 +37,7 @@ use App\Modules\Retail\Support\DecimalMoney;
 use App\Modules\Retail\Support\InvoiceDiscount;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use App\Support\ProductQuantity;
+use App\Support\RequestMemo;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -453,9 +455,13 @@ final class RetailSaleAction
         }
 
         $resolved = [];
+        // Load all cart products (with units and barcodes) and their prices in bulk, not per line.
+        $requestedIds = array_values(array_filter(array_map(static fn (array $line): int => (int) ($line['product_id'] ?? 0), $requestedLines)));
+        $this->prices->warm($requestedIds, (int) $store->id, null);
+        $preloaded = Product::query()->sellable()->with(['productUnits.unit', 'barcodes', 'parent'])->whereIn('id', $requestedIds)->get()->keyBy('id');
         foreach ($requestedLines as $requested) {
             $product = isset($requested['product_id'])
-                ? Product::query()->sellable()->find((int) $requested['product_id'])
+                ? $preloaded->get((int) $requested['product_id'])
                 : Barcode::query()->active()->where('barcode', trim((string) ($requested['barcode'] ?? '')))->first()?->product;
             if (! $product instanceof Product || ! $product->isSellable()) {
                 throw new InvalidArgumentException(__('Product was not found or is inactive.'));
@@ -628,12 +634,20 @@ final class RetailSaleAction
     /** @param array<int, array<string, mixed>> $lines */
     private function assertPricesRemainCurrent(Store $store, array $lines): void
     {
+        $productIds = array_map(static fn (array $line): int => (int) $line['product']->id, $lines);
+        $this->prices->warm($productIds, (int) $store->id);
         foreach ($lines as $line) {
             $current = $this->prices->resolve($line['product']->id, $store->id, productUnitId: $line['product_unit_id'], customerId: $line['customer_id'] ?? null);
             if ($current === null) {
                 throw new InvalidArgumentException(__('A basket price changed before checkout. Review the basket and try again.'));
             }
             $this->prices->lockSource($current);
+        }
+        // Every price source is now locked: drop request-cached pricing and re-read it from the
+        // database (in bulk) so a price changed before the lock is still detected.
+        RequestMemo::forget('pricing.');
+        $this->prices->warm($productIds, (int) $store->id);
+        foreach ($lines as $line) {
             $current = $this->prices->resolve($line['product']->id, $store->id, productUnitId: $line['product_unit_id'], customerId: $line['customer_id'] ?? null);
             if ($current === null || ! hash_equals($line['price_identity'], $this->prices->identity($current))) {
                 throw new InvalidArgumentException(__('A basket price changed before checkout. Review the basket and try again.'));
@@ -1035,6 +1049,7 @@ final class RetailSaleAction
                 Sale::class,
                 $sale->id,
                 $line->id,
+                batchId: InventoryBatch::firstExpiringIdFor((int) $line->product_id),
             );
             $line->update(['stock_movement_id' => $movement->id, 'consumed_cost' => $movement->consumed_cost]);
         }

@@ -9,9 +9,10 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\CustomerProductPrice;
 use App\Modules\Pricing\Models\PriceLine;
+use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\ProductPriceOverride;
+use App\Support\RequestMemo;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -22,8 +23,19 @@ final class EffectivePriceResolver
     public function resolve(int $productId, int $storeId, ?Carbon $at = null, ?int $productUnitId = null, ?int $customerId = null): ?PriceLine
     {
         $at ??= now();
-        $store = Store::query()->with(['priceList', 'branch.defaultPriceList'])->find($storeId);
-        $product = Product::query()->sellable()->with(['productUnits.unit'])->find($productId);
+        // One POS request resolves the same line several times (cart, checkout, posting checks).
+        // The result is remembered for this request; saving any price record clears it.
+        $key = 'pricing.resolved.'.implode(':', [$productId, $storeId, $productUnitId ?? 'base', $customerId ?? 'none', $at->format('Y-m-d H:i')]);
+
+        return RequestMemo::remember($key, fn (): ?PriceLine => $this->resolveFresh($productId, $storeId, $at, $productUnitId, $customerId));
+    }
+
+    private function resolveFresh(int $productId, int $storeId, \DateTimeInterface $at, ?int $productUnitId, ?int $customerId): ?PriceLine
+    {
+        // Store, product and customer are read-only here and repeat for every cart line and
+        // POS component, so they are remembered for the current request. Prices are always read fresh.
+        $store = RequestMemo::remember('pricing.store.'.$storeId, fn (): ?Store => Store::query()->with(['priceList', 'branch.defaultPriceList'])->find($storeId));
+        $product = RequestMemo::remember('pricing.product.'.$productId, fn (): ?Product => Product::query()->sellable()->with(['productUnits.unit', 'barcodes'])->find($productId));
         if ($store === null || $product === null) {
             return null;
         }
@@ -35,7 +47,7 @@ final class EffectivePriceResolver
             return null;
         }
 
-        $customer = $customerId === null ? null : Customer::query()->with(['createdStore', 'priceList'])->find($customerId);
+        $customer = $customerId === null ? null : RequestMemo::remember('pricing.customer.'.$customerId, fn (): ?Customer => Customer::query()->with(['createdStore', 'priceList'])->find($customerId));
         if ($customer !== null && (int) $customer->createdStore?->company_id !== (int) $store->company_id) {
             $customer = null;
         }
@@ -60,13 +72,8 @@ final class EffectivePriceResolver
         }
 
         if ($unit->is_base_unit) {
-            $legacy = PriceLine::query()
-                ->with(['version.priceList', 'product', 'store'])
-                ->where('product_id', $productId)->where('store_id', $storeId)
-                ->whereHas('version', fn ($query) => $query->where('state', PriceVersionState::Approved->value)
-                    ->where(fn ($scope) => $scope->whereNull('effective_from')->orWhere('effective_from', '<=', $at))
-                    ->where(fn ($scope) => $scope->whereNull('effective_to')->orWhere('effective_to', '>', $at)))
-                ->orderByDesc('price_version_id')->first();
+            $legacy = RequestMemo::remember('pricing.legacy.'.$storeId.'.'.$productId.'.'.$at->format('Y-m-d H:i'),
+                fn (): ?PriceLine => $this->legacyLines([$productId], $storeId, $at)->get($productId));
             if ($legacy !== null) {
                 return $this->decorate($legacy, $unit, 'approved_store_price', __('سعر منفذ معتمد'), $legacy->version?->price_list_id, null, null, $legacy);
             }
@@ -80,6 +87,57 @@ final class EffectivePriceResolver
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Pre-loads, for a whole cart, the product cards, approved store price lines and list overrides
+     * in a few queries instead of several per line. Results stay identical to per-line resolution.
+     *
+     * @param  array<int, int>  $productIds
+     */
+    public function warm(array $productIds, int $storeId, ?Carbon $at = null): void
+    {
+        $at ??= now();
+        $productIds = array_values(array_unique(array_map('intval', $productIds)));
+        if ($productIds === []) {
+            return;
+        }
+        $store = RequestMemo::remember('pricing.store.'.$storeId, fn (): ?Store => Store::query()->with(['priceList', 'branch.defaultPriceList'])->find($storeId));
+        if ($store === null) {
+            return;
+        }
+        $products = Product::query()->sellable()->with(['productUnits.unit', 'barcodes'])->whereIn('id', $productIds)->get()->keyBy('id');
+        $legacy = $this->legacyLines($productIds, $storeId, $at);
+        foreach ($productIds as $productId) {
+            RequestMemo::put('pricing.product.'.$productId, $products->get($productId));
+            RequestMemo::put('pricing.legacy.'.$storeId.'.'.$productId.'.'.$at->format('Y-m-d H:i'), $legacy->get($productId));
+        }
+        $listIds = [];
+        try {
+            $listIds[] = $this->lists->listForOutlet($store, $at)->id;
+        } catch (\Throwable) {
+        }
+        $baseId = RequestMemo::remember('pricing.base-list.'.$store->company_id, fn (): ?\App\Modules\Pricing\Models\PriceList => PriceList::query()->where('company_id', $store->company_id)->where('list_number', 0)->first())?->id;
+        $listIds[] = $baseId;
+        $this->lists->warmOverrides((int) $store->company_id, array_filter($listIds), $productIds);
+    }
+
+    /**
+     * Newest approved, currently effective store price line per product.
+     *
+     * @param  array<int, int>  $productIds
+     * @return Collection<int, PriceLine>
+     */
+    private function legacyLines(array $productIds, int $storeId, \DateTimeInterface $at): Collection
+    {
+        return PriceLine::query()
+            ->with(['version.priceList', 'product', 'store'])
+            ->whereIn('product_id', $productIds)->where('store_id', $storeId)
+            ->whereHas('version', fn ($query) => $query->where('state', PriceVersionState::Approved->value)
+                ->where(fn ($scope) => $scope->whereNull('effective_from')->orWhere('effective_from', '<=', $at))
+                ->where(fn ($scope) => $scope->whereNull('effective_to')->orWhere('effective_to', '>', $at)))
+            ->orderByDesc('price_version_id')->get()
+            ->unique('product_id')->keyBy('product_id');
     }
 
     public function isPriced(int $productId, int $storeId, ?Carbon $at = null, ?int $productUnitId = null, ?int $customerId = null): bool

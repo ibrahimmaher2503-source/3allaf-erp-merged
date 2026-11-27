@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Customer\Actions\CreateCustomerAction;
+use App\Modules\Customer\Actions\PostCustomerAccountAdjustmentAction;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
 use App\Support\UserSafeError;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::post('pos/customer/select', function (Request $request, PosContextResolver $contexts, PosOpenOrderManager $orders) {
@@ -66,13 +68,26 @@ Route::post('pos/customer/create', function (Request $request, CreateCustomerAct
         'customer_group_id' => ['nullable', 'integer'],
         'governorate_id' => ['required', 'integer'],
         'city_id' => ['nullable', 'integer'],
+        'opening_debt' => ['nullable', 'decimal:0,4', 'gt:0'],
+        'opening_debt_note' => ['nullable', 'string', 'max:500'],
     ], ['governorate_id.required' => __('Please select a governorate.')]);
+    $openingDebt = filled($validated['opening_debt'] ?? null) ? (string) $validated['opening_debt'] : null;
+    abort_if($openingDebt !== null && ! $user->can('customers.sensitive'), 403);
+    unset($validated['opening_debt'], $validated['opening_debt_note']);
     try {
         $context = $contexts->resolve($user);
         if (! $context->isReady() || $context->store === null) {
             throw new InvalidArgumentException($context->disabledReason ?? __('The active order is unavailable.'));
         }
-        $customer = $customers->execute($user, $context->store, $validated, cityOptional: true, allowWithoutConsent: true);
+        $customer = DB::transaction(function () use ($customers, $user, $context, $validated, $openingDebt, $request): Customer {
+            $customer = $customers->execute($user, $context->store, $validated, cityOptional: true, allowWithoutConsent: true);
+            if ($openingDebt !== null) {
+                $note = trim((string) $request->input('opening_debt_note', ''));
+                app(PostCustomerAccountAdjustmentAction::class)->execute($user, $customer, $openingDebt, __('Previous debt entered when adding the customer from POS').($note !== '' ? ': '.$note : ''), 'pos-opening-debt:'.$validated['idempotency_key'], now()->toDateString());
+            }
+
+            return $customer;
+        }, 5);
         $orders->setCustomer($request, $user, $context, $customer);
 
         return back()->with('success', __('Customer created and attached only to the active order.'))->with('pos_customer_code', $customer->customer_code);

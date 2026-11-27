@@ -39,6 +39,9 @@ final class PosCartAction
             throw new InvalidArgumentException(__('Select an active simple product or a fully resolved variation SKU. Product families cannot be added.'));
         }
         $unit = $this->resolveUnit($product, $productUnitId);
+        if ($productUnitId !== null && $unit?->id !== $productUnitId) {
+            throw new InvalidArgumentException(__('The selected unit is unavailable.'));
+        }
         $customerId = $request->session()->get('pos.customer_id');
         if ($this->prices->resolve($product->id, $store->id, productUnitId: $unit?->id, customerId: $customerId ? (int) $customerId : null) === null) {
             throw new InvalidArgumentException(__('The selected SKU unit has no positive selling price for this customer and store.'));
@@ -85,7 +88,11 @@ final class PosCartAction
             throw new InvalidArgumentException(__('The requested cart line was not found.'));
         }
         $line = $cart[$index];
-        $unit = $this->resolveUnit($product, filled($line['product_unit_id'] ?? null) ? (int) $line['product_unit_id'] : null);
+        $lineUnitId = filled($line['product_unit_id'] ?? null) ? (int) $line['product_unit_id'] : null;
+        $unit = $this->resolveUnit($product, $lineUnitId);
+        if ($lineUnitId !== null && $unit?->id !== $lineUnitId) {
+            throw new InvalidArgumentException(__('The selected unit is unavailable.'));
+        }
         $entered = $this->enteredQuantity($product, $unit, $quantity);
         $baseQuantity = $unit ? $this->converter->execute($product, $unit, $entered) : $entered;
         $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $productId)->first();
@@ -105,12 +112,22 @@ final class PosCartAction
     public function unit(Request $request, User $user, int $productId, int $productUnitId): void
     {
         $context = $this->context($request, $user);
+        $store = $this->store($context);
         $product = Product::query()->sellable()->with('productUnits.unit')->findOrFail($productId);
-        $unit = $this->resolveUnit($product, $productUnitId) ?? throw new InvalidArgumentException(__('The selected unit is unavailable.'));
+        $unit = $this->resolveUnit($product, $productUnitId);
+        if ($unit === null || (int) $unit->id !== $productUnitId) {
+            throw new InvalidArgumentException(__('The selected unit is unavailable.'));
+        }
         $cart = collect($request->session()->get('pos.cart', []));
         $index = $cart->search(fn (array $line): bool => (int) ($line['product_id'] ?? 0) === $productId);
         if ($index === false) {
             throw new InvalidArgumentException(__('The requested cart line was not found.'));
+        }
+        // The line restarts at one unit of the new unit, so that single unit must already be in stock.
+        $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $productId)->first();
+        $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
+        if (bccomp($available, $this->converter->execute($product, $unit, '1'), 6) < 0) {
+            throw new InvalidArgumentException(__('Only :quantity units of this product are available.', ['quantity' => ProductQuantity::format($available)]));
         }
         $line = $cart[$index];
         $line['product_unit_id'] = $unit->id;
@@ -167,9 +184,11 @@ final class PosCartAction
         if ($product->productUnits->isEmpty()) {
             return null;
         }
-        $unit = $productUnitId ? $product->productUnits->firstWhere('id', $productUnitId) : null;
+        // Only sale units can be sold at the POS; purchase-only units (e.g. a ton) have no selling price.
+        $saleUnits = $product->productUnits->where('is_sale_unit', true);
+        $unit = $productUnitId ? $saleUnits->firstWhere('id', $productUnitId) : null;
 
-        return $unit ?? $product->productUnits->firstWhere('is_base_unit', true);
+        return $unit ?? $saleUnits->firstWhere('is_base_unit', true) ?? $saleUnits->first();
     }
 
     private function enteredQuantity(Product $product, ?ProductUnit $unit, string $quantity): string

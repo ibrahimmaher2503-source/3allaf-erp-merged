@@ -12,19 +12,25 @@ use App\Modules\CashControl\Models\Expense;
 use App\Modules\CashControl\Models\ExpenseCategory;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Customer\Actions\PostCustomerAccountAdjustmentAction;
 use App\Modules\Customer\Actions\RecordCustomerReceiptAction;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerAccountAdjustment;
 use App\Modules\Customer\Models\CustomerReceipt;
 use App\Modules\Customer\Support\CustomerBalance;
+use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Inventory\Models\InventoryBatch;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Purchasing\Actions\PostSupplierAccountAdjustmentAction;
 use App\Modules\Purchasing\Actions\RecordSupplierPaymentAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\SupplierAccountAdjustment;
 use App\Modules\Purchasing\Models\SupplierPayment;
 use App\Modules\Purchasing\Support\SupplierBalance;
+use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -85,14 +91,14 @@ final class FeedStoreOperationsController extends Controller
                 $supplierAllocations = $supplierPayments->proposeAllocations($actor, $selectedSupplier, $selectedCompany, $supplierCurrency, (string) $request->input('amount'));
             }
         } catch (Throwable $exception) {
-            $proposalError = \App\Support\UserSafeError::message($exception);
+            $proposalError = UserSafeError::message($exception);
         }
 
         $request->validate(['customer_search' => ['nullable', 'string', 'max:100']]);
         $customerSearch = trim((string) $request->input('customer_search', ''));
-        $customerPhoneSearch = strtr($customerSearch, ['٠'=>'0', '١'=>'1', '٢'=>'2', '٣'=>'3', '٤'=>'4', '٥'=>'5', '٦'=>'6', '٧'=>'7', '٨'=>'8', '٩'=>'9']);
+        $customerPhoneSearch = strtr($customerSearch, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9']);
         try {
-            $customerPhoneSearch = \App\Modules\Customer\Support\PhoneNormalizer::normalize($customerPhoneSearch);
+            $customerPhoneSearch = PhoneNormalizer::normalize($customerPhoneSearch);
         } catch (\InvalidArgumentException) {
             $customerPhoneSearch = preg_replace('/[^0-9]/', '', $customerPhoneSearch);
         }
@@ -101,7 +107,9 @@ final class FeedStoreOperationsController extends Controller
                 ->where(function ($query) use ($customerSearch, $customerPhoneSearch): void {
                     $like = '%'.addcslashes($customerSearch, '%_\\').'%';
                     $query->where('name_ar', 'like', $like)->orWhere('name_en', 'like', $like);
-                    if ($customerPhoneSearch !== '') $query->orWhere('phone_normalized', 'like', '%'.$customerPhoneSearch.'%');
+                    if ($customerPhoneSearch !== '') {
+                        $query->orWhere('phone_normalized', 'like', '%'.$customerPhoneSearch.'%');
+                    }
                 })->orderBy('name_ar')->limit(20)->get()
             : collect();
         if ($selectedCustomer && ! $customers->contains('id', $selectedCustomer->id)) {
@@ -112,7 +120,18 @@ final class FeedStoreOperationsController extends Controller
             $suppliers->prepend($selectedSupplier);
         }
 
+        $canCustomerDebts = $canCustomerReceipts && Gate::forUser($actor)->allows('customers.sensitive');
+        $selectedCustomerBalance = $canCustomerDebts && $selectedCustomer ? app(CustomerBalance::class)->for($selectedCustomer, $customerCurrency) : null;
+        $selectedSupplierBalance = $selectedSupplier ? app(SupplierBalance::class)->for($selectedSupplier, $supplierCurrency) : null;
+
         return view('feed-store.operations', [
+            'canCustomerDebts' => $canCustomerDebts,
+            'selectedCustomerBalance' => $selectedCustomerBalance,
+            'selectedSupplierBalance' => $selectedSupplierBalance,
+            'customerCurrency' => $customerCurrency,
+            'supplierCurrency' => $supplierCurrency,
+            'customerDebts' => $canCustomerDebts ? CustomerAccountAdjustment::query()->with('customer')->whereIn('customer_id', $visibleCustomerIds)->whereNull('sale_id')->latest('id')->limit(10)->get() : collect(),
+            'supplierDebts' => $canSupplierPayments ? SupplierAccountAdjustment::query()->with('supplier')->whereNull('purchase_invoice_id')->latest('id')->limit(10)->get() : collect(),
             'customers' => $customers,
             'customerSearch' => $customerSearch,
             'stores' => $canCustomerReceipts ? $stores : collect(),
@@ -167,7 +186,7 @@ final class FeedStoreOperationsController extends Controller
 
             return back()->with('success', __('Customer receipt recorded successfully.'));
         } catch (Throwable $exception) {
-            return back()->withInput()->withErrors(['operation' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['operation' => UserSafeError::message($exception)]);
         }
     }
 
@@ -200,24 +219,74 @@ final class FeedStoreOperationsController extends Controller
             }
             $allocations = $requested->map(fn ($value, $id): array => ['purchase_invoice_id' => (int) $id, 'amount' => (string) $value])->values()->all();
             $action->execute($actor, $supplier, PaymentMethod::query()->findOrFail($data['payment_method_id']), $data['amount'], $allocations, $data['idempotency_key'], $data['date'], currencyCode: strtoupper((string) ($data['currency_code'] ?? 'EGP')), cashAccountId: filled($data['cash_account_id'] ?? null) ? (int) $data['cash_account_id'] : null, reference: $data['reference'] ?? null, evidenceReference: $data['evidence_reference'] ?? null, notes: $data['notes'] ?? null);
+
             return back()->with('success', __('Supplier payment recorded successfully.'));
         } catch (Throwable $exception) {
-            return back()->withInput()->withErrors(['operation' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['operation' => UserSafeError::message($exception)]);
+        }
+    }
+
+    /** Records a manual customer debt increase or decrease through the audited account-adjustment ledger. */
+    public function customerDebt(Request $request, PostCustomerAccountAdjustmentAction $action): RedirectResponse
+    {
+        $actor = $this->actor($request);
+        $data = $request->validate([
+            'customer_id' => 'required|integer',
+            'direction' => 'required|in:increase,decrease',
+            'amount' => 'required|decimal:0,4|gt:0',
+            'date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'reason' => 'required|string|max:1000',
+            'reference' => 'nullable|string|max:190',
+            'idempotency_key' => 'required|uuid',
+        ]);
+        try {
+            $customer = Customer::query()->visibleTo($actor)->findOrFail($data['customer_id']);
+            $amount = ($data['direction'] === 'decrease' ? '-' : '').$data['amount'];
+            $action->execute($actor, $customer, $amount, $data['reason'], $data['idempotency_key'], $data['date'], reference: $data['reference'] ?? null);
+
+            return redirect()->route('feed-store.operations', ['customer_id' => $customer->id])->withFragment('customer-debt')->with('success', __('Customer debt recorded successfully.'));
+        } catch (Throwable $exception) {
+            return back()->withInput()->withErrors(['operation' => UserSafeError::message($exception)]);
+        }
+    }
+
+    /** Records a manual supplier debt (debit: we owe more, credit: we owe less) through the audited account-adjustment ledger. */
+    public function supplierDebt(Request $request, PostSupplierAccountAdjustmentAction $action): RedirectResponse
+    {
+        $actor = $this->actor($request);
+        $data = $request->validate([
+            'supplier_id' => 'required|integer',
+            'direction' => 'required|in:debit,credit',
+            'amount' => 'required|decimal:0,4|gt:0',
+            'date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'currency_code' => 'nullable|alpha:ascii|size:3',
+            'reason' => 'required|string|max:1000',
+            'reference' => 'nullable|string|max:190',
+            'idempotency_key' => 'required|uuid',
+        ]);
+        try {
+            $supplier = Supplier::query()->findOrFail($data['supplier_id']);
+            $action->execute($actor, $supplier, $data['direction'], (string) $data['amount'], $data['reason'], $data['idempotency_key'], adjustmentDate: $data['date'], currencyCode: strtoupper((string) ($data['currency_code'] ?? 'EGP')), reference: $data['reference'] ?? null);
+
+            return redirect()->route('feed-store.operations', ['supplier_id' => $supplier->id])->withFragment('supplier-debt')->with('success', __('Supplier debt recorded successfully.'));
+        } catch (Throwable $exception) {
+            return back()->withInput()->withErrors(['operation' => UserSafeError::message($exception)]);
         }
     }
 
     public function expense(Request $request, RecordExpenseAction $action): RedirectResponse
     {
         $actor = $this->actor($request);
-        $data = $request->validate(['company_id'=>'required|integer','expense_category_id'=>'required|integer','amount'=>'required|decimal:0,4|gt:0','date'=>'required|date','description'=>'required|string|max:1000','payment_method_id'=>'nullable|integer','cash_account_id'=>'nullable|integer','reference'=>'nullable|string|max:190','idempotency_key'=>'required|uuid']);
+        $data = $request->validate(['company_id' => 'required|integer', 'expense_category_id' => 'required|integer', 'amount' => 'required|decimal:0,4|gt:0', 'date' => 'required|date', 'description' => 'required|string|max:1000', 'payment_method_id' => 'nullable|integer', 'cash_account_id' => 'nullable|integer', 'reference' => 'nullable|string|max:190', 'idempotency_key' => 'required|uuid']);
         try {
             $companyIds = Store::query()->visibleTo($actor)->pluck('company_id')->unique();
             $company = Company::query()->whereIn('id', $companyIds)->findOrFail($data['company_id']);
             $category = ExpenseCategory::query()->where('company_id', $company->id)->findOrFail($data['expense_category_id']);
             $action->execute($actor, $company, $category, $data['amount'], $data['description'], $data['idempotency_key'], $data['date'], filled($data['payment_method_id'] ?? null) ? PaymentMethod::query()->findOrFail($data['payment_method_id']) : null, filled($data['cash_account_id'] ?? null) ? CashAccount::query()->findOrFail($data['cash_account_id']) : null, $data['reference'] ?? null);
+
             return back()->with('success', __('Expense recorded successfully.'));
         } catch (Throwable $exception) {
-            return back()->withInput()->withErrors(['operation' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['operation' => UserSafeError::message($exception)]);
         }
     }
 
@@ -225,12 +294,13 @@ final class FeedStoreOperationsController extends Controller
     {
         $actor = $this->actor($request);
         Gate::forUser($actor)->authorize('shifts_cash_movements.approve');
-        $data = $request->validate(['company_id'=>'required|integer','code'=>['required','string','max:50',Rule::unique('cash_accounts')->where('company_id',$request->integer('company_id'))],'name_ar'=>'required|string|max:255','name_en'=>'nullable|string|max:255','type'=>'required|in:cash,bank,wallet','currency_code'=>'required|alpha:ascii|size:3']);
+        $data = $request->validate(['company_id' => 'required|integer', 'code' => ['required', 'string', 'max:50', Rule::unique('cash_accounts')->where('company_id', $request->integer('company_id'))], 'name_ar' => 'required|string|max:255', 'name_en' => 'nullable|string|max:255', 'type' => 'required|in:cash,bank,wallet', 'currency_code' => 'required|alpha:ascii|size:3']);
         $company = Company::query()->whereIn('id', Store::query()->visibleTo($actor)->select('company_id'))->findOrFail($data['company_id']);
         DB::transaction(function () use ($actor, $data): void {
             $account = CashAccount::query()->create($data + ['currency_code' => strtoupper($data['currency_code']), 'status' => 'active']);
             app(RecordAuditEvent::class)->execute('cash_control', 'cash_account_created', $account, after: $account->only(['company_id', 'code', 'type', 'currency_code']), metadata: ['actor_id' => $actor->id]);
         });
+
         return back()->with('success', __('Cash account created successfully.'));
     }
 
@@ -238,12 +308,13 @@ final class FeedStoreOperationsController extends Controller
     {
         $actor = $this->actor($request);
         Gate::forUser($actor)->authorize('inventory_stock_card.edit');
-        $data = $request->validate(['product_id'=>'required|integer','batch_number'=>['required','string','max:100',Rule::unique('inventory_batches')->where('product_id',$request->integer('product_id'))],'production_date'=>'nullable|date','expiry_date'=>'nullable|date|after_or_equal:production_date']);
+        $data = $request->validate(['product_id' => 'required|integer', 'batch_number' => ['required', 'string', 'max:100', Rule::unique('inventory_batches')->where('product_id', $request->integer('product_id'))], 'production_date' => 'nullable|date', 'expiry_date' => 'nullable|date|after_or_equal:production_date']);
         $product = Product::query()->where('status', 'active')->where('track_batches', true)->findOrFail($data['product_id']);
         DB::transaction(function () use ($actor, $data): void {
             $batch = InventoryBatch::query()->create($data + ['status' => 'active']);
             app(RecordAuditEvent::class)->execute('inventory', 'inventory_batch_created', $batch, after: $batch->only(['product_id', 'batch_number', 'production_date', 'expiry_date']), metadata: ['actor_id' => $actor->id]);
         });
+
         return back()->with('success', __('Inventory batch created successfully.'));
     }
 
@@ -251,6 +322,7 @@ final class FeedStoreOperationsController extends Controller
     {
         $actor = $request->user();
         abort_unless($actor instanceof User, 403);
+
         return $actor;
     }
 

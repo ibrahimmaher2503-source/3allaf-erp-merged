@@ -33,7 +33,7 @@
         </div>
 
         <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملخص حساب العميل' : 'Customer account summary' }}">
-            <div class="rounded-xl border p-4 {{ bccomp((string) $arOutstanding, '0', 4) > 0 ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20' : 'border-border bg-surface' }}"><div class="text-xs text-text-muted">{{ __('Current outstanding balance') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ $arOutstanding }} {{ $currencyCode }}</div><div class="text-xs text-text-muted">{{ $arInvoices->count() }} {{ str_starts_with(app()->getLocale(), 'ar') ? 'فاتورة مفتوحة' : 'open invoices' }}</div></div>
+            <div class="rounded-xl border p-4 {{ bccomp((string) $currentBalance, '0', 4) > 0 ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20' : 'border-border bg-surface' }}"><div class="text-xs text-text-muted">{{ __('Total owed by the customer') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ number_format((float) $currentBalance, 2) }} {{ $currencyCode }}</div><div class="text-xs text-text-muted">{{ __('Open invoices') }}: <span dir="ltr">{{ number_format((float) $arOutstanding, 2) }}</span> ({{ $arInvoices->count() }}) · {{ __('Manual debts') }}: <span dir="ltr">{{ number_format((float) $customerDebtsTotal, 2) }}</span></div><a href="#customer-debts" class="mt-1 inline-block text-xs font-semibold text-rose-700 underline dark:text-rose-300">{{ __('Add or edit a debt') }}</a></div>
             <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Credit limit') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ $customer->credit_limit !== null ? $customer->credit_limit.' '.$currencyCode : '—' }}</div><div class="text-xs text-text-muted">{{ __('Available credit') }}: <span dir="ltr">{{ $availableCredit ?? '—' }}</span></div></div>
             <div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Unapplied customer credit') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ $unappliedCredit }} {{ $currencyCode }}</div></div>
             @can('loyalty.view')<div class="rounded-xl border border-border bg-surface p-4"><div class="text-xs text-text-muted">{{ __('Shared balance') }}</div><div class="mt-1 text-xl font-black tabular-nums" dir="ltr">{{ number_format($balance) }}</div><div class="text-xs text-text-muted">{{ __('Points across the customer ledger') }}</div></div>@endcan
@@ -74,7 +74,8 @@
                                 @endforeach
                             </flux:select><x-context-help :title="__('Customer group')" :label="__('Open contextual help')"><p>{{ __('Optional hierarchical group for customer search and reporting.') }}</p></x-context-help></div>
                             <flux:select name="customer_type" :label="__('Customer payment type')"><flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير محدد' : 'Not set' }}</flux:select.option><flux:select.option value="cash" :selected="old('customer_type', $customer->customer_type) === 'cash'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي فقط' : 'Cash only' }}</flux:select.option><flux:select.option value="credit" :selected="old('customer_type', $customer->customer_type) === 'credit'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'آجل (ائتمان)' : 'Credit' }}</flux:select.option><flux:select.option value="both" :selected="old('customer_type', $customer->customer_type) === 'both'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي وآجل' : 'Cash and credit' }}</flux:select.option></flux:select>
-                            <flux:input name="credit_limit" type="number" min="0" step="0.01" inputmode="decimal" :label="__('Credit limit')" :value="old('credit_limit', $customer->credit_limit !== null ? rtrim(rtrim((string) $customer->credit_limit, '0'), '.') : '')" dir="ltr" />
+                            <flux:input name="credit_limit" type="number" min="0" step="0.01" inputmode="decimal" :label="__('Credit limit')" :value="old('credit_limit', $customer->credit_limit !== null ? rtrim(rtrim((string) $customer->credit_limit, '0'), '.') : '')" :placeholder="__('Empty = no ceiling')" dir="ltr" />
+                            <p class="sm:col-span-2 rounded-lg bg-cyan-50 px-3 py-2 text-xs text-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-100">{{ __('To sell on credit at the POS choose “Credit” or “Cash and credit”. Each credit sale is added to the customer debt automatically.') }} <a href="#customer-debts" class="font-semibold underline">{{ __('Add or edit a debt manually') }}</a></p>
                             <div class="sm:col-span-2"><flux:textarea name="notes" :label="__('Notes')" rows="2">{{ old('notes', $customer->notes) }}</flux:textarea></div>
                             @can('customers.sensitive')
                                 <flux:input name="email" :label="__('Email')" :value="old('email', $customer->email)" type="email" autocomplete="email" />
@@ -99,53 +100,9 @@
                     </section>
                 @endcan
 
-                @can('pricing_lists.view')
-                    <section class="rounded-2xl border border-cyan-200 bg-white p-5 shadow-sm dark:border-cyan-900 dark:bg-zinc-900" aria-labelledby="customer-pricing-heading">
-                        <div class="flex flex-wrap items-start justify-between gap-3"><div><flux:heading id="customer-pricing-heading" size="lg">{{ __('سياسة التسعير') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('يحدد النظام السعر تلقائيًا عند اختيار العميل ووحدة البيع في نقطة البيع.') }}</flux:text></div><div class="rounded-xl bg-cyan-50 px-4 py-2 text-sm dark:bg-cyan-950/30"><span class="text-text-muted">{{ __('نوع السعر') }}</span><div class="font-semibold">{{ $customer->priceList ? (str_starts_with(app()->getLocale(), 'ar') ? $customer->priceList->name_ar : $customer->priceList->name_en) : __('القطاعي الافتراضي') }}</div></div></div>
-                        @can('pricing_lists.assign')<form method="POST" action="{{ route('customers.pricing.list',$customer) }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<div class="min-w-64 flex-1"><flux:select name="price_list_id" :label="__('قائمة السعر المخصصة')"><flux:select.option value="">{{ __('القطاعي الافتراضي') }}</flux:select.option>@foreach($priceLists as $list)<flux:select.option value="{{ $list->id }}" :selected="$customer->price_list_id==$list->id">{{ str_starts_with(app()->getLocale(),'ar')?$list->name_ar:$list->name_en }}</flux:select.option>@endforeach</flux:select></div><flux:button type="submit" variant="primary">{{ __('تغيير نوع السعر') }}</flux:button></form>@endcan
-                        <div class="mt-5 overflow-x-auto"><table class="data-table"><thead><tr><th>{{ __('الصنف') }}</th><th>{{ __('وحدة البيع') }}</th><th>{{ __('السعر الخاص') }}</th><th>{{ __('سعر القائمة') }}</th><th>{{ __('الفرق') }}</th><th>{{ __('ساري من') }}</th><th>{{ __('ساري إلى') }}</th><th>{{ __('الحالة') }}</th><th>{{ __('إجراء') }}</th></tr></thead><tbody>@forelse($specialPrices as $special)<tr><td>{{ str_starts_with(app()->getLocale(),'ar')?$special->product?->name_ar:$special->product?->name_en }}</td><td>{{ str_starts_with(app()->getLocale(),'ar')?$special->productUnit?->unit?->name_ar:$special->productUnit?->unit?->name_en }}</td><td dir="ltr"><strong>{{ $special->price }} {{ __('ج.م') }}</strong></td><td dir="ltr">{{ $special->normal_customer_price ?? '—' }}</td><td dir="ltr">{{ $special->normal_customer_price === null ? '—' : bcsub((string) $special->price, (string) $special->normal_customer_price, 4) }}</td><td>{{ $special->effective_from?->format('Y-m-d') }}</td><td>{{ $special->effective_to?->format('Y-m-d')??'—' }}</td><td><x-status.badge :status="$special->status" /></td><td>@if($special->status==='active')@can('pricing_lists.overrides')<form method="POST" action="{{ route('customers.pricing.special.expire',[$customer,$special]) }}" class="flex items-end gap-2">@csrf @method('DELETE')<flux:input name="reason" :label="__('سبب الإنهاء')" required/><flux:button type="submit" variant="danger">{{ __('إنهاء') }}</flux:button></form>@endcan
-                        @endif</td></tr>@empty<tr><td colspan="9"><x-state.empty :title="__('لا توجد أسعار خاصة لهذا العميل.')" /></td></tr>@endforelse</tbody></table></div>
-                        @can('pricing_lists.overrides')<details class="mt-4 rounded-xl border p-4"><summary class="cursor-pointer font-semibold text-cyan-700">{{ __('إضافة سعر خاص') }}</summary><form method="POST" action="{{ route('customers.pricing.special',$customer) }}" class="mt-4 grid gap-3 md:grid-cols-2">@csrf<flux:select name="product_unit_id" :label="__('الصنف ووحدة البيع')" required><flux:select.option value="">{{ __('اختر') }}</flux:select.option>@foreach($sellingUnits as $unit)<flux:select.option value="{{ $unit->id }}">{{ str_starts_with(app()->getLocale(),'ar')?$unit->product?->name_ar:$unit->product?->name_en }} · {{ str_starts_with(app()->getLocale(),'ar')?$unit->unit?->name_ar:$unit->unit?->name_en }}</flux:select.option>@endforeach</flux:select><flux:input name="price" type="number" step="0.0001" :label="__('السعر الخاص')" required/><flux:input name="effective_from" type="date" :label="__('ساري من')"/><flux:input name="effective_to" type="date" :label="__('ساري إلى')"/><div class="md:col-span-2"><flux:textarea name="reason" :label="__('سبب الاتفاق')" required/></div><div class="md:col-span-2 flex justify-end"><flux:button type="submit" variant="primary">{{ __('حفظ السعر الخاص') }}</flux:button></div></form></details>@endcan
-                    </section>
-                @endcan
-
-                <section class="rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-900 dark:bg-zinc-900" aria-labelledby="customer-ar-heading">
-                    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-amber-100 px-5 py-4 dark:border-amber-900">
-                        <div>
-                            <flux:heading id="customer-ar-heading" size="lg">{{ __('Accounts Receivable / Customer Account') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm">{{ __('Balances are derived from approved sales, payments, returns, receipts, and approved adjustments.') }}</flux:text>
-                        </div>
-                        @can('customers.edit')
-                            <flux:button href="{{ route('feed-store.operations', ['operation' => 'customer_receipt', 'customer_id' => $customer->id, 'collection_store_id' => $store->id, 'currency_code' => $currencyCode]).'#customer-receipt' }}" variant="primary" icon="banknotes">{{ __('Receive Payment / تحصيل مبلغ') }}</flux:button>
-                        @endcan
-                    </div>
-                    <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
-                        <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Customer') }}</div><div class="mt-1 font-semibold">{{ $displayName }}</div><div class="text-xs font-mono" dir="ltr">{{ $customer->customer_code }} · {{ $customer->phone_display }}</div></div>
-                        <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Credit enabled') }}</div><div class="mt-1 font-semibold">{{ in_array($customer->customer_type, ['credit', 'both'], true) ? __('Yes') : __('No') }}</div><div class="text-xs">{{ __('Credit limit') }}: <span class="font-mono" dir="ltr">{{ $customer->credit_limit ?? '—' }} {{ $currencyCode }}</span></div></div>
-                        <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Current outstanding balance') }}</div><div class="mt-1 font-mono font-semibold" dir="ltr">{{ $arOutstanding }} {{ $currencyCode }}</div><div class="text-xs">{{ __('Net customer balance') }}: {{ $currentBalance }}</div></div>
-                        <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Available credit') }}</div><div class="mt-1 font-mono font-semibold" dir="ltr">{{ $availableCredit ?? '—' }} {{ $currencyCode }}</div></div>
-                        <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Unapplied customer credit') }}</div><div class="mt-1 font-mono font-semibold" dir="ltr">{{ $unappliedCredit }} {{ $currencyCode }}</div></div>
-                    </div>
-                    <div class="overflow-x-auto border-t border-amber-100 dark:border-amber-900">
-                        <table class="min-w-full text-start text-sm">
-                            <thead class="bg-amber-50/60 text-xs uppercase tracking-wide text-text-muted dark:bg-amber-950/20"><tr><th class="px-5 py-3">{{ __('Invoice') }}</th><th class="px-5 py-3">{{ __('Date') }}</th><th class="px-5 py-3 text-end">{{ __('Original total') }}</th><th class="px-5 py-3 text-end">{{ __('Paid amount') }}</th><th class="px-5 py-3 text-end">{{ __('Outstanding') }}</th><th class="px-5 py-3">{{ __('Payment status') }}</th></tr></thead>
-                            <tbody class="divide-y divide-amber-100 dark:divide-amber-900">
-                                @forelse($arInvoices as $invoice)
-                                    <tr><td class="px-5 py-3 font-mono">{{ $invoice->document_number ?? '#'.$invoice->id }}</td><td class="px-5 py-3">{{ $invoice->approved_at?->format('Y-m-d') }}</td><td class="px-5 py-3 text-end font-mono" dir="ltr">{{ $invoice->payable_total }}</td><td class="px-5 py-3 text-end font-mono" dir="ltr">{{ $invoice->current_paid }}</td><td class="px-5 py-3 text-end font-mono" dir="ltr">{{ $invoice->current_outstanding }}</td><td class="px-5 py-3"><x-status.badge :status="$invoice->current_payment_status" /></td></tr>
-                                @empty
-                                    <tr><td colspan="6" class="px-5 py-8"><x-state.empty :title="__('No outstanding customer invoices.')" /></td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                @if($salesAnalysis)
-                    @include('pages.customers._sales-analysis')
-                @endif
 
                 @can('customers.sensitive')
-                    <section class="grid gap-6 xl:grid-cols-2">
+                    <section class="grid gap-6">
                         <div class="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20">
                             <flux:heading size="lg">{{ __('Consent history') }}</flux:heading>
                             <div class="mt-4 space-y-3">
@@ -214,6 +171,118 @@
                     </section>
                 @endcan @endif
             </aside>
+        </div>
+
+        {{-- Account, debts, pricing and sales tables use the full page width. --}}
+        <div class="space-y-6">
+        @can('pricing_lists.view')
+            <section class="rounded-2xl border border-cyan-200 bg-white p-5 shadow-sm dark:border-cyan-900 dark:bg-zinc-900" aria-labelledby="customer-pricing-heading">
+                <div class="flex flex-wrap items-start justify-between gap-3"><div><flux:heading id="customer-pricing-heading" size="lg">{{ __('سياسة التسعير') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('يحدد النظام السعر تلقائيًا عند اختيار العميل ووحدة البيع في نقطة البيع.') }}</flux:text></div><div class="rounded-xl bg-cyan-50 px-4 py-2 text-sm dark:bg-cyan-950/30"><span class="text-text-muted">{{ __('نوع السعر') }}</span><div class="font-semibold">{{ $customer->priceList ? (str_starts_with(app()->getLocale(), 'ar') ? $customer->priceList->name_ar : $customer->priceList->name_en) : __('القطاعي الافتراضي') }}</div></div></div>
+                @can('pricing_lists.assign')<form method="POST" action="{{ route('customers.pricing.list',$customer) }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<div class="min-w-64 flex-1"><flux:select name="price_list_id" :label="__('قائمة السعر المخصصة')"><flux:select.option value="">{{ __('القطاعي الافتراضي') }}</flux:select.option>@foreach($priceLists as $list)<flux:select.option value="{{ $list->id }}" :selected="$customer->price_list_id==$list->id">{{ str_starts_with(app()->getLocale(),'ar')?$list->name_ar:$list->name_en }}</flux:select.option>@endforeach</flux:select></div><flux:button type="submit" variant="primary">{{ __('تغيير نوع السعر') }}</flux:button></form>@endcan
+                <div class="mt-5 overflow-x-auto"><table class="data-table"><thead><tr><th>{{ __('الصنف') }}</th><th>{{ __('وحدة البيع') }}</th><th>{{ __('السعر الخاص') }}</th><th>{{ __('سعر القائمة') }}</th><th>{{ __('الفرق') }}</th><th>{{ __('ساري من') }}</th><th>{{ __('ساري إلى') }}</th><th>{{ __('الحالة') }}</th><th>{{ __('إجراء') }}</th></tr></thead><tbody>@forelse($specialPrices as $special)<tr><td>{{ str_starts_with(app()->getLocale(),'ar')?$special->product?->name_ar:$special->product?->name_en }}</td><td>{{ str_starts_with(app()->getLocale(),'ar')?$special->productUnit?->unit?->name_ar:$special->productUnit?->unit?->name_en }}</td><td dir="ltr"><strong>{{ $special->price }} {{ __('ج.م') }}</strong></td><td dir="ltr">{{ $special->normal_customer_price ?? '—' }}</td><td dir="ltr">{{ $special->normal_customer_price === null ? '—' : bcsub((string) $special->price, (string) $special->normal_customer_price, 4) }}</td><td>{{ $special->effective_from?->format('Y-m-d') }}</td><td>{{ $special->effective_to?->format('Y-m-d')??'—' }}</td><td><x-status.badge :status="$special->status" /></td><td>@if($special->status==='active')@can('pricing_lists.overrides')<form method="POST" action="{{ route('customers.pricing.special.expire',[$customer,$special]) }}" class="flex items-end gap-2">@csrf @method('DELETE')<flux:input name="reason" :label="__('سبب الإنهاء')" required/><flux:button type="submit" variant="danger">{{ __('إنهاء') }}</flux:button></form>@endcan
+                @endif</td></tr>@empty<tr><td colspan="9"><x-state.empty :title="__('لا توجد أسعار خاصة لهذا العميل.')" /></td></tr>@endforelse</tbody></table></div>
+                @can('pricing_lists.overrides')<details class="mt-4 rounded-xl border p-4"><summary class="cursor-pointer font-semibold text-cyan-700">{{ __('إضافة سعر خاص') }}</summary><form method="POST" action="{{ route('customers.pricing.special',$customer) }}" class="mt-4 grid gap-3 md:grid-cols-2">@csrf<flux:select name="product_unit_id" :label="__('الصنف ووحدة البيع')" required><flux:select.option value="">{{ __('اختر') }}</flux:select.option>@foreach($sellingUnits as $unit)<flux:select.option value="{{ $unit->id }}">{{ str_starts_with(app()->getLocale(),'ar')?$unit->product?->name_ar:$unit->product?->name_en }} · {{ str_starts_with(app()->getLocale(),'ar')?$unit->unit?->name_ar:$unit->unit?->name_en }}</flux:select.option>@endforeach</flux:select><flux:input name="price" type="number" step="0.0001" :label="__('السعر الخاص')" required/><flux:input name="effective_from" type="date" :label="__('ساري من')"/><flux:input name="effective_to" type="date" :label="__('ساري إلى')"/><div class="md:col-span-2"><flux:textarea name="reason" :label="__('سبب الاتفاق')" required/></div><div class="md:col-span-2 flex justify-end"><flux:button type="submit" variant="primary">{{ __('حفظ السعر الخاص') }}</flux:button></div></form></details>@endcan
+            </section>
+        @endcan
+
+        <section class="rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-900 dark:bg-zinc-900" aria-labelledby="customer-ar-heading">
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-amber-100 px-5 py-4 dark:border-amber-900">
+                <div>
+                    <flux:heading id="customer-ar-heading" size="lg">{{ __('Accounts Receivable / Customer Account') }}</flux:heading>
+                    <flux:text class="mt-1 text-sm">{{ __('Balances are derived from approved sales, payments, returns, receipts, and approved adjustments.') }}</flux:text>
+                </div>
+                @can('customers.edit')
+                    <flux:button href="{{ route('feed-store.operations', ['operation' => 'customer_receipt', 'customer_id' => $customer->id, 'collection_store_id' => $store->id, 'currency_code' => $currencyCode]).'#customer-receipt' }}" variant="primary" icon="banknotes">{{ __('Receive Payment / تحصيل مبلغ') }}</flux:button>
+                @endcan
+            </div>
+            <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
+                <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Customer') }}</div><div class="mt-1 font-semibold">{{ $displayName }}</div><div class="text-xs font-mono" dir="ltr">{{ $customer->customer_code }} · {{ $customer->phone_display }}</div></div>
+                <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Credit enabled') }}</div><div class="mt-1 font-semibold">{{ in_array($customer->customer_type, ['credit', 'both'], true) ? __('Yes') : __('No') }}</div><div class="text-xs">{{ __('Credit limit') }}: <span class="font-mono" dir="ltr">{{ $customer->credit_limit ?? '—' }} {{ $currencyCode }}</span></div></div>
+                <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Current outstanding balance') }}</div><div class="mt-1 font-mono font-semibold" dir="ltr">{{ $arOutstanding }} {{ $currencyCode }}</div><div class="text-xs">{{ __('Net customer balance') }}: {{ $currentBalance }}</div></div>
+                <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Available credit') }}</div><div class="mt-1 font-mono font-semibold" dir="ltr">{{ $availableCredit ?? '—' }} {{ $currencyCode }}</div></div>
+                <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950"><div class="text-xs text-text-muted">{{ __('Unapplied customer credit') }}</div><div class="mt-1 font-mono font-semibold" dir="ltr">{{ $unappliedCredit }} {{ $currencyCode }}</div></div>
+            </div>
+            <div class="overflow-x-auto border-t border-amber-100 dark:border-amber-900">
+                <table class="min-w-full text-start text-sm">
+                    <thead class="bg-amber-50/60 text-xs uppercase tracking-wide text-text-muted dark:bg-amber-950/20"><tr><th class="px-5 py-3">{{ __('Invoice') }}</th><th class="px-5 py-3">{{ __('Date') }}</th><th class="px-5 py-3 text-end">{{ __('Original total') }}</th><th class="px-5 py-3 text-end">{{ __('Paid amount') }}</th><th class="px-5 py-3 text-end">{{ __('Outstanding') }}</th><th class="px-5 py-3">{{ __('Payment status') }}</th></tr></thead>
+                    <tbody class="divide-y divide-amber-100 dark:divide-amber-900">
+                        @forelse($arInvoices as $invoice)
+                            <tr><td class="px-5 py-3 font-mono">{{ $invoice->document_number ?? '#'.$invoice->id }}</td><td class="px-5 py-3">{{ $invoice->approved_at?->format('Y-m-d') }}</td><td class="px-5 py-3 text-end font-mono" dir="ltr">{{ $invoice->payable_total }}</td><td class="px-5 py-3 text-end font-mono" dir="ltr">{{ $invoice->current_paid }}</td><td class="px-5 py-3 text-end font-mono" dir="ltr">{{ $invoice->current_outstanding }}</td><td class="px-5 py-3"><x-status.badge :status="$invoice->current_payment_status" /></td></tr>
+                        @empty
+                            <tr><td colspan="6" class="px-5 py-8"><x-state.empty :title="__('No outstanding customer invoices.')" /></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="customer-debts" class="scroll-mt-24 rounded-2xl border border-rose-200 bg-white shadow-sm dark:border-rose-900 dark:bg-zinc-900" aria-labelledby="customer-debts-heading">
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-rose-100 px-5 py-4 dark:border-rose-900">
+                <div>
+                    <flux:heading id="customer-debts-heading" size="lg">{{ __('Customer debts') }}</flux:heading>
+                    <flux:text class="mt-1 text-sm">{{ __('Manual and previous debts on this customer. Editing posts a correction entry, so the history is kept.') }}</flux:text>
+                </div>
+                <div class="rounded-xl bg-rose-50 px-4 py-2 text-sm dark:bg-rose-950/30"><span class="text-text-muted">{{ __('Total manual debts') }}</span><div class="font-mono font-black tabular-nums" dir="ltr">{{ number_format((float) $customerDebtsTotal, 2) }} {{ $currencyCode }}</div></div>
+            </div>
+            @if(session('debt_success'))<p role="status" class="mx-5 mt-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('debt_success') }}</p>@endif
+            @error('customer_debt')<p role="alert" class="mx-5 mt-4 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-800 dark:bg-rose-950/40 dark:text-rose-200">{{ $message }}</p>@enderror
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-start text-sm">
+                    <thead class="bg-rose-50/60 text-xs uppercase tracking-wide text-text-muted dark:bg-rose-950/20"><tr><th class="px-5 py-3">#</th><th class="px-5 py-3">{{ __('Date') }}</th><th class="px-5 py-3">{{ __('Reason') }}</th><th class="px-5 py-3">{{ __('Reference') }}</th><th class="px-5 py-3 text-end">{{ __('Original amount') }}</th><th class="px-5 py-3 text-end">{{ __('Current amount') }}</th><th class="px-5 py-3">{{ __('Recorded by') }}</th>@can('customers.sensitive')<th class="px-5 py-3">{{ __('Action') }}</th>@endcan</tr></thead>
+                    <tbody class="divide-y divide-rose-100 dark:divide-rose-900">
+                        @forelse($customerDebts as $debt)
+                            @php $isCredit = bccomp((string) $debt->amount, '0', 4) < 0; $absCurrent = ltrim((string) $debt->current_amount, '-'); @endphp
+                            <tr class="align-top">
+                                <td class="px-5 py-3 font-mono">{{ $debt->id }}</td>
+                                <td class="px-5 py-3 whitespace-nowrap">{{ $debt->adjustment_date?->format('Y-m-d') }}</td>
+                                <td class="px-5 py-3"><div class="w-64">{{ $debt->reason }}@foreach($debt->corrections as $correction)<div class="mt-1 text-xs text-text-muted">↳ {{ $correction->adjustment_date?->format('Y-m-d') }} · {{ $correction->reason }} (<span dir="ltr">{{ bccomp((string) $correction->amount, '0', 4) > 0 ? '+' : '' }}{{ number_format((float) $correction->amount, 2) }}</span>)</div>@endforeach</div></td>
+                                <td class="px-5 py-3">{{ $debt->reference ?? '—' }}</td>
+                                <td class="px-5 py-3 text-end font-mono {{ $isCredit ? 'text-emerald-600' : 'text-rose-600' }}" dir="ltr">{{ $isCredit ? '' : '+' }}{{ number_format((float) $debt->amount, 2) }}</td>
+                                <td class="px-5 py-3 text-end font-mono font-bold" dir="ltr">{{ number_format((float) $debt->current_amount, 2) }}@if(bccomp((string) $debt->current_amount, '0', 4) === 0)<div class="text-xs font-normal text-text-muted">{{ __('Cancelled') }}</div>@endif</td>
+                                <td class="px-5 py-3">{{ $debt->creator?->name ?? '—' }}</td>
+                                @can('customers.sensitive')
+                                    <td class="px-5 py-3">
+                                        <details class="group">
+                                            <summary class="cursor-pointer text-sm font-semibold text-rose-700 dark:text-rose-300">{{ __('Edit') }}</summary>
+                                            <form method="POST" action="{{ route('customers.debts.correct', [$customer->id, $debt->id]) }}" class="mt-2 grid w-64 gap-2">@csrf
+                                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                                <flux:input name="corrected_amount" type="number" min="0" step="0.0001" :value="$absCurrent" :label="$isCredit ? __('Correct reduction amount') : __('Correct debt amount')" required />
+                                                <flux:input name="reason" :label="__('Reason for the edit')" required />
+                                                <p class="text-xs text-text-muted">{{ __('Enter 0 to cancel this debt.') }}</p>
+                                                <flux:button type="submit" size="sm" variant="primary">{{ __('Save edit') }}</flux:button>
+                                            </form>
+                                        </details>
+                                    </td>
+                                @endcan
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="px-5 py-8"><x-state.empty :title="__('No customer debts recorded yet.')" /></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @can('customers.sensitive')
+                <details class="border-t border-rose-100 px-5 py-4 dark:border-rose-900" @if($errors->has('customer_debt') || old('direction')) open @endif>
+                    <summary class="cursor-pointer font-semibold text-rose-700 dark:text-rose-300">{{ __('Add a debt') }}</summary>
+                    <form method="POST" action="{{ route('customers.debts.store', $customer->id) }}" class="mt-4 grid gap-3 md:grid-cols-2">@csrf
+                        <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                        <flux:select name="direction" :label="__('Type')" required>
+                            <option value="increase" @selected(old('direction', 'increase') === 'increase')>{{ __('Add debt on the customer') }}</option>
+                            <option value="decrease" @selected(old('direction') === 'decrease')>{{ __('Reduce the customer debt') }}</option>
+                        </flux:select>
+                        <flux:input name="amount" type="number" min="0.0001" step="0.0001" :value="old('amount')" :label="__('Amount')" required />
+                        <flux:input name="date" type="date" :value="old('date', now()->toDateString())" max="{{ now()->toDateString() }}" :label="__('Date')" required />
+                        <flux:input name="reference" :value="old('reference')" :label="__('Reference')" />
+                        <div class="md:col-span-2"><flux:textarea name="reason" rows="2" :label="__('Reason')" :placeholder="__('Example: opening balance before using the system')" required>{{ old('reason') }}</flux:textarea></div>
+                        <div class="md:col-span-2 flex justify-end"><flux:button type="submit" variant="primary">{{ __('Record debt') }}</flux:button></div>
+                    </form>
+                </details>
+            @endcan
+        </section>
+
+        @if($salesAnalysis)
+            @include('pages.customers._sales-analysis')
+        @endif
         </div>
     </div>
 </x-layouts::app>

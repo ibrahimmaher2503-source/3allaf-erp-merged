@@ -10,6 +10,7 @@ use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\PosOpenOrder;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Support\UserSafeError;
 use InvalidArgumentException;
@@ -18,8 +19,35 @@ final class PosCartSnapshot
 {
     public function __construct(private readonly EffectivePriceResolver $prices, private readonly PosCalculationService $calculator) {}
 
-    /** @return array<string, mixed> */
+    /**
+     * Cart, checkout and the POS page all build the same snapshot in one request. It is
+     * remembered for the current request, keyed by every input it reads, so a cart change
+     * later in the same request still produces a fresh snapshot.
+     *
+     * @return array<string, mixed>
+     */
     public function build(PosContext $context): array
+    {
+        if (! $context->isReady() || $context->store === null || ! request()->hasSession()) {
+            return $this->buildFresh($context, null);
+        }
+        $session = request()->session();
+        $order = app(PosOpenOrderManager::class)->active(request(), auth()->user(), $context, false);
+        $key = 'pos.snapshot.'.md5((string) json_encode([
+            auth()->id(), $context->store->id, $context->shift?->id,
+            $session->get('pos.cart', []), $session->get('pos.customer_id'), $session->get('pos.tax_applicable', false),
+            $session->get('pos.gift_card_sale'), $session->get(PosOpenOrderManager::SESSION_KEY),
+            $order?->id, $order?->invoice_discount_type, (string) ($order?->invoice_discount_value ?? ''),
+        ]));
+        if (! request()->attributes->has($key)) {
+            request()->attributes->set($key, $this->buildFresh($context, $order));
+        }
+
+        return request()->attributes->get($key);
+    }
+
+    /** @return array<string, mixed> */
+    private function buildFresh(PosContext $context, ?PosOpenOrder $order): array
     {
         if (! $context->isReady() || $context->store === null) {
             return [
@@ -47,7 +75,8 @@ final class PosCartSnapshot
                 ->where('status', 'unsold')->where('branch_id', $store->branch_id)->first();
         }
         $ids = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->unique()->values();
-        $products = Product::query()->with(['parent.images.attachment', 'images.attachment', 'variantValues.group', 'variantValues.value', 'productUnits.unit'])->whereIn('id', $ids)->get()->keyBy('id');
+        $products = Product::query()->with(['parent.images.attachment', 'images.attachment', 'variantValues.group', 'variantValues.value', 'productUnits.unit', 'barcodes'])->whereIn('id', $ids)->get()->keyBy('id');
+        $this->prices->warm($ids->all(), (int) $store->id);
         $customerId = request()->session()->get('pos.customer_id');
         $balances = StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $ids)->get()->keyBy('product_id');
         $lines = [];
@@ -69,7 +98,6 @@ final class PosCartSnapshot
             $lines[] = ['product' => $product, 'product_unit' => $productUnit, 'quantity' => (string) $cartLine['quantity'], 'available_quantity' => $available, 'unit_price' => $unitPrice, 'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'), 'price' => $price, 'cart' => $cartLine];
         }
         $taxApplicable = (bool) request()->session()->get('pos.tax_applicable', false);
-        $order = request()->hasSession() ? app(PosOpenOrderManager::class)->active(request(), auth()->user(), $context, false) : null;
         $discountType = $order?->invoice_discount_type;
         $discountValue = (string) ($order?->invoice_discount_value ?? '0.00');
         $effectiveTaxes = TaxSetting::query()->where('company_id', $store->company_id)->where('status', 'active')->where('is_default', true)->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>', now()))->limit(2)->get();

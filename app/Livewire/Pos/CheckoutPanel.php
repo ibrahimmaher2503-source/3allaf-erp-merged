@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Pos;
 
 use App\Models\User;
+use App\Modules\Customer\Support\CustomerBalance;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Models\GiftCard;
@@ -215,6 +217,32 @@ final class CheckoutPanel extends Component
         $this->saveDraft($orders, $contexts);
     }
 
+    /**
+     * Lets an authorized cashier allow credit (آجل) for the order's customer straight from the
+     * payment window. A cash-only or unset customer becomes "cash and credit"; the change is audited.
+     */
+    public function enableCustomerCredit(PosOpenOrderManager $orders, PosContextResolver $contexts): void
+    {
+        Gate::authorize('customers.edit');
+        /** @var User $user */
+        $user = auth()->user();
+        $order = $orders->active(request(), $user, $contexts->resolve($user), false);
+        $customer = $order?->customer;
+        if ($customer === null || $customer->status !== 'active') {
+            $this->addError('paymentLines', __('Select an active customer first.'));
+
+            return;
+        }
+        if (in_array($customer->customer_type, ['credit', 'both'], true)) {
+            return;
+        }
+        $before = $customer->only(['customer_type']);
+        $customer->update(['customer_type' => 'both']);
+        app(RecordAuditEvent::class)->execute(category: 'customer', event: 'pos_enable_customer_credit', source: $customer,
+            before: $before, after: $customer->only(['customer_type']), storeId: $order->store_id);
+        $this->switchCheckoutMode('credit', $orders, $contexts);
+    }
+
     public function switchCheckoutMode(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {
         $this->chooseMode($mode, $orders, $contexts);
@@ -319,7 +347,7 @@ final class CheckoutPanel extends Component
         $order = $orders->active(request(), $user, $context, ! is_numeric(request()->session()->get('pos.completed_sale_id')));
         $data = $snapshot->build($context);
         $orders->updateTotals($order, $data['preview'] ?? null);
-        $methods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->limit(100)->get();
+        $methods = PaymentMethod::query()->where('status', 'active')->where('type', '!=', 'gift_card')->orderBy('code')->limit(100)->get();
         $cashMethod = $methods->first(fn (PaymentMethod $method): bool => $method->isCash());
         $electronicMethods = $methods->reject(fn (PaymentMethod $method): bool => $method->isCash() || (string) $method->type === 'gift_card')->values();
         $invoiceTotal = (string) (($data['preview']['total'] ?? null) ?: '0.00');
@@ -336,16 +364,19 @@ final class CheckoutPanel extends Component
             }
         }
         $payable = (string) ($cashPayable ?? $invoiceTotal);
+        // Current debt of the selected customer, shown in the payment window next to the credit option.
+        $customerDebt = $order?->customer === null ? null
+            : app(CustomerBalance::class)->for($order->customer, (string) ($store?->company?->currency_code ?: 'EGP'));
 
         return view('livewire.pos.checkout-panel', array_merge($data, compact(
             'context', 'store', 'shift', 'order', 'methods', 'cashMethod', 'electronicMethods',
-            'invoiceTotal', 'cashPayable', 'cashAdjustment', 'cashRoundingError', 'payable',
+            'invoiceTotal', 'cashPayable', 'cashAdjustment', 'cashRoundingError', 'payable', 'customerDebt',
         )));
     }
 
     private function prepareMode(string $mode): void
     {
-        $methods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->limit(100)->get();
+        $methods = PaymentMethod::query()->where('status', 'active')->where('type', '!=', 'gift_card')->orderBy('code')->limit(100)->get();
         $cash = $methods->first(fn (PaymentMethod $method): bool => $method->isCash());
         $card = $methods->first(fn (PaymentMethod $method): bool => ! $method->isCash() && (string) $method->type !== 'gift_card');
         if ($mode === 'credit') {

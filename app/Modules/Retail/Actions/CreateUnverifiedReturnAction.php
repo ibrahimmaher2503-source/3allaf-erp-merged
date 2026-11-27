@@ -7,6 +7,7 @@ namespace App\Modules\Retail\Actions;
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Models\InventoryBatch;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -158,7 +159,7 @@ final class CreateUnverifiedReturnAction
                     ]);
                     app(PostInventoryMovement::class)->execute((int) $inputLine['product_id'], (int) $store->id, $inputLine['quantity'],
                         'retail_return', null, 'unverified-return:'.$document->id.':line:'.$line->id,
-                        RetailReturn::class, (int) $document->id, (int) $line->id);
+                        RetailReturn::class, (int) $document->id, (int) $line->id, batchId: InventoryBatch::firstExpiringIdFor((int) $inputLine['product_id']));
                 }
                 RetailReturnSettlement::query()->create([
                     'retail_return_id' => $document->id, 'payment_method_id' => $method->id,

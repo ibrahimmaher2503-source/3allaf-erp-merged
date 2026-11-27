@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Support\CustomerBalance;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Models\InventoryBatch;
+use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -295,6 +297,9 @@ final class RetailReturnAction
                         (int) $line->id,
                         false,
                         $saleLine->stock_movement_id === null ? null : (int) $saleLine->stock_movement_id,
+                        // A returned unit goes back into the batch it was sold from (FEFO for legacy sales without one).
+                        batchId: ($saleLine->stock_movement_id === null ? null : StockMovement::query()->whereKey($saleLine->stock_movement_id)->value('batch_id'))
+                            ?? InventoryBatch::firstExpiringIdFor((int) $line->product_id),
                     );
                     $inventoryCost = bcadd($inventoryCost, bcmul((string) $line->quantity, $unitCost, 4), 4);
                 }
@@ -318,7 +323,7 @@ final class RetailReturnAction
                         throw ValidationException::withMessages(['exchange' => __('The approved exchange details are unavailable.')]);
                     }
                     foreach ($exchange->lines as $line) {
-                        app(PostInventoryMovement::class)->execute((int) $line->product_id, (int) $locked->store_id, '-'.(string) $line->quantity, 'retail_exchange_out', null, 'retail-return:'.$locked->id.':exchange:'.$line->id, RetailReturn::class, (int) $locked->id, (int) $line->id);
+                        app(PostInventoryMovement::class)->execute((int) $line->product_id, (int) $locked->store_id, '-'.(string) $line->quantity, 'retail_exchange_out', null, 'retail-return:'.$locked->id.':exchange:'.$line->id, RetailReturn::class, (int) $locked->id, (int) $line->id, batchId: InventoryBatch::firstExpiringIdFor((int) $line->product_id));
                     }
                     $difference = (string) $exchange->difference_value;
                     if (bccomp($difference, '0.00', 2) !== 0) {

@@ -12,6 +12,7 @@ use App\Modules\Customer\Actions\CreateCustomerGroupAction;
 use App\Modules\Customer\Actions\ExpireLoyaltyAction;
 use App\Modules\Customer\Actions\ImportCustomerGroups;
 use App\Modules\Customer\Actions\MergeCustomersAction;
+use App\Modules\Customer\Actions\PostCustomerAccountAdjustmentAction;
 use App\Modules\Customer\Actions\PostPartyWalletEntryAction;
 use App\Modules\Customer\Actions\PostProductWalletEntryAction;
 use App\Modules\Customer\Actions\RecordCustomerConsentAction;
@@ -24,6 +25,7 @@ use App\Modules\Customer\Actions\StageCustomerImportAction;
 use App\Modules\Customer\Actions\UpdateCustomerAction;
 use App\Modules\Customer\Actions\UpdateCustomerGroupAction;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerAccountAdjustment;
 use App\Modules\Customer\Models\CustomerConsent;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerImportBatch;
@@ -50,8 +52,8 @@ use App\Modules\Pricing\Actions\AssignCustomerPriceListAction;
 use App\Modules\Pricing\Actions\SaveCustomerProductPriceAction;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Services\PriceListResolver;
-use App\Modules\Retail\Models\Sale;
 use App\Modules\Reporting\Queries\SalesReport;
+use App\Modules\Retail\Models\Sale;
 use App\Support\DataExchange\ImportTemplateFactory;
 use App\Support\DataExchange\MasterDataDocument;
 use App\Support\Hierarchy\GroupHierarchy;
@@ -351,7 +353,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'notes' => ['nullable', 'string', 'max:4000'],
             'governorate_id' => ['required', 'integer'],
             'city_id' => ['required', 'integer'],
+            'opening_debt' => ['nullable', 'decimal:0,4', 'gt:0'],
+            'opening_debt_note' => ['nullable', 'string', 'max:500'],
         ]);
+        // Optional previous debt (owed before using the system), same posting as the POS quick-add.
+        $openingDebt = filled($validated['opening_debt'] ?? null) ? (string) $validated['opening_debt'] : null;
+        abort_if($openingDebt !== null && ! $user->can('customers.sensitive'), 403);
+        $openingDebtNote = trim((string) ($validated['opening_debt_note'] ?? ''));
+        unset($validated['opening_debt'], $validated['opening_debt_note']);
 
         $store = $sellingStore($user);
         try {
@@ -361,7 +370,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'status' => 'denied',
                 'source' => 'profile_create',
             ])->all();
-            $customer = $action->execute($user, $store, $validated + ['consents' => $consents]);
+            $customer = DB::transaction(function () use ($action, $user, $store, $validated, $consents, $openingDebt, $openingDebtNote): Customer {
+                $customer = $action->execute($user, $store, $validated + ['consents' => $consents]);
+                if ($openingDebt !== null) {
+                    app(PostCustomerAccountAdjustmentAction::class)->execute($user, $customer, $openingDebt,
+                        __('Previous debt entered when adding the customer').($openingDebtNote !== '' ? ': '.$openingDebtNote : ''),
+                        'profile-opening-debt:'.$validated['idempotency_key'], now()->toDateString());
+                }
+
+                return $customer;
+            }, 5);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
             $normalizedPhone = PhoneNormalizer::normalize((string) ($validated['phone'] ?? ''));
             $candidate = Customer::query()
@@ -444,9 +462,71 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             }
         });
         $sellingUnits = ProductUnit::query()->with(['product', 'unit'])->where('is_sale_unit', true)->whereHas('product', fn ($query) => $query->sellable())->orderBy('product_id')->limit(100)->get();
+        $debtEntries = CustomerAccountAdjustment::query()->where('customer_id', $customer->id)->whereNull('sale_id')->where('status', 'approved')->with('creator')->orderByDesc('adjustment_date')->orderByDesc('id')->limit(200)->get();
+        $debtCorrections = $debtEntries->filter(fn (CustomerAccountAdjustment $entry): bool => str_starts_with((string) $entry->reference, 'CORR-'))->groupBy(fn (CustomerAccountAdjustment $entry): string => substr((string) $entry->reference, 5));
+        $customerDebts = $debtEntries->reject(fn (CustomerAccountAdjustment $entry): bool => str_starts_with((string) $entry->reference, 'CORR-'))->each(function (CustomerAccountAdjustment $entry) use ($debtCorrections): void {
+            $corrections = $debtCorrections->get($entry->public_id, collect());
+            $entry->setAttribute('current_amount', bcadd((string) $entry->amount, (string) $corrections->sum('amount'), 4));
+            $entry->setAttribute('corrections', $corrections->values());
+        })->values();
+        $customerDebtsTotal = $debtEntries->reduce(fn (string $total, CustomerAccountAdjustment $entry): string => bcadd($total, (string) $entry->amount, 4), '0.0000');
 
-        return view('pages.customers.show', compact('customer', 'store', 'salesAnalysis', 'salesStores', 'salesProducts', 'salesCategories', 'salesPaymentMethods', 'partyBookings', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions', 'governorates', 'cities', 'currencyCode', 'arInvoices', 'arOutstanding', 'unappliedCredit', 'currentBalance', 'availableCredit', 'priceLists', 'specialPrices', 'sellingUnits'));
+        return view('pages.customers.show', compact('customer', 'store', 'salesAnalysis', 'salesStores', 'salesProducts', 'salesCategories', 'salesPaymentMethods', 'partyBookings', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions', 'governorates', 'cities', 'currencyCode', 'arInvoices', 'arOutstanding', 'unappliedCredit', 'currentBalance', 'availableCredit', 'priceLists', 'specialPrices', 'sellingUnits', 'customerDebts', 'customerDebtsTotal'));
     })->middleware('can:customers.view')->name('customers.show');
+
+    Route::post('customers/{customerId}/debts', function (Request $request, int $customerId, PostCustomerAccountAdjustmentAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validate([
+            'direction' => ['required', 'in:increase,decrease'],
+            'amount' => ['required', 'decimal:0,4', 'gt:0'],
+            'date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'reason' => ['required', 'string', 'max:1000'],
+            'reference' => ['nullable', 'string', 'max:190'],
+            'idempotency_key' => ['required', 'uuid'],
+        ]);
+        $customer = Customer::query()->visibleTo($user)->findOrFail($customerId);
+        try {
+            $amount = ($data['direction'] === 'decrease' ? '-' : '').$data['amount'];
+            $action->execute($user, $customer, $amount, $data['reason'], $data['idempotency_key'], $data['date'], reference: $data['reference'] ?? null);
+        } catch (Throwable $exception) {
+            return redirect()->to(route('customers.show', $customer).'#customer-debts')->withInput()->withErrors(['customer_debt' => UserSafeError::message($exception)]);
+        }
+
+        return redirect()->to(route('customers.show', $customer).'#customer-debts')->with('debt_success', __('Customer debt recorded successfully.'));
+    })->middleware('can:customers.sensitive')->name('customers.debts.store');
+
+    /** Corrects a manual debt by posting the difference as a referenced adjustment; approved entries stay immutable. */
+    Route::post('customers/{customerId}/debts/{adjustmentId}/correct', function (Request $request, int $customerId, int $adjustmentId, PostCustomerAccountAdjustmentAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validate([
+            'corrected_amount' => ['required', 'decimal:0,4', 'gte:0'],
+            'reason' => ['required', 'string', 'max:1000'],
+            'idempotency_key' => ['required', 'uuid'],
+        ]);
+        $customer = Customer::query()->visibleTo($user)->findOrFail($customerId);
+        $original = CustomerAccountAdjustment::query()->where('customer_id', $customer->id)->whereNull('sale_id')->where('status', 'approved')
+            ->where(fn ($query) => $query->whereNull('reference')->orWhere('reference', 'not like', 'CORR-%'))->findOrFail($adjustmentId);
+        try {
+            $posted = DB::transaction(function () use ($user, $customer, $original, $data, $action): bool {
+                Customer::query()->whereKey($customer->id)->lockForUpdate()->first();
+                $current = bcadd((string) $original->amount, (string) CustomerAccountAdjustment::query()->where('customer_id', $customer->id)->where('status', 'approved')->where('reference', 'CORR-'.$original->public_id)->sum('amount'), 4);
+                $sign = bccomp((string) $original->amount, '0', 4) < 0 ? '-1' : '1';
+                $difference = bcsub(bcmul($sign, (string) $data['corrected_amount'], 4), $current, 4);
+                if (bccomp($difference, '0', 4) === 0) {
+                    return false;
+                }
+                $action->execute($user, $customer, $difference, __('Correction of debt entry #:id', ['id' => $original->id]).': '.trim($data['reason']), $data['idempotency_key'], now()->toDateString(), reference: 'CORR-'.$original->public_id);
+
+                return true;
+            }, 5);
+        } catch (Throwable $exception) {
+            return redirect()->to(route('customers.show', $customer).'#customer-debts')->withErrors(['customer_debt' => UserSafeError::message($exception)]);
+        }
+
+        return redirect()->to(route('customers.show', $customer).'#customer-debts')->with('debt_success', $posted ? __('Customer debt corrected successfully.') : __('The debt already has this amount; nothing changed.'));
+    })->middleware('can:customers.sensitive')->name('customers.debts.correct');
 
     Route::put('customers/{customerId}', function (Request $request, int $customerId, UpdateCustomerAction $action) use ($sellingStore) {
         /** @var User $user */

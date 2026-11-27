@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Data\ResolvedListPrice;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\ProductPriceOverride;
+use App\Support\RequestMemo;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -56,23 +57,53 @@ final class PriceListResolver
             throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
         }
 
-        $baseList = PriceList::query()->where('company_id', $list->company_id)->where('list_number', 0)->first();
+        $baseList = RequestMemo::remember('pricing.base-list.'.$list->company_id, fn (): ?PriceList => PriceList::query()->where('company_id', $list->company_id)->where('list_number', 0)->first());
         if (! $baseList?->isEffective($at)) {
             throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);
         }
-        $baseOverride = ProductPriceOverride::query()->where('company_id', $list->company_id)->where('price_list_id', $baseList->id)->where('product_id', $product->id)->where('product_unit_id', $unit->id)->first();
+        $baseOverride = $this->overrideFor((int) $list->company_id, (int) $baseList->id, (int) $product->id, (int) $unit->id);
         $baseOverride = $baseOverride?->isEffective($at) ? $baseOverride : null;
         $base = $baseOverride !== null ? (string) $baseOverride->amount : ($unit->is_base_unit ? (string) $product->sale_price : '0');
         if (bccomp($this->normalized($base, 4), '0', 4) <= 0) {
             throw ValidationException::withMessages(['base_price' => __('A retail price is required for this selling unit.')]);
         }
 
-        $override = ProductPriceOverride::query()->where('company_id', $list->company_id)->where('price_list_id', $list->id)->where('product_id', $product->id)->where('product_unit_id', $unit->id)->first();
+        $override = $this->overrideFor((int) $list->company_id, (int) $list->id, (int) $product->id, (int) $unit->id);
         $active = $override?->isEffective($at) ? $override : null;
         $calculation = $list->isBase() ? ['pre_round' => $base, 'rounded' => $base] : $this->calculate($base, (string) $list->percentage_increase);
         $final = $active ? (string) $active->amount : $calculation['rounded'];
 
         return new ResolvedListPrice($list->id, $list->code, $base, $calculation['pre_round'], $final, $active !== null, $unit->id, $active?->id, $baseOverride?->id);
+    }
+
+    /**
+     * Pre-loads every override of the given lists for the given products in one query, so a cart
+     * of many lines does not run two override queries per line.
+     *
+     * @param  array<int, int>  $listIds
+     * @param  array<int, int>  $productIds
+     */
+    public function warmOverrides(int $companyId, array $listIds, array $productIds): void
+    {
+        $listIds = array_values(array_unique(array_filter(array_map('intval', $listIds))));
+        $productIds = array_values(array_unique(array_map('intval', $productIds)));
+        if ($listIds === [] || $productIds === []) {
+            return;
+        }
+        $rows = ProductPriceOverride::query()->where('company_id', $companyId)->whereIn('price_list_id', $listIds)->whereIn('product_id', $productIds)->get();
+        foreach ($listIds as $listId) {
+            foreach ($productIds as $productId) {
+                RequestMemo::put('pricing.overrides.'.$companyId.'.'.$listId.'.'.$productId, $rows->where('price_list_id', $listId)->where('product_id', $productId)->keyBy('product_unit_id'));
+            }
+        }
+    }
+
+    private function overrideFor(int $companyId, int $listId, int $productId, int $unitId): ?ProductPriceOverride
+    {
+        $rows = RequestMemo::remember('pricing.overrides.'.$companyId.'.'.$listId.'.'.$productId,
+            fn () => ProductPriceOverride::query()->where('company_id', $companyId)->where('price_list_id', $listId)->where('product_id', $productId)->get()->keyBy('product_unit_id'));
+
+        return $rows->get($unitId);
     }
 
     public function resolveWithBasePrice(Product $product, PriceList $list, string $base, ?\DateTimeInterface $at = null): ResolvedListPrice
@@ -106,7 +137,7 @@ final class PriceListResolver
             return $list;
         }
 
-        $base = PriceList::query()->where('company_id', $outlet->company_id)->where('list_number', 0)->first();
+        $base = RequestMemo::remember('pricing.base-list.'.$outlet->company_id, fn (): ?PriceList => PriceList::query()->where('company_id', $outlet->company_id)->where('list_number', 0)->first());
         if ($base !== null) {
             if (! $base->isEffective($at)) {
                 throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);

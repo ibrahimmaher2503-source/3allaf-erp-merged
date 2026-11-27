@@ -85,7 +85,13 @@
                 <div class="border-b border-border pb-4"><flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الحساب والائتمان' : 'Account & credit' }}</flux:heading><flux:text class="mt-1 text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حدد هل العميل نقدي أو آجل وحد المديونية المسموح به. اترك الحد فارغًا لو بدون سقف.' : 'Choose whether the customer pays cash, on credit or both, and the allowed credit ceiling. Leave empty for no ceiling.' }}</flux:text></div>
                 <div class="mt-5 grid gap-4 sm:grid-cols-2">
                     <flux:select name="customer_type" :label="__('Customer payment type')"><flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير محدد' : 'Not set' }}</flux:select.option><flux:select.option value="cash" :selected="old('customer_type') === 'cash'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي فقط' : 'Cash only' }}</flux:select.option><flux:select.option value="credit" :selected="old('customer_type') === 'credit'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'آجل (ائتمان)' : 'Credit' }}</flux:select.option><flux:select.option value="both" :selected="old('customer_type') === 'both'">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نقدي وآجل' : 'Cash and credit' }}</flux:select.option></flux:select>
-                    <flux:input name="credit_limit" type="number" min="0" step="0.01" inputmode="decimal" :label="__('Credit limit')" :value="old('credit_limit')" dir="ltr" />
+                    <flux:input name="credit_limit" type="number" min="0" step="0.01" inputmode="decimal" :label="__('Credit limit')" :value="old('credit_limit')" :placeholder="__('Empty = no ceiling')" dir="ltr" />
+                    <p class="sm:col-span-2 rounded-lg bg-cyan-50 px-3 py-2 text-xs text-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-100">{{ __('To sell on credit at the POS choose “Credit” or “Cash and credit”. Each credit sale is added to the customer debt automatically.') }}</p>
+                    @can('customers.sensitive')
+                        <flux:input name="opening_debt" type="number" min="0.01" step="0.01" inputmode="decimal" :label="__('Previous debt on the customer (optional)')" :value="old('opening_debt')" dir="ltr" />
+                        <flux:input name="opening_debt_note" :label="__('Previous debt note')" :value="old('opening_debt_note')" :placeholder="__('Example: old account before the system')" />
+                        <p class="sm:col-span-2 text-xs text-text-muted">{{ __('Later debts and corrections are added from the “Customer debts” section on the customer profile.') }}</p>
+                    @endcan
                     <div class="sm:col-span-2"><flux:textarea name="notes" :label="__('Notes')" rows="2">{{ old('notes') }}</flux:textarea></div>
                 </div>
             </section>

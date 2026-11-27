@@ -11,10 +11,11 @@ use App\Modules\Catalog\Models\ProductImage;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Actions\PosCartAction;
-use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Support\PosContextResolver;
+use App\Modules\Retail\Support\ScaleLabelBarcode;
 use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
@@ -35,6 +36,9 @@ final class ProductBrowser extends Component
 
     public string $quantity = '1';
 
+    /** Last add-to-cart refusal; kept as state because Livewire drops the error bag on the next request. */
+    public string $selectionError = '';
+
     public function mount(): void
     {
         Gate::authorize('pos_sales.view');
@@ -43,25 +47,145 @@ final class ProductBrowser extends Component
     #[On('pos-cart-updated')]
     public function refreshProducts(): void {}
 
+    /** Code of the last scan that reached the cart, to ignore the same scan arriving twice. */
+    public string $lastScannedCode = '';
+
+    public float $lastScannedAt = 0;
+
+    /** 'enter' (scan handler / form submit) or 'live' (search box sync without Enter). */
+    public string $lastScannedVia = '';
+
     public function submitSearch(PosCartAction $cart): void
     {
         $term = trim($this->search);
         if ($term === '') {
-            return;
-        }
-        if (GiftCard::query()->where('identifier', $term)->exists() || str_starts_with(strtoupper($term), 'GC-')) {
-            $this->dispatch('pos-gift-card-scanned', identifier: $term);
-            $this->search = '';
+            // A scanner fires both the scan handler and the form's Enter. The second, empty
+            // submit must not re-render, or it wipes the message from the first (e.g. out of stock).
+            $this->skipRender();
 
             return;
         }
-        $matches = Product::query()->sellable()
-            ->where(fn ($query) => $query->where('item_code', $term)->orWhere('model_number', $term)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $term)))
-            ->limit(2)->get();
-        if ($matches->count() === 1) {
-            $this->addProduct((int) $matches->first()->id, $cart);
+        if ($this->scanToCart($term, $cart, allowPrefix: true, via: 'enter')) {
             $this->search = '';
         }
+    }
+
+    /**
+     * Scanners that do not send Enter only fill the search box. A complete numeric barcode
+     * (8+ digits) that identifies one product, or a scale label, goes straight to the cart.
+     */
+    public function updatedSearch(string $value, PosCartAction $cart): void
+    {
+        $term = trim($value);
+        if (preg_match('/\A\d{8,14}\z/', $term) !== 1) {
+            return;
+        }
+        if ($this->scanToCart($term, $cart, allowPrefix: false, via: 'live')) {
+            $this->search = '';
+        }
+    }
+
+    /**
+     * Adds the scanned product without making the cashier pick it from the results: an exact
+     * item code, model number or barcode, else (with Enter) the single product whose barcode or
+     * item code starts with the scanned text, else a scale label. A product with options opens
+     * its option picker. Returns true when the scan was handled (added, opened or refused).
+     */
+    private function scanToCart(string $term, PosCartAction $cart, bool $allowPrefix, string $via): bool
+    {
+        // One physical scan can arrive twice: through Enter and through the search-box sync.
+        // Only that pair is ignored; scanning the same item again (two bags) adds it again.
+        if ($term === $this->lastScannedCode && $via !== $this->lastScannedVia && microtime(true) - $this->lastScannedAt < 1.2) {
+            return true;
+        }
+        $this->scanVia = $via;
+        $match = $this->uniqueProduct(fn ($query) => $query->where('item_code', $term)->orWhere('model_number', $term)
+            ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $term)));
+        if ($match === false && $allowPrefix) {
+            $prefix = addcslashes($term, '%_\\').'%';
+            $match = $this->uniqueProduct(fn ($query) => $query->where('item_code', 'like', $prefix)
+                ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', 'like', $prefix)));
+        }
+        if ($match instanceof Product) {
+            $this->rememberScan($term);
+            if ($match->has_variations) {
+                $this->openFamily((int) $match->id);
+
+                return true;
+            }
+            $this->addProduct((int) $match->id, $cart);
+
+            return true;
+        }
+        if ($match === null) {
+            return false; // several products match: leave the results for the cashier
+        }
+        if ($this->addScaleLabel($term, $cart)) {
+            $this->rememberScan($term);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  \Closure(Builder<Product>): mixed  $criteria
+     * @return Product|false|null the product, false when none matches, null when several match
+     */
+    private function uniqueProduct(\Closure $criteria): Product|false|null
+    {
+        // Active simple products, variation SKUs and families (a family opens its option picker).
+        $matches = Product::query()->where('status', 'active')
+            ->where($criteria)->limit(2)->get(['id', 'has_variations', 'parent_product_id']);
+
+        return match ($matches->count()) {
+            0 => false,
+            1 => $matches->first(),
+            default => null,
+        };
+    }
+
+    private string $scanVia = '';
+
+    private function rememberScan(string $term): void
+    {
+        $this->lastScannedCode = $term;
+        $this->lastScannedAt = microtime(true);
+        $this->lastScannedVia = $this->scanVia;
+    }
+
+    /**
+     * A weighed item's label (e.g. 2000001016473 = PLU 1, 1.647 kg) is not a product barcode;
+     * it is read with the scale's barcode settings and added with its weight.
+     * Returns true when the code was a scale label (added, or refused with a message).
+     */
+    private function addScaleLabel(string $code, PosCartAction $cart): bool
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $context = app(PosContextResolver::class)->resolve($user);
+        if (! $context->isReady() || $context->store === null) {
+            return false;
+        }
+        $this->selectionError = '';
+        try {
+            $line = ScaleLabelBarcode::resolve($code, (int) $context->store->id, $context->store->company_id === null ? null : (int) $context->store->company_id);
+            if ($line === null) {
+                return false;
+            }
+            Gate::authorize('pos_sales.create');
+            $cart->add(request(), $user, $line['product_id'], $line['quantity'], $line['product_unit_id']);
+        } catch (\Throwable $exception) {
+            $this->selectionError = (string) UserSafeError::message($exception);
+
+            return true;
+        }
+        $this->dispatch('pos-cart-updated');
+        $this->dispatch('notify', message: __('Weighed item added: :quantity', ['quantity' => $line['quantity']]));
+        $this->dispatch('pos-product-search-focus');
+
+        return true;
     }
 
     public function chooseCategory(?int $id): void
@@ -105,11 +229,11 @@ final class ProductBrowser extends Component
     public function addProduct(int $productId, PosCartAction $cart): bool
     {
         Gate::authorize('pos_sales.create');
-        $this->resetErrorBag('selection');
+        $this->selectionError = '';
         /** @var User $user */ $user = auth()->user();
         $context = app(PosContextResolver::class)->resolve($user);
         if (! $context->isReady()) {
-            $this->addError('selection', $context->disabledReason ?? __('POS is not ready for selling.'));
+            $this->selectionError = (string) ($context->disabledReason ?? __('POS is not ready for selling.'));
 
             return false;
         }
@@ -124,7 +248,7 @@ final class ProductBrowser extends Component
 
             return true;
         } catch (\Throwable $exception) {
-            $this->addError('selection', UserSafeError::message($exception));
+            $this->selectionError = (string) (UserSafeError::message($exception));
 
             return false;
         }
@@ -133,7 +257,7 @@ final class ProductBrowser extends Component
     public function addSelected(PosCartAction $cart): void
     {
         if (! $this->selectedVariantId) {
-            $this->addError('selection', __('Choose one value from every option group.'));
+            $this->selectionError = (string) (__('Choose one value from every option group.'));
 
             return;
         }

@@ -167,3 +167,10 @@
 - Migration: additive `2026_11_23_090000_add_bonus_quantity_to_purchase_lines` (`purchase_order_lines.bonus_quantity`, `bonus_quantity_received`; `purchase_invoice_lines.bonus_quantity`, `original_bonus_quantity`), default 0 / nullable. Rollback: revert code; drop the columns only before any bonus line is approved.
 - Regression scope: PO save/approve/PDF, invoice save/receive/approve/reverse, WAC, supplier payable, distribution transfers, supplier returns, landed charges.
 - Not yet covered: tiered price breaks by quantity (phase 2) and bonus lines with zero paid quantity (a free item of a different product).
+
+## 2026-11-25 — Owner decision: POS sales of batch/expiry-tracked products use first-expiry-first-out
+
+- Status: Approved by owner in chat (2026-11-25), chosen over cashier batch selection.
+- Old behavior: POS sales never passed a batch, so any product with `track_batches` or `track_expiry` failed at checkout ("A batch is required for this tracked product.").
+- New behavior: `InventoryBatch::firstExpiringIdFor()` picks the active batch with the nearest unexpired expiry date (earliest id breaks ties; expiry required when the product tracks expiry). Used by POS sale posting, retail exchange-out and unverified returns. A verified return goes back into the batch of the original sale movement, falling back to the same rule for legacy sales without a batch. Untracked products post exactly as before.
+- No migration. Rollback: revert the code; posted movements keep their batch ids.
