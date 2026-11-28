@@ -122,7 +122,8 @@ final class CriticalRegressionTest extends PureCalculatorTestCase
             }
         }
         self::assertSame('1.2', ProductQuantity::format('1.200000'));
-        self::assertSame('1.24', ProductQuantity::format('1.235000'));
+        // 3allaf keeps exact decimal quantities (MERGE_REPORT.md section 7, item 2).
+        self::assertSame('1.235', ProductQuantity::format('1.235000'));
         self::assertSame('9007199254740993', ProductQuantity::format('9007199254740993.000000'));
     }
 
