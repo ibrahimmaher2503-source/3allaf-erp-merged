@@ -36,7 +36,7 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
 
         $this->post(route('inventory.documents.store', ['documentType' => 'entry']), [
             'store_id' => $store->id,
-            'reason_code' => 'direct_addition',
+            'reason_code' => 'opening_stock',
             'lines' => [['product_id' => $product->id, 'quantity_delta' => 2, 'unit_cost' => null]],
         ])->assertRedirect()->assertSessionHasNoErrors();
 
@@ -74,7 +74,7 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
             'sale_price' => '10.00',
         ]);
         $adjustment = app(SaveInventoryAdjustmentAction::class)->execute(
-            ['store_id' => $store->id, 'adjustment_type' => 'entry', 'reason_code' => 'qa_scope'],
+            ['store_id' => $store->id, 'adjustment_type' => 'entry', 'reason_code' => 'count_variance'],
             [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
         );
 
@@ -87,7 +87,7 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
         self::assertSame('approved', $adjustment->fresh()->status);
         self::assertSame('1.000000', (string) StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->value('on_hand'));
         $deduction = app(SaveInventoryAdjustmentAction::class)->execute(
-            ['store_id' => $store->id, 'adjustment_type' => 'exit', 'reason_code' => 'qa_scope'],
+            ['store_id' => $store->id, 'adjustment_type' => 'exit', 'reason_code' => 'count_variance'],
             [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
         );
         self::assertStringContainsString('-IAD-', $adjustment->adjustment_number);
@@ -95,11 +95,11 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
         self::assertStringEndsWith('000001', $adjustment->adjustment_number);
         self::assertStringEndsWith('000001', $deduction->adjustment_number);
         $nextAddition = app(SaveInventoryAdjustmentAction::class)->execute(
-            ['store_id' => $store->id, 'adjustment_type' => 'entry', 'reason_code' => 'qa_scope'],
+            ['store_id' => $store->id, 'adjustment_type' => 'entry', 'reason_code' => 'count_variance'],
             [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
         );
         $nextDeduction = app(SaveInventoryAdjustmentAction::class)->execute(
-            ['store_id' => $store->id, 'adjustment_type' => 'exit', 'reason_code' => 'qa_scope'],
+            ['store_id' => $store->id, 'adjustment_type' => 'exit', 'reason_code' => 'count_variance'],
             [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
         );
         self::assertStringEndsWith('000002', $nextAddition->adjustment_number);
