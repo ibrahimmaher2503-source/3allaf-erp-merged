@@ -2369,6 +2369,7 @@
     "The print template code is already in use.": "The print template code is already in use.",
     "Reset filters": "Reset filters",
     "Product quantities must be whole numbers.": "Product quantities must be whole numbers.",
+    "Product quantity has an invalid decimal precision.": "Product quantity has an invalid decimal precision.",
     "Generated label queue": "Generated label queue",
     "Create barcode labels": "Create barcode labels",
     "Product search": "Product search",

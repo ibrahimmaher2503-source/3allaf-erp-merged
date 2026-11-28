@@ -5534,6 +5534,7 @@
     "PurchaseInvoice": "فاتورة مشتريات",
     "Reset filters": "إعادة ضبط عوامل التصفية",
     "Product quantities must be whole numbers.": "يجب أن تكون كميات المنتجات أعدادًا صحيحة.",
+    "Product quantity has an invalid decimal precision.": "كمية المنتج غير صالحة أو تتجاوز عدد الخانات العشرية المسموح به.",
     "Create barcode labels": "إنشاء ملصقات باركود",
     "Search products, choose their actual barcode and output context, then preview or download exact labels.": "ابحث عن المنتجات واختر الباركود الفعلي وسياق الإخراج، ثم عاين الملصقات الدقيقة أو نزّلها.",
     "Product search": "البحث عن منتج",

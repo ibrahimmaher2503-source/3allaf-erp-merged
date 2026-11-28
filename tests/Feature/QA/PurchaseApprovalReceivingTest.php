@@ -389,7 +389,8 @@ final class PurchaseApprovalReceivingTest extends TestCase
             ->call('approveInvoice', $invoice->id)
             ->assertHasErrors(['approval'])
             ->assertSet('showReceiving', true);
-        self::assertStringContainsString('يجب أن تكون كميات المنتجات أعدادًا صحيحة.', $component->html());
+        // Received quantities accept up to six decimals (3allaf kg receiving), so the Arabic invalid-quantity message applies.
+        self::assertStringContainsString('كمية المنتج غير صالحة أو تتجاوز عدد الخانات العشرية المسموح به.', $component->html());
         self::assertSame('submitted', $invoice->fresh()->status);
         self::assertSame(0, StockMovement::query()->count());
         self::assertSame(0, AuditLog::query()->where('event', 'approve_purchase_invoice')->count());

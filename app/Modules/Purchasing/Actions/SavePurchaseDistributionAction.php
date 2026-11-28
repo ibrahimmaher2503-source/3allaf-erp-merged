@@ -83,7 +83,7 @@ final class SavePurchaseDistributionAction
             foreach ($invoice->lines as $line) {
                 $allocated = $invoice->distributions()->where('purchase_invoice_line_id', $line->id)->sum('quantity');
                 if (bccomp((string) $allocated, (string) $line->quantity, 6) > 0) {
-                    throw ValidationException::withMessages(['distributionMatrix.'.$line->id => 'إجمالي التوزيع لا يمكن أن يتجاوز الكمية المستلمة.']);
+                    throw ValidationException::withMessages(['distributionMatrix.'.$line->id => __('Distribution cannot exceed the accepted quantity.')]);
                 }
             }
             $invoice->update(['status' => 'submitted', 'lock_version' => $invoice->lock_version + 1, 'updated_by' => $actor->id]);
