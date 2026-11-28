@@ -50,8 +50,8 @@ final class OperationalPolishBatchTest extends TestCase
     {
         $store = $this->fixture['store'];
         $this->fixture['admin']->branchScopes()->firstOrCreate(['branch_id' => $this->fixture['branch']->id], ['status' => 'active']);
-        $store->update(['price_list_id' => null]);
-        PriceList::query()->where('company_id', $store->company_id)->where('list_number', 0)->delete();
+        // 3allaf unit pricing (kept by the merge) always derives from Base Price List 0, so the company keeps it and
+        // the outlet is assigned its list explicitly; rajeh's "single list without List 0" fallback cannot price here.
         $list = PriceList::query()->updateOrCreate(['company_id' => $store->company_id, 'list_number' => 1], [
             'code' => 'PL-0001',
             'name_ar' => 'قائمة نشطة',
@@ -59,15 +59,16 @@ final class OperationalPolishBatchTest extends TestCase
             'percentage_increase' => 0,
             'status' => 'active',
         ]);
+        $store->update(['price_list_id' => $list->id]);
         $otherCompany = Company::query()->create(['code' => 'QA-BAR-OTHER', 'name_ar' => 'شركة أخرى', 'name_en' => 'Other company', 'status' => 'active', 'currency_code' => 'EGP', 'timezone' => 'Africa/Cairo']);
         PriceList::query()->create(['company_id' => $otherCompany->id, 'list_number' => 1, 'code' => 'PL-OTHER', 'name_ar' => 'قائمة أخرى', 'name_en' => 'Other list', 'percentage_increase' => 0, 'status' => 'active']);
-        $product = Product::factory()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '125.000']);
+        $product = Product::factory()->withBaseUnit()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '125.000']);
         $barcode = $product->barcodes()->create(['barcode' => 'QA-POLISH-'.uniqid(), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
         $service = app(BarcodeLabelService::class);
         $rows = [['product_id' => $product->id, 'barcode_id' => $barcode->id, 'copies' => 1]];
         $document = $service->compose($this->fixture['admin'], $rows, $service->profile($this->fixture['admin']), $store->id);
         $this->assertSame('PL-0001', $document['labels'][0]['list']->code);
-        $this->assertSame(app(EffectivePriceResolver::class)->resolveForStore([$product->id], $store->id)->get($product->id)->amount, $document['labels'][0]['price']);
+        $this->assertSame(0, bccomp((string) app(EffectivePriceResolver::class)->resolveForStore([$product->id], $store->id)->get($product->id)->amount, (string) $document['labels'][0]['price'], 4));
 
         $product->update(['sale_price' => null]);
         try {
@@ -91,7 +92,7 @@ final class OperationalPolishBatchTest extends TestCase
         $secondStore = Store::query()->create(['company_id' => $store->company_id, 'branch_id' => $store->branch_id, 'price_list_id' => $alternateList->id, 'code' => 'QA-POLISH-SECOND', 'name_ar' => 'منفذ ثان', 'name_en' => 'Second outlet', 'type' => 'selling', 'status' => 'active', 'allows_negative_stock' => false]);
         $otherDocument = $service->compose($this->fixture['admin'], $rows, $service->profile($this->fixture['admin']), $secondStore->id);
         $this->assertSame('PL-0002', $otherDocument['labels'][0]['list']->code);
-        $this->assertSame(app(EffectivePriceResolver::class)->resolveForStore([$product->id], $secondStore->id)->get($product->id)->amount, $otherDocument['labels'][0]['price']);
+        $this->assertSame(0, bccomp((string) app(EffectivePriceResolver::class)->resolveForStore([$product->id], $secondStore->id)->get($product->id)->amount, (string) $otherDocument['labels'][0]['price'], 4));
     }
 
     public function test_barcode_preview_and_print_apply_selected_outlet_percentage_rule(): void
@@ -103,7 +104,7 @@ final class OperationalPolishBatchTest extends TestCase
             'percentage_increase' => '15', 'status' => 'active',
         ]);
         $store->update(['price_list_id' => $list->id]);
-        $product = Product::factory()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '300.000']);
+        $product = Product::factory()->withBaseUnit()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '300.000']);
         $barcode = $product->barcodes()->create(['barcode' => 'QA-SAH-'.uniqid(), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
 
         $preview = app(BarcodeSellingPriceResolver::class)->resolveForStore([$product->id], $store);

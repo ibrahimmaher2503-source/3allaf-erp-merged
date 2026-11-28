@@ -37,8 +37,9 @@ final class CommercialBranchPricingTest extends TestCase
         $base = PriceList::query()->where('company_id', $company->id)->where('list_number', 0)->firstOrFail();
         $sahil = PriceList::query()->firstOrCreate(['company_id' => $company->id, 'list_number' => 2], ['code' => 'QA-S2', 'name_ar' => 'ساحل', 'name_en' => 'Sahil', 'percentage_increase' => '15', 'status' => 'active']);
         $outlet->update(['price_list_id' => $sahil->id]);
-        $product = Product::factory()->create(['status' => 'active', 'sale_price' => '400']);
-        $barcode = $product->barcodes()->create(['barcode' => 'QA-'.uniqid(), 'source' => 'local', 'status' => 'active', 'is_primary' => true]);
+        $product = Product::factory()->withBaseUnit()->create(['status' => 'active', 'sale_price' => '400']);
+        // The 3allaf ProductFactory already gives every non-service product its primary identity barcode.
+        $barcode = $product->barcodes()->where('is_primary', true)->sole();
         $actor = $fixture['admin'];
         $version = $sahil->versions()->create(['version' => 100, 'state' => 'approved', 'source_type' => 'qa_fixture', 'approved_by' => $actor->id, 'approved_at' => now()]);
         $version->lines()->create(['product_id' => $product->id, 'store_id' => $outlet->id, 'branch_id' => $branch->id, 'amount' => '460', 'reference_amount' => '400']);
@@ -62,7 +63,8 @@ final class CommercialBranchPricingTest extends TestCase
         self::assertSame('460.000', $preview['prices'][$product->id]);
         $labels = app(BarcodeLabelService::class)->compose($actor, [['product_id' => $product->id, 'barcode_id' => $barcode->id, 'copies' => 1]], app(BarcodeLabelService::class)->profile($actor), $outlet->id);
         self::assertCount(1, $labels['labels']);
-        self::assertSame('460.000', (string) $labels['labels'][0]['price']);
+        // 3allaf price lines are decimal:4 (kept by the merge); labels print two decimals, so compare the money value.
+        self::assertSame(0, bccomp('460', (string) $labels['labels'][0]['price'], 4));
         self::assertSame($beforeInvoices, PurchaseInvoice::query()->count());
         self::assertSame($beforeMovements, DB::table('stock_movements')->count());
 
