@@ -2049,3 +2049,34 @@ Reviewed d9b5319b in isolated clone on review/merge-fixes. Four local fix commit
 - Arabic "Change total" was relabelled from "إجمالي الباقي" to "الباقي للعميل (فكة)", so it no longer reads like unpaid balance.
 - Checked: `view:cache` passed and locale parity passed. The rendered thermal receipt for local sale MAIN-SI-000005 (payable 1,475, paid 1,000) shows 475.00 for this invoice and 1,283.00 total debt.
 - Committed together with the POS "remaining to customer debt" button. Neither is in the c5c8211e release package.
+
+## 2026-11-28 — Fast QA gate repair on `fix/inventory-qa` (Rajeh ERP Fast QA Gate)
+
+Task (from the deploy-blocker session): make `./scripts/qa-gate.sh fast` pass. It had failed on every push since at least 2026-11-13, so the server deployment policy blocked 3allaf.duckdns.org. This task explicitly authorized running the focused QA suite and editing stale QA tests. Class: I4/test infrastructure plus small L2 fixes. Not deployed and not merged to main.
+
+Root causes and commits (one per cause):
+- `storage/framework/views/.gitignore` was dropped by the merge (`fb791902`). A fresh CI checkout had no compiled-view path, so Larastan's bootstrap and `scripts/qa/runtime-check.sh` crashed with "Please provide a valid cache path". Restored it.
+- Larastan then reported 17 level-7 errors in the six gated files. They were fixed with real types and numeric guards. No baseline entries were added.
+- MariaDB 11.8 on the CI runner (snapshot isolation on by default) raised 1020 "Record has changed since last read" in the branch/store lifecycle race. `SaveBranchAction`/`SaveStoreAction::toggleStatus` now use `DB::transaction(..., attempts: 3)`. Laravel already treats that message as a concurrency error.
+- Purchase UI localization:
+  - `SavePurchaseDistributionAction` had a hard-coded Arabic over-distribution error (`fe3a5a31`). It is back on `__()`.
+  - The 3allaf "Product quantity has an invalid decimal precision." message had no ar/ar-EG translation. Added it.
+- Stale rajeh QA tests and fixtures under rules the merge kept (`MERGE_REPORT.md` §6–7). Assertions were changed only where an owner/merge contract changed, and each commit cites the commit or decision behind it:
+  - inventory reason codes;
+  - zero-tax gross purchase pricing (`02f15f03`, DECISIONS 2026-11-23);
+  - exact decimal quantity display;
+  - draft original-quantity re-baseline (`fa991dca`);
+  - sellable base unit (`ProductFactory::withBaseUnit()`, opt-in);
+  - 3allaf unit pricing in label tests.
+- Demo seeders and the integrity duplicate:
+  - The `rajeh:qa-reset` demo seeders broke on the 3allaf auto-barcode factory, on direct-approval inventory additions, on auto-dispatching transfers and on 3allaf outlet-list rounding.
+  - Each failure left the committed `QA-DEMO` company and `qa-admin` in the shared disposable DB. `scripts/qa/fixture.php` then inserted `qa-admin@example.test` a second time, which caused the integrity scanner's `users_email_unique` failure.
+  - Fixed the seeders/factory, not the fixture.
+
+Needs an owner decision (not changed): rajeh's label-pricing fallback to the "single active price list without Base Price List 0" (`PriceListResolver::listForOutlet`) can no longer price anything under the kept 3allaf unit pricing. Either remove the dead fallback or relax the List 0 rule.
+
+Verification actually run:
+- Local XAMPP MariaDB 10.4, dedicated schemas `qa_rajh_m1_gate_20261007` and `qa_rajh_m1_gate2_20261007`. They were created for this task and reset with `migrate:fresh` only on those schemas.
+- `phpstan analyse -c phpstan.qa.neon` OK; `scripts/qa/runtime-check.sh` PASS; focused PHPUnit files for every changed test group.
+- GitHub Actions fast gate on `fix/inventory-qa`: see the final run noted below.
+- No browser checks were run; no deploy; nothing merged to main.
