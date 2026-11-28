@@ -14,14 +14,15 @@ use InvalidArgumentException;
 
 final class FinancialContractTest extends PureCalculatorTestCase
 {
-    public function test_exact_purchase_snapshot_and_document_preserve_cost_discount_tax(): void
+    /** Purchase tax is a zero legacy snapshot (02f15f03, DECISIONS 2026-11-23): tax inputs never change the payable. */
+    public function test_exact_purchase_snapshot_and_document_preserve_cost_discount_with_zero_tax(): void
     {
         $c = new PurchaseInvoiceCalculator;
         $input = ['quantity' => '3', 'unit_cost' => ' 10.1234 ', 'discount_type' => 'percentage', 'discount_value' => '12.3456', 'tax_rate' => '14.1256', 'tax_code' => 'QA', 'tax_inclusive' => false];
         $x = $c->calculateLine($input);
-        self::assertSame(['quantity' => '3.000000', 'unit_cost' => '10.1234', 'discount_type' => 'percentage', 'discount_value' => '12.3456', 'discount_amount' => '3.7493', 'tax_rate' => '14.1256', 'tax_code' => 'QA', 'tax_inclusive' => false, 'tax_amount' => '3.7603', 'subtotal' => '26.6208', 'line_total' => '30.3811'], $x);
+        self::assertSame(['product_unit_id' => null, 'entered_quantity' => '3.000000', 'conversion_factor_snapshot' => '1.000000', 'entered_unit_price' => '10.1234', 'quantity' => '3.000000', 'bonus_quantity' => '0.000000', 'unit_cost' => '10.1234', 'discount_type' => 'percentage', 'discount_value' => '12.3456', 'discount_amount' => '3.7493', 'tax_rate' => '0.0000', 'tax_code' => null, 'tax_inclusive' => false, 'tax_amount' => '0.0000', 'subtotal' => '26.6208', 'line_total' => '26.6208'], $x);
         $d = $c->calculateDocument([$input, $input]);
-        self::assertSame(['subtotal' => '53.2416', 'discountAmount' => '7.4986', 'taxAmount' => '7.5206', 'totalAmount' => '60.7622', 'calculated' => [$x, $x]], $d);
+        self::assertSame(['subtotal' => '53.2416', 'discountAmount' => '7.4986', 'totalAmount' => '53.2416', 'taxAmount' => '0.0000', 'calculated' => [$x, $x]], $d);
     }
 
     public function test_discount_allocation_uses_largest_remainder_and_stable_line_order(): void
@@ -134,6 +135,6 @@ final class FinancialContractTest extends PureCalculatorTestCase
             self::assertStringContainsString('rate', $e->getMessage());
         }
         $this->expectException(InvalidArgumentException::class);
-        $p->calculateLine(['quantity' => '1', 'unit_cost' => '10', 'tax_rate' => '100.0001']);
+        $p->calculateLine(['quantity' => '1', 'unit_cost' => '10', 'discount_type' => 'amount', 'discount_value' => '1e2']);
     }
 }

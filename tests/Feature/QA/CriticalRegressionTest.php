@@ -59,17 +59,18 @@ final class CriticalRegressionTest extends PureCalculatorTestCase
         self::assertSame('1.00', $c->cashRoundingAdjustmentForDenomination('29', '5'));
     }
 
-    public function test_purchase_inclusive_and_exclusive_totals(): void
+    /** Purchase lines are gross supplier prices; tax inputs are legacy and ignored (02f15f03, DECISIONS 2026-11-23). */
+    public function test_purchase_inclusive_and_exclusive_tax_inputs_keep_gross_totals(): void
     {
         $c = new PurchaseInvoiceCalculator;
         $x = $c->calculateLine(['quantity' => '2', 'unit_cost' => '57', 'tax_rate' => '14', 'tax_inclusive' => true]);
-        self::assertSame('100.0000', $x['subtotal']);
-        self::assertSame('14.0000', $x['tax_amount']);
+        self::assertSame('114.0000', $x['subtotal']);
+        self::assertSame('0.0000', $x['tax_amount']);
         self::assertSame('114.0000', $x['line_total']);
         $x = $c->calculateDocument([['quantity' => '2', 'unit_cost' => '50', 'discount_type' => 'percentage', 'discount_value' => '10', 'tax_rate' => '14']]);
         self::assertSame('90.0000', $x['subtotal']);
-        self::assertSame('12.6000', $x['taxAmount']);
-        self::assertSame('102.6000', $x['totalAmount']);
+        self::assertSame('0.0000', $x['taxAmount']);
+        self::assertSame('90.0000', $x['totalAmount']);
     }
 
     public function test_product_cost_precision_and_quantity_rejection(): void
@@ -162,12 +163,12 @@ final class CriticalRegressionTest extends PureCalculatorTestCase
         $x = $c->calculateLine(['quantity' => '3', 'unit_cost' => '10.50', 'discount_type' => 'amount', 'discount_value' => '1.5', 'tax_rate' => '0', 'tax_code' => 'QA']);
         self::assertSame('30.0000', $x['line_total']);
         self::assertSame('1.5000', $x['discount_amount']);
-        self::assertSame('QA', $x['tax_code']);
+        self::assertNull($x['tax_code']);
         self::assertFalse($x['tax_inclusive']);
         $x = $c->calculateDocument([['quantity' => '1', 'unit_cost' => '1'], ['quantity' => '2', 'unit_cost' => '2']]);
         self::assertSame('5.0000', $x['totalAmount']);
         self::assertCount(2, $x['calculated']);
-        foreach ([['quantity' => '0', 'unit_cost' => '1'], ['quantity' => '1', 'unit_cost' => '-1'], ['quantity' => '1', 'unit_cost' => '1', 'discount_type' => 'other'], ['quantity' => '1', 'unit_cost' => '1', 'discount_type' => 'amount', 'discount_value' => '2'], ['quantity' => '1', 'unit_cost' => '1', 'tax_rate' => '101']] as $line) {
+        foreach ([['quantity' => '0', 'unit_cost' => '1'], ['quantity' => '1', 'unit_cost' => '-1'], ['quantity' => '1', 'unit_cost' => '1', 'discount_type' => 'other'], ['quantity' => '1', 'unit_cost' => '1', 'discount_type' => 'amount', 'discount_value' => '2'], ['quantity' => '1.5', 'unit_cost' => '1']] as $line) {
             try {
                 $c->calculateLine($line);
                 self::fail('invalid purchase accepted');
