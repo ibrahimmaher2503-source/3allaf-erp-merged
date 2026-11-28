@@ -90,6 +90,8 @@ class SaveBranchAction
     {
         Gate::authorize('branches_stores.edit');
 
+        // Retried: MariaDB 11.6+ snapshot isolation reports a concurrent parent/child change as
+        // 'Record has changed since last read' (a Laravel concurrency error) instead of waiting on the lock.
         return DB::transaction(function () use ($id) {
             $branchQuery = Branch::query();
             if (auth()->check()) {
@@ -115,7 +117,7 @@ class SaveBranchAction
             );
 
             return $branch;
-        });
+        }, attempts: 3);
     }
 
     private function assertDeactivationSafe(Branch $branch): void

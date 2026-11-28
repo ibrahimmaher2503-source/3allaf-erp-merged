@@ -192,6 +192,8 @@ class SaveStoreAction
     {
         Gate::authorize('branches_stores.edit');
 
+        // Retried: MariaDB 11.6+ snapshot isolation reports a concurrent parent/child change as
+        // 'Record has changed since last read' (a Laravel concurrency error) instead of waiting on the lock.
         return DB::transaction(function () use ($id) {
             $storeQuery = Store::query();
             if (auth()->check()) {
@@ -228,7 +230,7 @@ class SaveStoreAction
             );
 
             return $store;
-        });
+        }, attempts: 3);
     }
 
     /** @return list<array{table: string, column: string, label: string, count: int}> */
