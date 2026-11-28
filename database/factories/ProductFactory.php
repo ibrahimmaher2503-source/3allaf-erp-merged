@@ -2,9 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Barcode;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductUnit;
+use App\Modules\Catalog\Models\Unit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<Product> */
@@ -46,6 +48,21 @@ class ProductFactory extends Factory
                     'is_primary' => true,
                 ]);
             }
+        });
+    }
+
+    /**
+     * Give the product the base selling unit every saved feed-store product has (PIECE, or KG when fractional),
+     * as created by SaveProductAction and backfilled by the 2026_09_15 product-units migration.
+     */
+    public function withBaseUnit(): static
+    {
+        return $this->afterCreating(function (Product $product): void {
+            $unit = Unit::query()->where('code', $product->fractional_quantity ? 'KG' : 'PIECE')->firstOrFail();
+            ProductUnit::query()->firstOrCreate(
+                ['product_id' => $product->id, 'unit_id' => $unit->id],
+                ['conversion_factor' => '1.000000', 'is_base_unit' => true, 'is_purchase_unit' => true, 'is_sale_unit' => true],
+            );
         });
     }
 

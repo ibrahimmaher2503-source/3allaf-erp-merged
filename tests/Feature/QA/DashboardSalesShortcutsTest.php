@@ -70,7 +70,7 @@ final class DashboardSalesShortcutsTest extends TestCase
     public function test_ordinary_invoice_draft_is_scoped_idempotent_and_does_not_post_stock(): void
     {
         $user = $this->userWith('invoice-draft', ['sales_invoices.create']);
-        $product = Product::factory()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '125.00']);
+        $product = Product::factory()->withBaseUnit()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '125.00']);
         $product->barcodes()->create(['barcode' => 'QA-INVOICE-'.Str::random(10), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
         $token = (string) Str::uuid();
         $beforeMovements = StockMovement::query()->count();
@@ -98,7 +98,7 @@ final class DashboardSalesShortcutsTest extends TestCase
     {
         $invoiceUser = $this->userWith('invoice-post', ['sales_invoices.create']);
         $posUser = $this->userWith('pos-post', ['pos_sales.view', 'pos_sales.create']);
-        $product = Product::factory()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '45.00']);
+        $product = Product::factory()->withBaseUnit()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '45.00']);
         $product->barcodes()->create(['barcode' => 'QA-INVOICE-POST-'.Str::random(8), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
         $payload = [
             'store_id' => $this->fixture['store']->id,

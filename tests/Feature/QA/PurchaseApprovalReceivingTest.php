@@ -9,6 +9,7 @@ use App\Modules\Catalog\Actions\ImportProductCardsWorkbookAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Models\Unit;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
@@ -424,7 +425,9 @@ final class PurchaseApprovalReceivingTest extends TestCase
     public function test_model_optional_in_final_draft_edit_readiness_and_product_form(): void
     {
         $data = ['name_ar' => 'منتج بدون موديل', 'name_en' => 'No model', 'category_id' => $this->fixture['category']->id,
-            'preferred_supplier_id' => $this->supplier->id, 'barcode_registration_type' => 'local', 'product_type' => 'service', 'sale_price' => '25', 'status' => 'active'];
+            'preferred_supplier_id' => $this->supplier->id, 'barcode_registration_type' => 'local', 'product_type' => 'service', 'sale_price' => '25', 'status' => 'active',
+            // Every 3allaf product card carries a base unit; the Product Card form requires it on save.
+            'product_units' => [['unit_id' => Unit::query()->where('code', 'PIECE')->value('id'), 'conversion_factor' => '1', 'is_base_unit' => true, 'is_purchase_unit' => true, 'is_sale_unit' => true]]];
         $save = app(SaveProductAction::class);
         $product = $save->execute($data);
         self::assertNull($product->model_number);
