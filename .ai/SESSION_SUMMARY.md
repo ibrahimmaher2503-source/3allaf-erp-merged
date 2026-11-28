@@ -2078,5 +2078,5 @@ Needs an owner decision (not changed): rajeh's label-pricing fallback to the "si
 Verification actually run:
 - Local XAMPP MariaDB 10.4, dedicated schemas `qa_rajh_m1_gate_20261007` and `qa_rajh_m1_gate2_20261007`. They were created for this task and reset with `migrate:fresh` only on those schemas.
 - `phpstan analyse -c phpstan.qa.neon` OK; `scripts/qa/runtime-check.sh` PASS; focused PHPUnit files for every changed test group.
-- GitHub Actions fast gate on `fix/inventory-qa`: see the final run noted below.
+- GitHub Actions fast gate on `fix/inventory-qa`: run 46157937632 on c713245c PASSED all 8 checks (focused suite OK, 125 tests / 924 assertions; integrity scanner PASS). The earlier run 46157541308 (10a2a6b3) had already confirmed the PHPStan, runtime and MariaDB 11.8 concurrency fixes.
 - No browser checks were run; no deploy; nothing merged to main.
