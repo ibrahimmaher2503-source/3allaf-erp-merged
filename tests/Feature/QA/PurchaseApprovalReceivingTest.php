@@ -256,8 +256,12 @@ final class PurchaseApprovalReceivingTest extends TestCase
         $invoice = app(SavePurchaseInvoiceAction::class)->execute(
             ['supplier_id' => $this->supplier->id, 'store_id' => $invoice->store_id],
             [['product_id' => $this->product->id, 'quantity' => '900', 'unit_cost' => '12', 'base_consumer_price' => '30', 'original_quantity' => '900']], $invoice->id, $invoice->lock_version);
-        self::assertSame('1000.000000', $invoice->lines->first()->original_quantity);
-        $invoice = app(ApprovePurchaseInvoiceAction::class)->execute($this->submit($invoice)->id);
+        // A draft edit re-baselines the supplier quantity (fa991dca R1-R7, PostPosPurchaseDraftFocusedTest);
+        // original_quantity is frozen once the invoice leaves draft (asserted at the end of this test).
+        self::assertSame('900.000000', $invoice->lines->first()->original_quantity);
+        $invoice = $this->submit($invoice);
+        $invoice = app(SavePurchaseReceivingAction::class)->execute($invoice->id, [$invoice->lines->first()->id => '800'], $invoice->lock_version);
+        $invoice = app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
         $lineSnapshot = $invoice->lines->first()->getAttributes();
         $movementSnapshot = StockMovement::query()->firstOrFail()->getAttributes();
         $later = $this->submit($this->draft('5', '18', '45'));
@@ -268,7 +272,7 @@ final class PurchaseApprovalReceivingTest extends TestCase
         self::assertSame($movementSnapshot, StockMovement::query()->findOrFail($movementSnapshot['id'])->getAttributes());
         self::assertSame(1, PurchaseInvoiceLine::query()->withShortage()->count());
         $this->expectException(\LogicException::class);
-        $invoice->lines->first()->update(['original_quantity' => '900']);
+        $invoice->lines->first()->update(['original_quantity' => '1000']);
     }
 
     public function test_livewire_received_quantity_is_saved_atomically_with_approval(): void
