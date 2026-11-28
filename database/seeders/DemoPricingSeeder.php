@@ -12,7 +12,9 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\EnsureBasePriceList;
+use App\Modules\Pricing\Actions\SaveProductPriceOverrideAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
+use App\Modules\Pricing\Models\PriceList;
 use App\Support\QaDemoSafety;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Auth;
@@ -53,6 +55,14 @@ final class DemoPricingSeeder extends Seeder
                 $listId = $proposal->price_list_id;
                 $branch->update(['default_price_list_id' => $listId]);
                 $outlet->update(['price_list_id' => $listId]);
+                // 3allaf outlet lists round derived prices up to 5 (64 -> 65); keep the documented 64.00 POS
+                // split-sale scenario with an explicit outlet-list price override, as an operator would.
+                app(SaveProductPriceOverrideAction::class)->execute(
+                    Product::query()->where('item_code', 'QA-POS-64')->firstOrFail(),
+                    PriceList::query()->findOrFail($listId),
+                    '64.00',
+                    'QA demo POS split-sale price.',
+                );
             } finally {
                 Auth::logout();
             }

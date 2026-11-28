@@ -6,12 +6,12 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\SaveInventoryAdjustmentAction;
-use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockTransferAction;
 use App\Modules\Platform\Models\Store;
 use App\Support\QaDemoSafety;
@@ -52,7 +52,10 @@ final class DemoInventorySeeder extends Seeder
                 if ($transfer->status === 'submitted') {
                     $transfer = app(ApproveStockTransferAction::class)->execute($transfer->id);
                 }
-                $transfer = app(DispatchStockTransferAction::class)->execute($transfer->id);
+                // Submit/approve now dispatch atomically; only an approved-but-undispatched transfer needs this step.
+                if ($transfer->status === 'approved') {
+                    $transfer = app(DispatchStockTransferAction::class)->execute($transfer->id);
+                }
                 $line = $transfer->fresh('lines')->lines->firstOrFail();
                 app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '5.000000'], null, null);
 
@@ -80,6 +83,7 @@ final class DemoInventorySeeder extends Seeder
             'reason_notes' => fake()->sentence(),
             'idempotency_key' => $key,
         ], $lines);
-        app(SubmitInventoryAdjustmentAction::class)->execute($adjustment->id);
+        // Inventory Addition documents post on direct approval (owner-authorized Core change 6125482).
+        app(ApproveInventoryAdjustmentAction::class)->execute($adjustment->id);
     }
 }

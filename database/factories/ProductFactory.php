@@ -96,6 +96,10 @@ class ProductFactory extends Factory
         return $this->state(['track_batches' => true, 'track_expiry' => true]);
     }
 
+    /**
+     * A never-used parent that GenerateProductVariationsAction may still convert into a family.
+     * The conversion rejects barcoded products, so the identity barcode added by configure() is removed.
+     */
     public function unpricedFamilyCandidate(): static
     {
         return $this->state([
@@ -103,6 +107,6 @@ class ProductFactory extends Factory
             'sale_price' => null,
             'name_ar' => fake('ar_EG')->words(2, true),
             'name_en' => fake()->words(2, true),
-        ]);
+        ])->afterCreating(fn (Product $product) => $product->barcodes()->delete());
     }
 }

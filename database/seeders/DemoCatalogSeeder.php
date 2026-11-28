@@ -36,7 +36,7 @@ final class DemoCatalogSeeder extends Seeder
                     ['QA-ZERO-STOCK', '120.00', '30.0000'],
                 ];
                 foreach ($scenarioProducts as [$code, $price, $cost]) {
-                    $product = Product::factory()->for($category)->create([
+                    $product = Product::factory()->withBaseUnit()->for($category)->create([
                         'item_code' => $code,
                         'sale_price' => $price,
                         'average_cost' => $cost,
@@ -46,7 +46,7 @@ final class DemoCatalogSeeder extends Seeder
                     app(AddBarcodeAction::class)->addManualCode128($product->id, 'QA-BAR-'.$code);
                 }
 
-                Product::factory()->count(6)->for($category)->state(fn (): array => [
+                Product::factory()->withBaseUnit()->count(6)->for($category)->state(fn (): array => [
                     'sale_price' => (string) fake()->numberBetween(70, 350),
                     'average_cost' => (string) fake()->numberBetween(10, 60),
                     'name_ar' => fake('ar_EG')->words(2, true),
